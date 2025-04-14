@@ -20,7 +20,7 @@ local-front: # stop frontend image, and run front locally (dev mode)
 
 local-back: # stop backend image, and run back locally (dev mode)
 	$(DOCKER_COMPOSE) stop backend 
-	cd backend && go run main.go
+	cd backend/srcs && go run main.go
 
 up: # up latest built images. (Doesn't rebuild using your local files)
 	$(DOCKER_COMPOSE) up -d

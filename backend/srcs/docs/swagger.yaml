@@ -1,0 +1,119 @@
+basePath: /api/v1
+definitions:
+  modules.Module:
+    description: API Module model
+    properties:
+      lastUpdate:
+        example: "2025-02-18T15:00:00Z"
+        type: string
+      lastestVersion:
+        example: "1.7"
+        type: string
+      lateCommits:
+        example: 2
+        type: integer
+      name:
+        example: captain-hook
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/modules.ModuleStatus'
+        example: enabled
+      url:
+        example: https://github.com/some-user/some-repo
+        type: string
+      version:
+        example: "1.2"
+        type: string
+    type: object
+  modules.ModuleInput:
+    description: API Module model
+    properties:
+      gitBranch:
+        example: main
+        type: string
+      name:
+        example: captain-hook
+        type: string
+      url:
+        example: https://github.com/some-user/some-repo
+        type: string
+    type: object
+  modules.ModuleStatus:
+    enum:
+    - enable
+    - disable
+    - downloading
+    type: string
+    x-enum-varnames:
+    - Enabled
+    - Disabled
+    - Downloading
+  version.VersionResponse:
+    description: API version response model
+    properties:
+      version:
+        example: "1.1"
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API REST du projet Pan Bagnat.
+  title: Pan Bagnat API
+  version: "1.1"
+paths:
+  /modules:
+    get:
+      consumes:
+      - application/json
+      description: Returns all the available modules for your campus
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/modules.Module'
+            type: array
+      summary: Get Module List
+      tags:
+      - modules
+    post:
+      consumes:
+      - application/json
+      description: Download a new module for your campus
+      parameters:
+      - description: Module input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/modules.ModuleInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/modules.Module'
+      summary: Post Module List
+      tags:
+      - modules
+  /version:
+    get:
+      consumes:
+      - application/json
+      description: Returns the current version of the API
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/version.VersionResponse'
+      summary: Get API version
+      tags:
+      - version
+swagger: "2.0"
