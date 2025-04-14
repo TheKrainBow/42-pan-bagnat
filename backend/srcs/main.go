@@ -1,16 +1,25 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	_ "backend/docs"
+	"backend/handlers/modules"
+	"backend/handlers/version"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
+// @title Pan Bagnat API
+// @version 1.1
+// @description API REST du projet Pan Bagnat.
+// @host localhost:8080
+// @BasePath /api/v1
 func main() {
 	port := getPort()
 
@@ -27,15 +36,13 @@ func main() {
 
 	// Use the CORS middleware
 	r.Use(corsMiddleware.Handler)
+	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
-	r.Get("/api", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Received request for /api")
-		fmt.Fprintln(w, "Hello from Go backend with chi!")
-	})
+	r.Route("/api/v1", func(r chi.Router) {
+		r.Get("/modules", modules.GetModules)
+		r.Post("/modules", modules.PostModule)
 
-	r.Get("/api/version", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprintln(w, `{"version": "1.1"}`)
+		r.Get("/version", version.GetVersion)
 	})
 
 	log.Printf("Backend listening on port %s", port)

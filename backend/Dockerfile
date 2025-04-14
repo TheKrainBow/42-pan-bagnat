@@ -7,11 +7,11 @@ FROM golang:latest AS builder
 WORKDIR /app
 
 # 3. Copy go.mod and go.sum, then download dependencies
-COPY go.mod go.sum ./
+COPY srcs/go.mod srcs/go.sum ./
 RUN go mod download
 
 # 4. Copy the rest of the source code
-COPY . .
+COPY ./srcs .
 
 # 5. Build the Go app
 RUN go build -o main .

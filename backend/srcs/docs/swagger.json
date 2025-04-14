@@ -1,0 +1,175 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API REST du projet Pan Bagnat.",
+        "title": "Pan Bagnat API",
+        "contact": {},
+        "version": "1.1"
+    },
+    "host": "localhost:8080",
+    "basePath": "/api/v1",
+    "paths": {
+        "/modules": {
+            "get": {
+                "description": "Returns all the available modules for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "modules"
+                ],
+                "summary": "Get Module List",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/modules.Module"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Download a new module for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "modules"
+                ],
+                "summary": "Post Module List",
+                "parameters": [
+                    {
+                        "description": "Module input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/modules.ModuleInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/modules.Module"
+                        }
+                    }
+                }
+            }
+        },
+        "/version": {
+            "get": {
+                "description": "Returns the current version of the API",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "version"
+                ],
+                "summary": "Get API version",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/version.VersionResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "modules.Module": {
+            "description": "API Module model",
+            "type": "object",
+            "properties": {
+                "lastUpdate": {
+                    "type": "string",
+                    "example": "2025-02-18T15:00:00Z"
+                },
+                "lastestVersion": {
+                    "type": "string",
+                    "example": "1.7"
+                },
+                "lateCommits": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "name": {
+                    "type": "string",
+                    "example": "captain-hook"
+                },
+                "status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/modules.ModuleStatus"
+                        }
+                    ],
+                    "example": "enabled"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://github.com/some-user/some-repo"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "1.2"
+                }
+            }
+        },
+        "modules.ModuleInput": {
+            "description": "API Module model",
+            "type": "object",
+            "properties": {
+                "gitBranch": {
+                    "type": "string",
+                    "example": "main"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "captain-hook"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://github.com/some-user/some-repo"
+                }
+            }
+        },
+        "modules.ModuleStatus": {
+            "type": "string",
+            "enum": [
+                "enable",
+                "disable",
+                "downloading"
+            ],
+            "x-enum-varnames": [
+                "Enabled",
+                "Disabled",
+                "Downloading"
+            ]
+        },
+        "version.VersionResponse": {
+            "description": "API version response model",
+            "type": "object",
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "example": "1.1"
+                }
+            }
+        }
+    }
+}
