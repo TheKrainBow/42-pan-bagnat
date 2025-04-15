@@ -52,58 +52,75 @@ definitions:
     - Enabled
     - Disabled
     - Downloading
-  users.User:
-    description: API User model
+  roles.Role:
+    description: API Role model
     properties:
+      color:
+        example: "0xFF00FF"
+        type: string
       id:
         example: 01HZ0MMK4S6VQW4WPHB6NZ7R7X
         type: string
-      lastUpdate:
-        example: "2025-02-18T15:00:00Z"
-        type: string
-      lastestVersion:
-        example: "1.7"
-        type: string
-      lateCommits:
-        example: 2
-        type: integer
       name:
         example: captain-hook
         type: string
-      status:
-        allOf:
-        - $ref: '#/definitions/users.UserStatus'
-        example: enabled
-      url:
-        example: https://github.com/some-user/some-repo
+    type: object
+  roles.RolePatchInput:
+    description: API Role model
+    properties:
+      color:
+        example: "0xFF00FF"
         type: string
-      version:
-        example: "1.2"
+      name:
+        example: captain-hook
         type: string
     type: object
-  users.UserPatchInput:
+  users.FtUser:
+    properties:
+      ftId:
+        example: "1492"
+        type: string
+      ftIsStaff:
+        example: true
+        type: boolean
+      login:
+        example: heinz
+        type: string
+    type: object
+  users.User:
+    description: API User model
+    properties:
+      ftUser:
+        $ref: '#/definitions/users.FtUser'
+      id:
+        example: 01HZ0MMK4S6VQW4WPHB6NZ7R7X
+        type: string
+      isStaff:
+        example: true
+        type: boolean
+      lastUpdate:
+        example: "2025-02-18T15:00:00Z"
+        type: string
+      url:
+        example: https://intra.42.fr/some-login/some-id
+        type: string
+    type: object
+  users.UserPostInput:
     description: API User model
     properties:
       gitBranch:
         example: main
         type: string
-      name:
-        example: captain-hook
+      id:
+        example: 01HZ0MMK4S6VQW4WPHB6NZ7R7X
+        type: string
+      login:
+        example: heinz
         type: string
       url:
-        example: https://github.com/some-user/some-repo
+        example: https://intra.42.fr/some-login/some-id
         type: string
     type: object
-  users.UserStatus:
-    enum:
-    - enabled
-    - disabled
-    - downloading
-    type: string
-    x-enum-varnames:
-    - Enabled
-    - Disabled
-    - Downloading
   version.VersionResponse:
     description: API version response model
     properties:
@@ -175,7 +192,21 @@ paths:
       summary: Post Module List
       tags:
       - modules
-  /modules/{id}:
+  /modules/{moduleID}:
+    get:
+      consumes:
+      - application/json
+      description: Returns all the available modules for your campus
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/modules.Module'
+      summary: Get Module List
+      tags:
+      - modules
     patch:
       consumes:
       - application/json
@@ -197,33 +228,104 @@ paths:
       summary: Post Module List
       tags:
       - modules
-  /modules/{moduleID}:
+  /roles:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a role for your campus (All role datas will be lost!)
+      parameters:
+      - description: Role input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/roles.RolePatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Delete Role
+      tags:
+      - roles
     get:
       consumes:
       - application/json
-      description: Returns all the available modules for your campus
+      description: Returns all the available roles for your campus
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/modules.Module'
-      summary: Get Module List
+            items:
+              $ref: '#/definitions/roles.Role'
+            type: array
+      summary: Get Role List
       tags:
-      - modules
+      - roles
+    post:
+      consumes:
+      - application/json
+      description: Download a new role for your campus
+      parameters:
+      - description: Role input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/roles.RolePatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/roles.Role'
+      summary: Post Role List
+      tags:
+      - roles
+  /roles/{roleID}:
+    get:
+      consumes:
+      - application/json
+      description: Returns all the available roles for your campus
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/roles.Role'
+      summary: Get Role List
+      tags:
+      - roles
+    patch:
+      consumes:
+      - application/json
+      description: Download a new module for your campus
+      parameters:
+      - description: Role input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/roles.RolePatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/roles.Role'
+      summary: Post Role List
+      tags:
+      - roles
   /users:
     delete:
       consumes:
       - application/json
       description: Delete a user for your campus (All user datas will be lost!)
-      parameters:
-      - description: User input
-        in: body
-        name: input
-        required: true
-        schema:
-          $ref: '#/definitions/users.UserPatchInput'
       produces:
       - application/json
       responses:
@@ -258,7 +360,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/users.UserPatchInput'
+          $ref: '#/definitions/users.UserPostInput'
       produces:
       - application/json
       responses:
@@ -282,27 +384,6 @@ paths:
           schema:
             $ref: '#/definitions/users.User'
       summary: Get User List
-      tags:
-      - users
-    patch:
-      consumes:
-      - application/json
-      description: Download a new module for your campus
-      parameters:
-      - description: User input
-        in: body
-        name: input
-        required: true
-        schema:
-          $ref: '#/definitions/users.UserPatchInput'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/users.User'
-      summary: Post User List
       tags:
       - users
   /version:

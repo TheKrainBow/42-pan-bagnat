@@ -1,4 +1,4 @@
-package users
+package roles
 
 import (
 	"encoding/json"
@@ -10,21 +10,24 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// @Summary      Delete User
-// @Description  Delete a user for your campus (All user datas will be lost!)
-// @Tags         users
+// @Summary      Post Role List
+// @Description  Download a new role for your campus
+// @Tags         roles
 // @Accept       json
 // @Produce      json
-// @Success      200
-// @Router       /users [delete]
-func DeleteUser(w http.ResponseWriter, r *http.Request) {
+// @Param        input body RolePatchInput true "Role input"
+// @Success      200 {object} Role
+// @Router       /roles [post]
+func PostRole(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	t := time.Now()
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
 	id := ulid.MustNew(ulid.Timestamp(t), entropy)
-	dest := User{
-		ID: id.String(),
+	dest := Role{
+		ID:    id.String(),
+		Name:  "Test",
+		Color: "0xFF00FF",
 	}
 
 	// Marshal the dest struct into JSON

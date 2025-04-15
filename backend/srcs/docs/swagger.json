@@ -96,7 +96,28 @@
                 }
             }
         },
-        "/modules/{id}": {
+        "/modules/{moduleID}": {
+            "get": {
+                "description": "Returns all the available modules for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "modules"
+                ],
+                "summary": "Get Module List",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/modules.Module"
+                        }
+                    }
+                }
+            },
             "patch": {
                 "description": "Download a new module for your campus",
                 "consumes": [
@@ -130,9 +151,9 @@
                 }
             }
         },
-        "/modules/{moduleID}": {
+        "/roles": {
             "get": {
-                "description": "Returns all the available modules for your campus",
+                "description": "Returns all the available roles for your campus",
                 "consumes": [
                     "application/json"
                 ],
@@ -140,14 +161,133 @@
                     "application/json"
                 ],
                 "tags": [
-                    "modules"
+                    "roles"
                 ],
-                "summary": "Get Module List",
+                "summary": "Get Role List",
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/modules.Module"
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/roles.Role"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Download a new role for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Post Role List",
+                "parameters": [
+                    {
+                        "description": "Role input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/roles.RolePatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/roles.Role"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a role for your campus (All role datas will be lost!)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Delete Role",
+                "parameters": [
+                    {
+                        "description": "Role input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/roles.RolePatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/roles/{roleID}": {
+            "get": {
+                "description": "Returns all the available roles for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Get Role List",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/roles.Role"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Download a new module for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "roles"
+                ],
+                "summary": "Post Role List",
+                "parameters": [
+                    {
+                        "description": "Role input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/roles.RolePatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/roles.Role"
                         }
                     }
                 }
@@ -197,7 +337,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/users.UserPatchInput"
+                            "$ref": "#/definitions/users.UserPostInput"
                         }
                     }
                 ],
@@ -222,17 +362,6 @@
                     "users"
                 ],
                 "summary": "Delete User",
-                "parameters": [
-                    {
-                        "description": "User input",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/users.UserPatchInput"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK"
@@ -253,38 +382,6 @@
                     "users"
                 ],
                 "summary": "Get User List",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/users.User"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "description": "Download a new module for your campus",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Post User List",
-                "parameters": [
-                    {
-                        "description": "User input",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/users.UserPatchInput"
-                        }
-                    }
-                ],
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -393,49 +490,81 @@
                 "Downloading"
             ]
         },
+        "roles.Role": {
+            "description": "API Role model",
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "0xFF00FF"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "captain-hook"
+                }
+            }
+        },
+        "roles.RolePatchInput": {
+            "description": "API Role model",
+            "type": "object",
+            "properties": {
+                "color": {
+                    "type": "string",
+                    "example": "0xFF00FF"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "captain-hook"
+                }
+            }
+        },
+        "users.FtUser": {
+            "type": "object",
+            "properties": {
+                "ftId": {
+                    "type": "string",
+                    "example": "1492"
+                },
+                "ftIsStaff": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "login": {
+                    "type": "string",
+                    "example": "heinz"
+                }
+            }
+        },
         "users.User": {
             "description": "API User model",
             "type": "object",
             "properties": {
+                "ftUser": {
+                    "$ref": "#/definitions/users.FtUser"
+                },
                 "id": {
                     "type": "string",
                     "example": "01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                },
+                "isStaff": {
+                    "type": "boolean",
+                    "example": true
                 },
                 "lastUpdate": {
                     "type": "string",
                     "example": "2025-02-18T15:00:00Z"
                 },
-                "lastestVersion": {
-                    "type": "string",
-                    "example": "1.7"
-                },
-                "lateCommits": {
-                    "type": "integer",
-                    "example": 2
-                },
-                "name": {
-                    "type": "string",
-                    "example": "captain-hook"
-                },
-                "status": {
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/users.UserStatus"
-                        }
-                    ],
-                    "example": "enabled"
-                },
                 "url": {
                     "type": "string",
-                    "example": "https://github.com/some-user/some-repo"
-                },
-                "version": {
-                    "type": "string",
-                    "example": "1.2"
+                    "example": "https://intra.42.fr/some-login/some-id"
                 }
             }
         },
-        "users.UserPatchInput": {
+        "users.UserPostInput": {
             "description": "API User model",
             "type": "object",
             "properties": {
@@ -443,28 +572,19 @@
                     "type": "string",
                     "example": "main"
                 },
-                "name": {
+                "id": {
                     "type": "string",
-                    "example": "captain-hook"
+                    "example": "01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                },
+                "login": {
+                    "type": "string",
+                    "example": "heinz"
                 },
                 "url": {
                     "type": "string",
-                    "example": "https://github.com/some-user/some-repo"
+                    "example": "https://intra.42.fr/some-login/some-id"
                 }
             }
-        },
-        "users.UserStatus": {
-            "type": "string",
-            "enum": [
-                "enabled",
-                "disabled",
-                "downloading"
-            ],
-            "x-enum-varnames": [
-                "Enabled",
-                "Disabled",
-                "Downloading"
-            ]
         },
         "version.VersionResponse": {
             "description": "API version response model",

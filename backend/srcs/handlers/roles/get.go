@@ -1,4 +1,4 @@
-package users
+package roles
 
 import (
 	"encoding/json"
@@ -9,18 +9,20 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
-// @Summary      Get User List
-// @Description  Returns all the available users for your campus
-// @Tags         users
+// @Summary      Get Role List
+// @Description  Returns all the available roles for your campus
+// @Tags         roles
 // @Accept       json
 // @Produce      json
-// @Success      200 {object} []User
-// @Router       /users [get]
-func GetUsers(w http.ResponseWriter, r *http.Request) {
+// @Success      200 {object} []Role
+// @Router       /roles [get]
+func GetRoles(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dest := User{
-		ID: "01HZ0MMK4S6VQW4WPHB6NZ7R7X",
+	dest := Role{
+		ID:    "01HZ0MMK4S6VQW4WPHB6NZ7R7X",
+		Name:  "Test",
+		Color: "0xFF00FF",
 	}
 
 	// Marshal the dest struct into JSON
@@ -33,17 +35,17 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(destJSON))
 }
 
-// @Summary      Get User List
-// @Description  Returns all the available users for your campus
-// @Tags         users
+// @Summary      Get Role List
+// @Description  Returns all the available roles for your campus
+// @Tags         roles
 // @Accept       json
 // @Produce      json
-// @Success      200 {object} User
-// @Router       /users/{userID} [get]
-func GetUser(w http.ResponseWriter, r *http.Request) {
+// @Success      200 {object} Role
+// @Router       /roles/{roleID} [get]
+func GetRole(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	id := chi.URLParam(r, "userID")
+	id := chi.URLParam(r, "roleID")
 	log.Printf("Received ID: '%s'", id) // This should print the ID
 
 	if id == "" {
@@ -55,8 +57,10 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	// }
 	// log.Printf("Backend id: %+v", chi.RouteContext(r.Context()).URLParams)
 
-	dest := User{
-		ID: id,
+	dest := Role{
+		ID:    "01HZ0MMK4S6VQW4WPHB6NZ7R7X",
+		Name:  "Test",
+		Color: "0xFF00FF",
 	}
 
 	// Marshal the dest struct into JSON
