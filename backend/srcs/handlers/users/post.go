@@ -1,29 +1,31 @@
-package modules
+package users
 
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/oklog/ulid/v2"
 )
 
-// @Summary      Post Module List
-// @Description  Download a new module for your campus
-// @Tags         modules
+// @Summary      Post User List
+// @Description  Download a new user for your campus
+// @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        input body ModulePatchInput true "Module input"
-// @Success      200 {object} Module
-// @Router       /modules/{moduleID} [patch]
-func PatchModule(w http.ResponseWriter, r *http.Request) {
+// @Param        input body UserPatchInput true "User input"
+// @Success      200 {object} User
+// @Router       /users [post]
+func PostUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	id := chi.URLParam(r, "moduleID")
-
-	dest := Module{
-		ID:            id,
+	t := time.Now()
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	id := ulid.MustNew(ulid.Timestamp(t), entropy)
+	dest := User{
+		ID:            id.String(),
 		Name:          "Test",
 		Version:       "1.2",
 		Status:        Enabled,

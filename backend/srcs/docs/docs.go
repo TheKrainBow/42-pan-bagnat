@@ -59,7 +59,7 @@ const docTemplate = `{
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/modules.ModuleInput"
+                            "$ref": "#/definitions/modules.ModulePatchInput"
                         }
                     }
                 ],
@@ -68,6 +68,234 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/modules.Module"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a module for your campus (All module datas will be lost!)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "modules"
+                ],
+                "summary": "Delete Module",
+                "parameters": [
+                    {
+                        "description": "Module input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/modules.ModulePatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/modules/{id}": {
+            "patch": {
+                "description": "Download a new module for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "modules"
+                ],
+                "summary": "Post Module List",
+                "parameters": [
+                    {
+                        "description": "Module input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/modules.ModulePatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/modules.Module"
+                        }
+                    }
+                }
+            }
+        },
+        "/modules/{moduleID}": {
+            "get": {
+                "description": "Returns all the available modules for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "modules"
+                ],
+                "summary": "Get Module List",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/modules.Module"
+                        }
+                    }
+                }
+            }
+        },
+        "/users": {
+            "get": {
+                "description": "Returns all the available users for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get User List",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/users.User"
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Download a new user for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Post User List",
+                "parameters": [
+                    {
+                        "description": "User input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/users.UserPatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/users.User"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Delete a user for your campus (All user datas will be lost!)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Delete User",
+                "parameters": [
+                    {
+                        "description": "User input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/users.UserPatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK"
+                    }
+                }
+            }
+        },
+        "/users/{userID}": {
+            "get": {
+                "description": "Returns all the available users for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Get User List",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/users.User"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Download a new module for your campus",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "users"
+                ],
+                "summary": "Post User List",
+                "parameters": [
+                    {
+                        "description": "User input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/users.UserPatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/users.User"
                         }
                     }
                 }
@@ -102,6 +330,10 @@ const docTemplate = `{
             "description": "API Module model",
             "type": "object",
             "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                },
                 "lastUpdate": {
                     "type": "string",
                     "example": "2025-02-18T15:00:00Z"
@@ -136,7 +368,7 @@ const docTemplate = `{
                 }
             }
         },
-        "modules.ModuleInput": {
+        "modules.ModulePatchInput": {
             "description": "API Module model",
             "type": "object",
             "properties": {
@@ -157,8 +389,81 @@ const docTemplate = `{
         "modules.ModuleStatus": {
             "type": "string",
             "enum": [
-                "enable",
-                "disable",
+                "enabled",
+                "disabled",
+                "downloading"
+            ],
+            "x-enum-varnames": [
+                "Enabled",
+                "Disabled",
+                "Downloading"
+            ]
+        },
+        "users.User": {
+            "description": "API User model",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                },
+                "lastUpdate": {
+                    "type": "string",
+                    "example": "2025-02-18T15:00:00Z"
+                },
+                "lastestVersion": {
+                    "type": "string",
+                    "example": "1.7"
+                },
+                "lateCommits": {
+                    "type": "integer",
+                    "example": 2
+                },
+                "name": {
+                    "type": "string",
+                    "example": "captain-hook"
+                },
+                "status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/users.UserStatus"
+                        }
+                    ],
+                    "example": "enabled"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://github.com/some-user/some-repo"
+                },
+                "version": {
+                    "type": "string",
+                    "example": "1.2"
+                }
+            }
+        },
+        "users.UserPatchInput": {
+            "description": "API User model",
+            "type": "object",
+            "properties": {
+                "gitBranch": {
+                    "type": "string",
+                    "example": "main"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "captain-hook"
+                },
+                "url": {
+                    "type": "string",
+                    "example": "https://github.com/some-user/some-repo"
+                }
+            }
+        },
+        "users.UserStatus": {
+            "type": "string",
+            "enum": [
+                "enabled",
+                "disabled",
                 "downloading"
             ],
             "x-enum-varnames": [
