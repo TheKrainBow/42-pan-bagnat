@@ -3,6 +3,9 @@ definitions:
   modules.Module:
     description: API Module model
     properties:
+      id:
+        example: 01HZ0MMK4S6VQW4WPHB6NZ7R7X
+        type: string
       lastUpdate:
         example: "2025-02-18T15:00:00Z"
         type: string
@@ -26,7 +29,7 @@ definitions:
         example: "1.2"
         type: string
     type: object
-  modules.ModuleInput:
+  modules.ModulePatchInput:
     description: API Module model
     properties:
       gitBranch:
@@ -41,8 +44,60 @@ definitions:
     type: object
   modules.ModuleStatus:
     enum:
-    - enable
-    - disable
+    - enabled
+    - disabled
+    - downloading
+    type: string
+    x-enum-varnames:
+    - Enabled
+    - Disabled
+    - Downloading
+  users.User:
+    description: API User model
+    properties:
+      id:
+        example: 01HZ0MMK4S6VQW4WPHB6NZ7R7X
+        type: string
+      lastUpdate:
+        example: "2025-02-18T15:00:00Z"
+        type: string
+      lastestVersion:
+        example: "1.7"
+        type: string
+      lateCommits:
+        example: 2
+        type: integer
+      name:
+        example: captain-hook
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/users.UserStatus'
+        example: enabled
+      url:
+        example: https://github.com/some-user/some-repo
+        type: string
+      version:
+        example: "1.2"
+        type: string
+    type: object
+  users.UserPatchInput:
+    description: API User model
+    properties:
+      gitBranch:
+        example: main
+        type: string
+      name:
+        example: captain-hook
+        type: string
+      url:
+        example: https://github.com/some-user/some-repo
+        type: string
+    type: object
+  users.UserStatus:
+    enum:
+    - enabled
+    - disabled
     - downloading
     type: string
     x-enum-varnames:
@@ -64,6 +119,25 @@ info:
   version: "1.1"
 paths:
   /modules:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a module for your campus (All module datas will be lost!)
+      parameters:
+      - description: Module input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/modules.ModulePatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Delete Module
+      tags:
+      - modules
     get:
       consumes:
       - application/json
@@ -90,7 +164,7 @@ paths:
         name: input
         required: true
         schema:
-          $ref: '#/definitions/modules.ModuleInput'
+          $ref: '#/definitions/modules.ModulePatchInput'
       produces:
       - application/json
       responses:
@@ -101,6 +175,136 @@ paths:
       summary: Post Module List
       tags:
       - modules
+  /modules/{id}:
+    patch:
+      consumes:
+      - application/json
+      description: Download a new module for your campus
+      parameters:
+      - description: Module input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/modules.ModulePatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/modules.Module'
+      summary: Post Module List
+      tags:
+      - modules
+  /modules/{moduleID}:
+    get:
+      consumes:
+      - application/json
+      description: Returns all the available modules for your campus
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/modules.Module'
+      summary: Get Module List
+      tags:
+      - modules
+  /users:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a user for your campus (All user datas will be lost!)
+      parameters:
+      - description: User input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/users.UserPatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+      summary: Delete User
+      tags:
+      - users
+    get:
+      consumes:
+      - application/json
+      description: Returns all the available users for your campus
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/users.User'
+            type: array
+      summary: Get User List
+      tags:
+      - users
+    post:
+      consumes:
+      - application/json
+      description: Download a new user for your campus
+      parameters:
+      - description: User input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/users.UserPatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+      summary: Post User List
+      tags:
+      - users
+  /users/{userID}:
+    get:
+      consumes:
+      - application/json
+      description: Returns all the available users for your campus
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+      summary: Get User List
+      tags:
+      - users
+    patch:
+      consumes:
+      - application/json
+      description: Download a new module for your campus
+      parameters:
+      - description: User input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/users.UserPatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/users.User'
+      summary: Post User List
+      tags:
+      - users
   /version:
     get:
       consumes:

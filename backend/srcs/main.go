@@ -39,9 +39,24 @@ func main() {
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	r.Route("/api/v1", func(r chi.Router) {
-		r.Get("/modules", modules.GetModules)
-		r.Post("/modules", modules.PostModule)
-
+		r.Route("/modules", func(r chi.Router) {
+			// We must register routes in the package the have the handlers, so chi doesn't break
+			modules.RegisterRoutes(r)
+		})
+		r.Route("/users", func(r chi.Router) {
+			r.Get("/", modules.GetModules)
+			r.Post("/", modules.PostModule)
+			r.Get("/{userID}", modules.GetModule)
+			r.Patch("/{userID}", modules.PatchModule)
+			r.Delete("/{userID}", modules.DeleteModule)
+		})
+		r.Route("/roles", func(r chi.Router) {
+			r.Get("/", modules.GetModules)
+			r.Post("/", modules.PostModule)
+			r.Get("/{roleID}", modules.GetModule)
+			r.Patch("/{roleID}", modules.PatchModule)
+			r.Delete("/{roleID}", modules.DeleteModule)
+		})
 		r.Get("/version", version.GetVersion)
 	})
 

@@ -3,8 +3,11 @@ package modules
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
+
+	"github.com/oklog/ulid/v2"
 )
 
 // @Summary      Post Module List
@@ -12,13 +15,17 @@ import (
 // @Tags         modules
 // @Accept       json
 // @Produce      json
-// @Param        input body ModuleInput true "Module input"
+// @Param        input body ModulePatchInput true "Module input"
 // @Success      200 {object} Module
 // @Router       /modules [post]
 func PostModule(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	t := time.Now()
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	id := ulid.MustNew(ulid.Timestamp(t), entropy)
 	dest := Module{
+		ID:            id.String(),
 		Name:          "Test",
 		Version:       "1.2",
 		Status:        Enabled,

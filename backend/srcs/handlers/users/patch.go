@@ -1,4 +1,4 @@
-package modules
+package users
 
 import (
 	"encoding/json"
@@ -9,20 +9,20 @@ import (
 	"github.com/go-chi/chi"
 )
 
-// @Summary      Post Module List
+// @Summary      Post User List
 // @Description  Download a new module for your campus
-// @Tags         modules
+// @Tags         users
 // @Accept       json
 // @Produce      json
-// @Param        input body ModulePatchInput true "Module input"
-// @Success      200 {object} Module
-// @Router       /modules/{moduleID} [patch]
-func PatchModule(w http.ResponseWriter, r *http.Request) {
+// @Param        input body UserPatchInput true "User input"
+// @Success      200 {object} User
+// @Router       /users/{userID} [patch]
+func PatchUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	id := chi.URLParam(r, "moduleID")
+	id := chi.URLParam(r, "userID")
 
-	dest := Module{
+	dest := User{
 		ID:            id,
 		Name:          "Test",
 		Version:       "1.2",

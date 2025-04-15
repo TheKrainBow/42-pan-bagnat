@@ -11,12 +11,14 @@ require (
 
 require (
 	github.com/KyleBanks/depth v1.2.1 // indirect
+	github.com/go-chi/chi v1.5.5 // indirect
 	github.com/go-openapi/jsonpointer v0.21.1 // indirect
 	github.com/go-openapi/jsonreference v0.21.0 // indirect
 	github.com/go-openapi/spec v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.1 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.9.0 // indirect
+	github.com/oklog/ulid/v2 v2.1.0 // indirect
 	github.com/swaggo/files v1.0.1 // indirect
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/tools v0.32.0 // indirect

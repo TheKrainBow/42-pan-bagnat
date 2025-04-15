@@ -12,7 +12,16 @@ type ModuleStatus string
 
 // Define the model for the API Module input
 // @Description API Module model
-type ModuleInput struct {
+type ModulePostInput struct {
+	ID        string `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	Name      string `json:"name" example:"captain-hook"`
+	URL       string `json:"url" example:"https://github.com/some-user/some-repo"`
+	GitBranch string `json:"gitBranch" example:"main"`
+}
+
+// Define the model for the API Module input
+// @Description API Module model
+type ModulePatchInput struct {
 	Name      string `json:"name" example:"captain-hook"`
 	URL       string `json:"url" example:"https://github.com/some-user/some-repo"`
 	GitBranch string `json:"gitBranch" example:"main"`
@@ -21,7 +30,7 @@ type ModuleInput struct {
 // Define the model for the API Module response
 // @Description API Module model
 type Module struct {
-	ID            string       `json:"id" example:""`
+	ID            string       `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
 	Name          string       `json:"name" example:"captain-hook"`
 	Version       string       `json:"version" example:"1.2"`
 	Status        ModuleStatus `json:"status" example:"enabled"`
