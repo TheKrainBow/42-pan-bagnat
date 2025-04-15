@@ -7,6 +7,8 @@ import (
 
 	_ "backend/docs"
 	"backend/handlers/modules"
+	"backend/handlers/roles"
+	"backend/handlers/users"
 	"backend/handlers/version"
 
 	"github.com/go-chi/chi/v5"
@@ -44,18 +46,10 @@ func main() {
 			modules.RegisterRoutes(r)
 		})
 		r.Route("/users", func(r chi.Router) {
-			r.Get("/", modules.GetModules)
-			r.Post("/", modules.PostModule)
-			r.Get("/{userID}", modules.GetModule)
-			r.Patch("/{userID}", modules.PatchModule)
-			r.Delete("/{userID}", modules.DeleteModule)
+			users.RegisterRoutes(r)
 		})
 		r.Route("/roles", func(r chi.Router) {
-			r.Get("/", modules.GetModules)
-			r.Post("/", modules.PostModule)
-			r.Get("/{roleID}", modules.GetModule)
-			r.Patch("/{roleID}", modules.PatchModule)
-			r.Delete("/{roleID}", modules.DeleteModule)
+			roles.RegisterRoutes(r)
 		})
 		r.Get("/version", version.GetVersion)
 	})

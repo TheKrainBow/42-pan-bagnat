@@ -1,43 +1,20 @@
 package users
 
 import (
-	"encoding/json"
-	"fmt"
 	"net/http"
-	"time"
-
-	"github.com/go-chi/chi"
 )
 
-// @Summary      Post User List
-// @Description  Download a new module for your campus
-// @Tags         users
-// @Accept       json
-// @Produce      json
-// @Param        input body UserPatchInput true "User input"
-// @Success      200 {object} User
-// @Router       /users/{userID} [patch]
+// // @Summary      Post User List
+// // @Description  Download a new module for your campus
+// // @Tags         users
+// // @Accept       json
+// // @Produce      json
+// // @Param        input body UserPatchInput true "User input"
+// // @Success      200 {object} User
+// // @Router       /users/{userID} [patch]
 func PatchUser(w http.ResponseWriter, r *http.Request) {
+	// For now, User are not Patchable since it will fetch 42 API datas. Only Patch available will be Password for staff accounts
 	w.Header().Set("Content-Type", "application/json")
 
-	id := chi.URLParam(r, "userID")
-
-	dest := User{
-		ID:            id,
-		Name:          "Test",
-		Version:       "1.2",
-		Status:        Enabled,
-		URL:           "https://github.com/some-user/some-repo",
-		LatestVersion: "1.7",
-		LastUpdate:    time.Date(2025, 02, 18, 15, 0, 0, 0, time.UTC),
-	}
-
-	// Marshal the dest struct into JSON
-	destJSON, err := json.Marshal(dest)
-	if err != nil {
-		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
-		return
-	}
-
-	fmt.Fprint(w, string(destJSON))
+	http.Error(w, "ID not found", http.StatusNotImplemented)
 }
