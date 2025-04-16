@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func GetUsersWithRole(roleID string) ([]User, error) {
+func GetRoleUsers(roleID string) ([]User, error) {
 	rows, err := db.Query(`
 		SELECT u.id, u.ft_login, u.ft_id, u.ft_is_staff, u.photo_url, u.last_seen, u.is_staff
 		FROM users u
@@ -34,6 +34,38 @@ func GetUsersWithRole(roleID string) ([]User, error) {
 		users = append(users, user)
 	}
 	return users, nil
+}
+
+func GetRoleModules(roleID string) ([]Module, error) {
+	rows, err := db.Query(`
+		SELECT mod.id, mod.name, mod.version, mod.status, mod.url, mod.latest_version, mod.late_commits, mod.last_update
+		FROM modules mod
+		JOIN module_roles ur ON ur.module_id = mod.id
+		WHERE ur.role_id = $1
+	`, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var modules []Module
+	for rows.Next() {
+		var module Module
+		if err := rows.Scan(
+			&module.ID,
+			&module.Name,
+			&module.Version,
+			&module.Status,
+			&module.URL,
+			&module.LatestVersion,
+			&module.LateCommits,
+			&module.LastUpdate,
+		); err != nil {
+			return nil, err
+		}
+		modules = append(modules, module)
+	}
+	return modules, nil
 }
 
 func AddRole(role Role) error {
