@@ -20,10 +20,17 @@ local-front: # stop frontend image, and run front locally (dev mode)
 
 local-back: # stop backend image, and run back locally (dev mode)
 	$(DOCKER_COMPOSE) stop backend 
-	cd backend/srcs && go run main.go
+	cd backend/srcs && DATABASE_URL=postgres://admin:pw_admin@localhost/panbagnat?sslmode=disable go run main.go
 
 up: # up latest built images. (Doesn't rebuild using your local files)
 	$(DOCKER_COMPOSE) up -d
+
+db-clean:
+	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+
+db-test: db-clean
+	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/init.sql
+	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/test_data.sql
 
 down: # down docker images. (Doesn't delete images)
 	$(DOCKER_COMPOSE) down

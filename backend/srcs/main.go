@@ -1,20 +1,24 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"os"
 
+	"backend/api/modules"
+	"backend/api/roles"
+	"backend/api/users"
+	"backend/api/version"
+	"backend/database"
 	_ "backend/docs"
-	"backend/handlers/modules"
-	"backend/handlers/roles"
-	"backend/handlers/users"
-	"backend/handlers/version"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
+
+	_ "github.com/lib/pq"
 )
 
 // @title Pan Bagnat API
@@ -53,6 +57,15 @@ func main() {
 		})
 		r.Get("/version", version.GetVersion)
 	})
+
+	roles, err := database.GetUserRoles("user_01HZXYZDE0420")
+	if err != nil {
+		log.Fatal("Get User: ", err)
+	}
+	fmt.Printf("Printing user roles:\n")
+	for _, role := range roles {
+		fmt.Printf("%s\n", role.Name)
+	}
 
 	log.Printf("Backend listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
