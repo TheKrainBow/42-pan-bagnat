@@ -18,7 +18,7 @@ CREATE TABLE modules (
 CREATE TABLE users (
   id TEXT PRIMARY KEY, -- user_ULID
   ft_login TEXT NOT NULL,
-  ft_id TEXT NOT NULL,
+  ft_id INTEGER NOT NULL,
   ft_is_staff BOOLEAN NOT NULL,
   photo_url TEXT NOT NULL,
   last_seen TIMESTAMP WITH TIME ZONE NOT NULL,
