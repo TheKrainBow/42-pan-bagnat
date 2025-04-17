@@ -58,15 +58,41 @@ func main() {
 		r.Get("/version", version.GetVersion)
 	})
 
-	roles, err := database.GetUserRoles("user_01HZXYZDE0420")
+	users, err := database.GetAllUsers(&[]database.UserOrder{
+		{Field: database.FtID, Order: database.Asc},
+		{Field: database.ID, Order: database.Desc},
+	}, nil, 2)
+
 	if err != nil {
 		log.Fatal("Get User: ", err)
 	}
-	fmt.Printf("Printing user roles:\n")
-	for _, role := range roles {
-		fmt.Printf("%s\n", role.Name)
+	fmt.Printf("Printing users:\n")
+	for _, user := range users {
+		fmt.Printf("%v\n", user)
 	}
 
+	users, err = database.GetAllUsers(&[]database.UserOrder{
+		{Field: database.FtID, Order: database.Asc},
+		{Field: database.ID, Order: database.Desc},
+	}, &users[len(users)-1], 2)
+
+	if err != nil {
+		log.Fatal("Get User: ", err)
+	}
+	fmt.Printf("Printing users page 2:\n")
+	for _, user := range users {
+		fmt.Printf("%v\n", user)
+	}
+
+	users, err = database.GetAllUsers(nil, nil, 0)
+
+	if err != nil {
+		log.Fatal("Get User: ", err)
+	}
+	fmt.Printf("Printing users page 2:\n")
+	for _, user := range users {
+		fmt.Printf("%v\n", user)
+	}
 	log.Printf("Backend listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
