@@ -429,19 +429,19 @@ const docTemplate = `{
             "properties": {
                 "id": {
                     "type": "string",
-                    "example": "01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                    "example": "module_01HZ0MMK4S6VQW4WPHB6NZ7R7X"
                 },
-                "lastUpdate": {
+                "last_update": {
                     "type": "string",
                     "example": "2025-02-18T15:00:00Z"
                 },
-                "lastestVersion": {
-                    "type": "string",
-                    "example": "1.7"
-                },
-                "lateCommits": {
+                "late_commits": {
                     "type": "integer",
                     "example": 2
+                },
+                "latest_version": {
+                    "type": "string",
+                    "example": "1.7"
                 },
                 "name": {
                     "type": "string",
@@ -506,11 +506,11 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string",
-                    "example": "01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                    "example": "role_01HZ0MMK4S6VQW4WPHB6NZ7R7X"
                 },
                 "name": {
                     "type": "string",
-                    "example": "captain-hook"
+                    "example": "IT"
                 }
             }
         },
@@ -524,24 +524,7 @@ const docTemplate = `{
                 },
                 "name": {
                     "type": "string",
-                    "example": "captain-hook"
-                }
-            }
-        },
-        "users.FtUser": {
-            "type": "object",
-            "properties": {
-                "ftId": {
-                    "type": "string",
-                    "example": "1492"
-                },
-                "ftIsStaff": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "login": {
-                    "type": "string",
-                    "example": "heinz"
+                    "example": "IT"
                 }
             }
         },
@@ -549,24 +532,39 @@ const docTemplate = `{
             "description": "API User model",
             "type": "object",
             "properties": {
-                "ftUser": {
-                    "$ref": "#/definitions/users.FtUser"
-                },
-                "id": {
+                "ft_id": {
                     "type": "string",
-                    "example": "01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                    "example": "1492"
                 },
-                "isStaff": {
+                "ft_is_staff": {
                     "type": "boolean",
                     "example": true
                 },
-                "lastUpdate": {
+                "ft_login": {
+                    "type": "string",
+                    "example": "heinz"
+                },
+                "ft_photo": {
+                    "type": "string",
+                    "example": "https://intra.42.fr/some-login/some-id"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "user_01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                },
+                "is_staff": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "last_seen": {
                     "type": "string",
                     "example": "2025-02-18T15:00:00Z"
                 },
-                "url": {
-                    "type": "string",
-                    "example": "https://intra.42.fr/some-login/some-id"
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/roles.Role"
+                    }
                 }
             }
         },
@@ -580,7 +578,7 @@ const docTemplate = `{
                 },
                 "id": {
                     "type": "string",
-                    "example": "01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                    "example": "user_01HZ0MMK4S6VQW4WPHB6NZ7R7X"
                 },
                 "login": {
                     "type": "string",

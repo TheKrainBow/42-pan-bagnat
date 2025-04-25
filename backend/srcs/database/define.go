@@ -63,7 +63,8 @@ type UserPatch struct {
 	IsStaff   *bool      `json:"isStaff" example:"true"`
 }
 
-var db *sql.DB
+var mainDB *sql.DB
+var testDB *sql.DB
 
 func init() {
 	var err error
@@ -71,7 +72,7 @@ func init() {
 	if connStr == "" {
 		log.Fatal("DATABASE_URL is not set")
 	}
-	db, err = sql.Open("postgres", connStr)
+	mainDB, err = sql.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal("Couldn't connect to database: ", err)
 	}

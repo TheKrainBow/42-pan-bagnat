@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -10,7 +9,6 @@ import (
 	"backend/api/roles"
 	"backend/api/users"
 	"backend/api/version"
-	"backend/database"
 	_ "backend/docs"
 
 	"github.com/go-chi/chi/v5"
@@ -58,41 +56,6 @@ func main() {
 		r.Get("/version", version.GetVersion)
 	})
 
-	users, err := database.GetAllUsers(&[]database.UserOrder{
-		{Field: database.FtID, Order: database.Asc},
-		{Field: database.ID, Order: database.Desc},
-	}, nil, 2)
-
-	if err != nil {
-		log.Fatal("Get User: ", err)
-	}
-	fmt.Printf("Printing users:\n")
-	for _, user := range users {
-		fmt.Printf("%v\n", user)
-	}
-
-	users, err = database.GetAllUsers(&[]database.UserOrder{
-		{Field: database.FtID, Order: database.Asc},
-		{Field: database.ID, Order: database.Desc},
-	}, &users[len(users)-1], 2)
-
-	if err != nil {
-		log.Fatal("Get User: ", err)
-	}
-	fmt.Printf("Printing users page 2:\n")
-	for _, user := range users {
-		fmt.Printf("%v\n", user)
-	}
-
-	users, err = database.GetAllUsers(nil, nil, 0)
-
-	if err != nil {
-		log.Fatal("Get User: ", err)
-	}
-	fmt.Printf("Printing users page 2:\n")
-	for _, user := range users {
-		fmt.Printf("%v\n", user)
-	}
 	log.Printf("Backend listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }

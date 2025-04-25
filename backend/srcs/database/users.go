@@ -30,7 +30,7 @@ type UserOrder struct {
 }
 
 func GetRoleUsers(roleID string) ([]User, error) {
-	rows, err := db.Query(`
+	rows, err := mainDB.Query(`
 		SELECT u.id, u.ft_login, u.ft_id, u.ft_is_staff, u.photo_url, u.last_seen, u.is_staff
 		FROM users u
 		JOIN user_roles ur ON ur.user_id = u.id
@@ -60,12 +60,14 @@ func GetRoleUsers(roleID string) ([]User, error) {
 	return users, nil
 }
 
-func GetAllUsers(orderBy *[]UserOrder, lastUser *User, limit int) ([]User, error) {
+func GetAllUsers(orderBy *[]UserOrder, filter string, lastUser *User, limit int) ([]User, error) {
 	orderSTR := ""
-	pagination := ""
+	where := ""
 	orderList := []string{}
 	paginationList := []string{}
 	paginationArgsList := []string{}
+	args := []any{}
+	argsCount := 1
 	hasID := orderBy == nil
 	comparaisonDirection := ""
 
@@ -90,46 +92,65 @@ func GetAllUsers(orderBy *[]UserOrder, lastUser *User, limit int) ([]User, error
 			paginationList = append(paginationList, string(order.Field))
 			switch order.Field {
 			case ID:
-				paginationArgsList = append(paginationArgsList, fmt.Sprintf("'%s'", (*lastUser).ID))
+				args = append(args, (*lastUser).ID)
 			case FtID:
-				paginationArgsList = append(paginationArgsList, (*lastUser).FtID)
+				args = append(args, (*lastUser).FtID)
 			case FtIsStaff:
-				paginationArgsList = append(paginationArgsList, fmt.Sprintf("%t", (*lastUser).FtIsStaff))
+				args = append(args, (*lastUser).FtIsStaff)
 			case IsStaff:
-				paginationArgsList = append(paginationArgsList, fmt.Sprintf("%t", (*lastUser).IsStaff))
+				args = append(args, (*lastUser).IsStaff)
 			case LastSeen:
 				formattedTimestamp := (*lastUser).LastSeen.Format("2006-01-02 15:04:05-07:00")
-				paginationArgsList = append(paginationArgsList, fmt.Sprintf("'%s'", formattedTimestamp))
+				args = append(args, formattedTimestamp)
 			case FtLogin:
-				paginationArgsList = append(paginationArgsList, fmt.Sprintf("'%s'", (*lastUser).FtLogin))
+				args = append(args, (*lastUser).FtLogin)
 			}
+			argsCount++
 		}
 	}
+
+	whereCondition := []string{}
 
 	if lastUser != nil {
 		if !hasID {
 			paginationList = append(paginationList, "id")
-			paginationArgsList = append(paginationArgsList, fmt.Sprintf("'%s'", (*lastUser).ID))
+			args = append(args, (*lastUser).ID)
+			argsCount++
 		}
-		pagination = "WHERE (" + strings.Join(paginationList, ", ") + ") " + comparaisonDirection + " (" + strings.Join(paginationArgsList, ", ") + ")"
+		for i := 1; i < argsCount; i++ {
+			paginationArgsList = append(paginationArgsList, fmt.Sprintf("$%d", i))
+		}
+		whereCondition = append(whereCondition, "("+strings.Join(paginationList, ", ")+") "+comparaisonDirection+" ("+strings.Join(paginationArgsList, ", ")+")")
 	}
 
+	if filter != "" {
+		whereCondition = append(whereCondition, fmt.Sprintf("(ft_login ILIKE '%%' || $%d || '%%' OR ft_id::text ILIKE '%%' || $%d || '%%')", argsCount, argsCount))
+		args = append(args, filter)
+		argsCount++
+	}
+	if len(whereCondition) != 0 {
+		where = "WHERE " + strings.Join(whereCondition, " AND ")
+	}
 	if !hasID {
-		orderList = append(orderList, "id ASC")
+		if comparaisonDirection == ">" {
+			orderList = append(orderList, "id ASC")
+		} else {
+			orderList = append(orderList, "id DESC")
+		}
 	}
 	orderSTR = "ORDER BY " + strings.Join(orderList, ", ")
 
 	query := "SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff\n" +
 		"FROM users"
-	if lastUser != nil {
-		query = fmt.Sprintf("%s\n%s", query, pagination)
+	if where != "" {
+		query = fmt.Sprintf("%s\n%s", query, where)
 	}
 	query = fmt.Sprintf("%s\n%s", query, orderSTR)
 	if limit > 0 {
 		query = fmt.Sprintf("%s\n%s", query, fmt.Sprintf("LIMIT %d;", limit))
 	}
 	query = query + "\n"
-	rows, err := db.Query(query)
+	rows, err := mainDB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -164,7 +185,7 @@ func AddUser(user User) error {
 	if user.FtLogin == "" && user.FtID == "" {
 		return fmt.Errorf("you must provide ftlogin or ftid")
 	}
-	_, err := db.Exec(`
+	_, err := mainDB.Exec(`
 		INSERT INTO users (id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`, user.ID, user.FtLogin, user.FtID, user.FtIsStaff, user.PhotoURL, user.LastSeen, user.IsStaff)
@@ -172,6 +193,6 @@ func AddUser(user User) error {
 }
 
 func DeleteUser(id string) error {
-	_, err := db.Exec(`DELETE FROM users WHERE id = $1`, id)
+	_, err := mainDB.Exec(`DELETE FROM users WHERE id = $1`, id)
 	return err
 }
