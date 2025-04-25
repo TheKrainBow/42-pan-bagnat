@@ -1,41 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import './App.css';
+import User from './User';
 
 function App() {
-  const [version, setVersion] = useState(null);
-
-  useEffect(() => {
-    // Make the API call to get the version
-    fetch('http://localhost:8080/api/version')
-      .then((response) => response.json())
-      .then((data) => {
-        setVersion(data.version); // Store the version in state
-      })
-      .catch((error) => {
-        console.error('Error fetching version:', error);
-      });
-  }, []); // Empty dependency array ensures this runs only once when the component mounts
+  const [page, setPage] = useState('users');
 
   return (
-    <div className="App">
-      <header className="App-header">
-        {version && (
-          <div>
-            <h1>Backend Version: {version}</h1>
-          </div>
-        )}
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+    <div className="app-container">
+      <aside className="sidebar"> 
+      <div className="sidebar-header">
+        <img src="/icons/panbagnat.png" alt="Logo" className="sidebar-logo" />
+        <span className="sidebar-title">Pan Bagnat</span>
+      </div>
+      <div className={`sidebar-item ${page === 'modules' ? 'active' : 'inactive'}`} onClick={() => setPage('modules')}>
+        <img src="/icons/modules.png" alt="Modules" className="sidebar-icon" />
+        Modules
+      </div>
+      <div className={`sidebar-item ${page === 'roles' ? 'active' : 'inactive'}`} onClick={() => setPage('roles')}>
+        <img src="/icons/roles.png" alt="Roles" className="sidebar-icon" />
+        Roles
+      </div>
+      <div className={`sidebar-item ${page === 'users' ? 'active' : 'inactive'}`} onClick={() => setPage('users')}>
+        <img src="/icons/users.png" alt="Users" className="sidebar-icon" />
+        Users
+      </div>
+      </aside>
+      <main className="main-content">
+        {page === 'users' && <User onSort="-last_seen" />}
+        {page === 'modules' && <h2>Modules (coming soon)</h2>}
+        {page === 'roles' && <h2>     Roles (coming soon)</h2>}
+      </main>
     </div>
   );
 }

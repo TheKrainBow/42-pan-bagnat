@@ -1,0 +1,204 @@
+.user-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  cursor: default;
+  background-color: #252525;
+  color: #fff;
+  text-align: center;
+}
+
+.user-table-container {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1; /* Ensure it grows to fill remaining space */
+  max-height: calc(100vh - 155px);
+  overflow-y: auto;
+  padding-bottom: 20px; /* To ensure the button isn't hidden */
+}
+
+.user-table th,
+.user-table td {
+  padding: 8px;
+  vertical-align: middle;
+  word-wrap: break-word;
+}
+
+.user-table th:not(.small-column),
+.user-table td:not(.small-column) {
+  text-align: left;
+}
+
+
+.user-cell.disabled-sort {
+  cursor: default;
+}
+
+.user-picture {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.user-header {
+  background-color: #333;
+  color: #fff;
+  font-weight: bold;
+}
+
+.user-cell {
+  padding: 0 8px;
+  position: relative;
+  border-right: 1px solid #252525;
+}
+
+.small-column {
+  width: 60px;
+  text-align: center;
+}
+
+.user-role {
+  display: inline-block;
+  padding: 4px 8px;
+  margin: 2px;
+  border-radius: 6px;
+  color: black;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background-color: #fff;
+}
+
+.sort-icon {
+  margin-left: 5px;
+  font-size: 0.75rem;
+  color: #e0e0e0;
+}
+
+.sort-icon.up::after {
+  content: '▲';
+}
+
+.sort-icon.down::after {
+  content: '▼';
+}
+
+.user-row {
+  border-bottom: 1px solid #444;
+}
+
+.user-cell {
+  cursor: pointer;
+}
+
+.user-cell.sortable:hover {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.header-content.sortable {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.sort-arrows {
+  display: flex;
+  flex-direction: row;
+  font-size: 0.75rem;
+  line-height: 0.8;
+}
+
+.user-header-bar {
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-left: 30px;
+}
+
+.user-search {
+  padding: 12px;
+  width: 100%;
+  max-width: 500px;
+  border-radius: 8px;
+  border: 1px solid #444;
+  background-color: #2a2a2a;
+  color: white;
+  margin-bottom: 20px;
+}
+
+.staff-login {
+  position: relative;
+  font-weight: bold;
+  color: #e44141;
+}
+
+.staff-login::after {
+  content: "PB Staff";
+  position: absolute;
+  bottom: 130%; /* above the text */
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: #fff;
+  padding: 4px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease-in-out;
+  z-index: 10;
+}
+
+.staff-login:hover::after {
+  opacity: 1;
+}
+
+.user-search-container {
+  position: relative;
+  display: inline-block;
+}
+
+.search-icon-inside {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-100%);
+  width: 20px;
+  height: 20px;
+  pointer-events: none;
+}
+
+.user-search.with-icon {
+  padding-left: 40px; /* space for the icon */
+}
+
+.load-more-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.load-more-button {
+  padding: 10px 20px;
+  background-color: #5b9df9;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.load-more-button:hover {
+  background-color: #4a86c6;
+}
+
+.loading-icon {
+  text-align: center;
+  padding: 20px;
+  font-size: 16px;
+  color: #e0e0e0;
+}
