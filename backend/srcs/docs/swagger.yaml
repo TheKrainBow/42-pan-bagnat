@@ -4,17 +4,17 @@ definitions:
     description: API Module model
     properties:
       id:
-        example: 01HZ0MMK4S6VQW4WPHB6NZ7R7X
+        example: module_01HZ0MMK4S6VQW4WPHB6NZ7R7X
         type: string
-      lastUpdate:
+      last_update:
         example: "2025-02-18T15:00:00Z"
         type: string
-      lastestVersion:
-        example: "1.7"
-        type: string
-      lateCommits:
+      late_commits:
         example: 2
         type: integer
+      latest_version:
+        example: "1.7"
+        type: string
       name:
         example: captain-hook
         type: string
@@ -59,10 +59,10 @@ definitions:
         example: "0xFF00FF"
         type: string
       id:
-        example: 01HZ0MMK4S6VQW4WPHB6NZ7R7X
+        example: role_01HZ0MMK4S6VQW4WPHB6NZ7R7X
         type: string
       name:
-        example: captain-hook
+        example: IT
         type: string
     type: object
   roles.RolePatchInput:
@@ -72,38 +72,37 @@ definitions:
         example: "0xFF00FF"
         type: string
       name:
-        example: captain-hook
-        type: string
-    type: object
-  users.FtUser:
-    properties:
-      ftId:
-        example: "1492"
-        type: string
-      ftIsStaff:
-        example: true
-        type: boolean
-      login:
-        example: heinz
+        example: IT
         type: string
     type: object
   users.User:
     description: API User model
     properties:
-      ftUser:
-        $ref: '#/definitions/users.FtUser'
-      id:
-        example: 01HZ0MMK4S6VQW4WPHB6NZ7R7X
+      ft_id:
+        example: "1492"
         type: string
-      isStaff:
+      ft_is_staff:
         example: true
         type: boolean
-      lastUpdate:
-        example: "2025-02-18T15:00:00Z"
+      ft_login:
+        example: heinz
         type: string
-      url:
+      ft_photo:
         example: https://intra.42.fr/some-login/some-id
         type: string
+      id:
+        example: user_01HZ0MMK4S6VQW4WPHB6NZ7R7X
+        type: string
+      is_staff:
+        example: true
+        type: boolean
+      last_seen:
+        example: "2025-02-18T15:00:00Z"
+        type: string
+      roles:
+        items:
+          $ref: '#/definitions/roles.Role'
+        type: array
     type: object
   users.UserPostInput:
     description: API User model
@@ -112,7 +111,7 @@ definitions:
         example: main
         type: string
       id:
-        example: 01HZ0MMK4S6VQW4WPHB6NZ7R7X
+        example: user_01HZ0MMK4S6VQW4WPHB6NZ7R7X
         type: string
       login:
         example: heinz
