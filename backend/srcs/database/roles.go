@@ -6,7 +6,7 @@ import (
 )
 
 func GetUserRoles(userID string) ([]Role, error) {
-	rows, err := db.Query(`
+	rows, err := mainDB.Query(`
 		SELECT r.id, r.name, r.color
 		FROM roles r
 		JOIN user_roles ur ON ur.role_id = r.id
@@ -35,7 +35,7 @@ func AddRole(role Role) error {
 	if role.Color == "" || role.Name == "" {
 		return fmt.Errorf("some fields are missing")
 	}
-	_, err := db.Exec(`
+	_, err := mainDB.Exec(`
 		INSERT INTO roles (id, name, color)
 		VALUES ($1, $2, $3)
 	`, role.ID, role.Name, role.Color)
@@ -43,7 +43,7 @@ func AddRole(role Role) error {
 }
 
 func DeleteRole(id string) error {
-	_, err := db.Exec(`DELETE FROM roles WHERE id = $1`, id)
+	_, err := mainDB.Exec(`DELETE FROM roles WHERE id = $1`, id)
 	return err
 }
 
@@ -72,12 +72,12 @@ func PatchRole(toPatch RolePatch) error {
 	query += fmt.Sprintf(" WHERE id = $%d", paramCount)
 	params = append(params, toPatch.ID)
 
-	_, err := db.Exec(query, params...)
+	_, err := mainDB.Exec(query, params...)
 	return err
 }
 
 func PutRole(role Role) error {
-	_, err := db.Exec(`
+	_, err := mainDB.Exec(`
 		UPDATE users
 		SET name = $1, color = $2
 		WHERE id = $3
