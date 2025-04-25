@@ -25,10 +25,10 @@ local-back: # stop backend image, and run back locally (dev mode)
 up: # up latest built images. (Doesn't rebuild using your local files)
 	$(DOCKER_COMPOSE) up -d
 
-db-clean:
+db-clear: # clear database datas and schema
 	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
-db-test: db-clean
+db-test: db-clear # clear database and populate it with some test datas
 	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/init.sql
 	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/test_data.sql
 
