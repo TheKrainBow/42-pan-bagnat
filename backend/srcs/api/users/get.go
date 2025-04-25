@@ -1,10 +1,12 @@
 package users
 
 import (
+	"backend/core"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -17,11 +19,40 @@ import (
 // @Success      200 {object} []User
 // @Router       /users [get]
 func GetUsers(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var users []core.User
+	var nextToken string
+
 	w.Header().Set("Content-Type", "application/json")
 
-	dest := User{
-		ID: "01HZ0MMK4S6VQW4WPHB6NZ7R7X",
+	filter := r.URL.Query().Get("filter")
+	pageToken := r.URL.Query().Get("next_page_token")
+	order := r.URL.Query().Get("order")
+	limitStr := r.URL.Query().Get("limit")
+	limit := 0
+	if limitStr != "" {
+		limit, _ = strconv.Atoi(limitStr)
+	} else {
+		limit = 50
 	}
+
+	dest := UserGetResponse{}
+	if pageToken != "" {
+		users, nextToken, err = core.GetUsersFromToken(pageToken)
+		if err != nil {
+			http.Error(w, "Failed to core.GetUsers()", http.StatusInternalServerError)
+			fmt.Printf("Error for token:\n%s\n: %s\n", pageToken, err.Error())
+			return
+		}
+	} else {
+		users, nextToken, err = core.GetUsers(core.UserPagination{OrderBy: core.GenerateOrderBy(order), Filter: filter, LastUser: nil, Limit: limit})
+		if err != nil {
+			http.Error(w, "Failed to core.GetUsers()", http.StatusInternalServerError)
+			return
+		}
+	}
+	dest.NextPage = nextToken
+	dest.Users = UsersToAPIUsers(users)
 
 	// Marshal the dest struct into JSON
 	destJSON, err := json.Marshal(dest)

@@ -1,7 +1,7 @@
 package database
 
 func GetRoleModules(roleID string) ([]Module, error) {
-	rows, err := db.Query(`
+	rows, err := mainDB.Query(`
 		SELECT mod.id, mod.name, mod.version, mod.status, mod.url, mod.latest_version, mod.late_commits, mod.last_update
 		FROM modules mod
 		JOIN module_roles ur ON ur.module_id = mod.id
