@@ -12,12 +12,14 @@ DATABASE_URL = postgres://admin:pw_admin@localhost/panbagnat?sslmode=disable
 #                                         HELP                                          #
 #########################################################################################
 .PHONY: help
-help:  ## Help | I am pretty sure you know what this one is doing!
-	@echo "📦  Pan-Bagnat Makefile commands:"
+help:																					## Help | I am pretty sure you know what this one is doing!
+	@printf "\033[1;34m📦 Makefile commands:\033[0m\n"
 	@grep -E '^[a-zA-Z0-9_-]+:.*?##[A-Za-z0-9 _-]+\|.*$$' $(MAKEFILE_LIST) \
 	| awk 'BEGIN {FS = ":.*?##|\\|"} \
-	{ gsub(/^ +| +$$/, "", $$2); data[$$2] = data[$$2] sprintf("      \033[36m%-15s\033[0m %s\n", $$1, $$3) } \
-	END { for (cat in data) { printf "   \033[32m%s\033[0m:\n%s", cat, data[cat] } }'
+	{ gsub(/^ +| +$$/, "", $$2); \
+	  if (!seen[$$2]++) order[++i] = $$2; \
+	  data[$$2] = data[$$2] sprintf("      \033[36m%-36s\033[0m %s\n", $$1, $$3) } \
+	END { for (j = 1; j <= i; j++) { cat = order[j]; printf "   \033[32m%s\033[0m:\n%s", cat, data[cat] } }'
 
 #########################################################################################
 #                                        LOCAL                                          #
