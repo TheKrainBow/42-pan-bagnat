@@ -1,48 +1,73 @@
-.PHONY: up build down prune fprune
-
+#########################################################################################
+#                                       CONFIG                                          #
+#########################################################################################
 DOCKER_COMPOSE = docker compose
+DATABASE_URL = postgres://admin:pw_admin@localhost/panbagnat?sslmode=disable
 
-build: # build all images and replace currently running images
-	$(DOCKER_COMPOSE) build
-	$(DOCKER_COMPOSE) up -d
+#########################################################################################
+#                                                                                       #
+#                      DO NOT CHANGE ANYTHING AFTER THIS BLOCK                          #
+#                                                                                       #
+#########################################################################################
+#                                         HELP                                          #
+#########################################################################################
+.PHONY: help
+help:  ## Help | I am pretty sure you know what this one is doing!
+	@echo "📦  Pan-Bagnat Makefile commands:"
+	@grep -E '^[a-zA-Z0-9_-]+:.*?##[A-Za-z0-9 _-]+\|.*$$' $(MAKEFILE_LIST) \
+	| awk 'BEGIN {FS = ":.*?##|\\|"} \
+	{ gsub(/^ +| +$$/, "", $$2); data[$$2] = data[$$2] sprintf("      \033[36m%-15s\033[0m %s\n", $$1, $$3) } \
+	END { for (cat in data) { printf "   \033[32m%s\033[0m:\n%s", cat, data[cat] } }'
 
-build-back: # build backend image and replace currently running backend image
-	$(DOCKER_COMPOSE) build backend
-	$(DOCKER_COMPOSE) up -d
-
-build-front: # build frontend image and replace currently running frontend image
-	$(DOCKER_COMPOSE) build frontend
-	$(DOCKER_COMPOSE) up -d
-
-local-front: # stop frontend image, and run front locally (dev mode)
+#########################################################################################
+#                                        LOCAL                                          #
+#########################################################################################
+.PHONY: local-front local-back
+local-front:																			## Local | Stop frontend docker container, and run front locally (dev mode)
 	$(DOCKER_COMPOSE) stop frontend
 	cd frontend && BROWSER=none pnpm start
 
-local-back: # stop backend image, and run back locally (dev mode)
+local-back:																				## Local | Stop backend docker container, and run back locally (dev mode)
 	$(DOCKER_COMPOSE) stop backend 
-	cd backend/srcs && DATABASE_URL=postgres://admin:pw_admin@localhost/panbagnat?sslmode=disable go run main.go
+	cd backend/srcs && DATABASE_URL=$(DATABASE_URL) go run main.go
 
-up: # up latest built images. (Doesn't rebuild using your local files)
-	$(DOCKER_COMPOSE) up -d
-
-db-clear: # clear database datas and schema
+#########################################################################################
+#                                      DATABASE                                         #
+#########################################################################################
+.PHONY: db-clear db-test
+db-clear:																				## Database | Clear database datas and schema
 	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
-db-test: db-clear # clear database and populate it with some test datas
+db-test: db-clear																		## Database | Clear database and populate it with some test datas
 	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/init.sql
 	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/test_data.sql
 
-down: # down docker images. (Doesn't delete images)
+#########################################################################################
+#                                       DOCKER                                          #
+#########################################################################################
+.PHONY: up down build build-back build-front prune fprune
+up:																						## Docker | Up latest built images. (Doesn't rebuild using your local files)
+	$(DOCKER_COMPOSE) up -d
+
+down:																					## Docker | Down docker images. (Doesn't delete images)
 	$(DOCKER_COMPOSE) down
 
-prune: # Delete created images
+prune:																					## Docker | Delete created images
 	$(DOCKER_COMPOSE) down
 	docker image prune -f
 
-fprune: prune # Stop all containers, volumes, and networks
+build: 																					## Docker | Build all images and replace currently running images
+	$(DOCKER_COMPOSE) build
+	$(DOCKER_COMPOSE) up -d
+
+build-back: 																			## Docker | Build backend image and replace currently running backend image
+	$(DOCKER_COMPOSE) build backend
+	$(DOCKER_COMPOSE) up -d
+
+build-front: 																			## Docker | Build frontend image and replace currently running frontend image
+	$(DOCKER_COMPOSE) build frontend
+	$(DOCKER_COMPOSE) up -d
+
+fprune: prune																			## Docker | Stop all containers, volumes, and networks
 	$(DOCKER_COMPOSE) down --volumes --remove-orphans
 	docker system prune -af --volumes
-
-help: # Display help message with list of rules
-	@echo "Makefile commands:"
-	@grep -E '^[a-zA-Z0-9_-]+:' Makefile | sed 's/:.*#/ #/' | sed 's/#/-/'
