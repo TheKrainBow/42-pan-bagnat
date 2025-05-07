@@ -27,7 +27,7 @@ help:																					## Help | I am pretty sure you know what this one is d
 .PHONY: local-front local-back
 local-front:																			## Local | Stop frontend docker container, and run front locally (dev mode)
 	$(DOCKER_COMPOSE) stop frontend
-	cd frontend && BROWSER=none pnpm start
+	cd frontend && BROWSER=none pnpm dev
 
 local-back:																				## Local | Stop backend docker container, and run back locally (dev mode)
 	$(DOCKER_COMPOSE) stop backend 
