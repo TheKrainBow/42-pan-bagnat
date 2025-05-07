@@ -29,7 +29,7 @@ func main() {
 
 	// Set up the CORS middleware
 	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"}, // allow React frontend to access the backend
+		AllowedOrigins:   []string{"http://localhost:5173"}, // allow React frontend to access the backend
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
