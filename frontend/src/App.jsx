@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import User from './User';
+import Roles from './Roles';
 
 function App() {
   const [page, setPage] = useState('users');
@@ -26,9 +27,9 @@ function App() {
       </div>
       </aside>
       <main className="main-content">
-        {page === 'users' && <User onSort="-last_seen" />}
         {page === 'modules' && <h2>Modules (coming soon)</h2>}
-        {page === 'roles' && <h2>     Roles (coming soon)</h2>}
+        {page === 'roles' && <Roles onSort="name" />}
+        {page === 'users' && <User onSort="-last_seen" />}
       </main>
     </div>
   );
