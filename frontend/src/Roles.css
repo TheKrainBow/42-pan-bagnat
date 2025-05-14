@@ -1,0 +1,149 @@
+/* container */
+.roles-table-container {
+  max-height: calc(100vh - 155px);
+  overflow-y: auto;
+  padding-bottom: 20px;
+  background: #252525;
+}
+
+/* table */
+.roles-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  color: #fff;
+}
+
+.roles-table th,
+.roles-table td {
+  padding: 10px;
+  text-align: left;
+  border-bottom: 1px solid #333;
+}
+
+.roles-table th {
+  background: #333;
+  font-weight: bold;
+}
+
+/* header bar */
+.roles-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.roles-controls {
+  display: flex;
+  gap: 8px;
+}
+
+/* search */
+.search-wrap {
+  position: relative;
+}
+
+.search-input {
+  padding: 8px 12px 8px 36px;
+  border-radius: 6px;
+  border: 1px solid #444;
+  background: #2a2a2a;
+  color: #fff;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  opacity: 0.6;
+}
+
+/* buttons */
+.filter-btn,
+.add-btn {
+  background: #2a2a2a;
+  border: 1px solid #444;
+  border-radius: 6px;
+  padding: 8px;
+  cursor: pointer;
+}
+
+.filter-btn img,
+.add-btn img {
+  width: 18px;
+  height: 18px;
+}
+
+/* sort */
+.sortable {
+  cursor: pointer;
+}
+
+.th-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.arrows {
+  font-size: 0.7rem;
+  line-height: 0.8;
+}
+
+/* role badge */
+.role-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #fff;
+}
+
+/* members */
+.icon-small {
+  width: 16px;
+  vertical-align: middle;
+  margin-right: 4px;
+  opacity: 0.8;
+}
+
+/* apps icons */
+.apps-cell {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+}
+
+.app-icon {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+}
+
+/* load more & loading */
+.load-more {
+  text-align: center;
+  margin: 12px 0;
+}
+.load-more button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 5px;
+  background: #5b9df9;
+  color: #fff;
+  cursor: pointer;
+}
+.load-more button:hover {
+  background: #4a86c6;
+}
+
+.loading {
+  text-align: center;
+  padding: 16px 0;
+  color: #e0e0e0;
+}
+  
