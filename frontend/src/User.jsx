@@ -40,7 +40,10 @@ const User = () => {
       const response = await fetch(`http://localhost:8080/api/v1/users?${params.toString()}`);
       const data = await response.json();
 
-      setUsers(prev => append ? [...prev, ...data.users] : (Array.isArray(data.users) ? data.users : []));
+      setUsers(prev =>
+        append ? [...prev, ...data.users]
+        : (Array.isArray(data.users) ? data.users : [])
+      );
       setNextPage(data.next_page_token);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -60,30 +63,19 @@ const User = () => {
   };
   
   const handleScroll = useCallback(() => {
-    const scrollTop = scrollContainerRef.current.scrollTop;
-    const scrollHeight = scrollContainerRef.current.scrollHeight;
-    const clientHeight = scrollContainerRef.current.clientHeight;
-  
-    // Check if we are near the bottom (with a small buffer of 10px)
-    if (scrollTop + clientHeight >= scrollHeight - 10 && nextPage && !isLoading) {
+    const el = scrollContainerRef.current;
+    if (!el || isLoading || !nextPage) return;
+    if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) {
       fetchUsers(true, nextPage);
     }
   }, [nextPage, isLoading, fetchUsers]);
   
   useEffect(() => {
     const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      scrollContainer.addEventListener('scroll', handleScroll);
-    }
-  
-    return () => {
-      if (scrollContainer) {
-        scrollContainer.removeEventListener('scroll', handleScroll);
-      }
-    };
+    scrollContainer?.addEventListener('scroll', handleScroll);  
+    return () => scrollContainer?.removeEventListener('scroll', handleScroll);
   }, [handleScroll]);
   
-  // Prevent calling scroll handler too frequently (debounce-like behavior)
   useEffect(() => {
     const timeout = setTimeout(() => {
       setDebouncedFilter(filterQuery);
