@@ -84,18 +84,8 @@ const User = () => {
   }, [filterQuery]);
 
   useEffect(() => {
-    const timeout = setTimeout(() => setDebouncedFilter(filterQuery), 200);
-    return () => clearTimeout(timeout);
-  }, [filterQuery]);
-
-  useEffect(() => {
-    if (isFirstRender.current === false) {
-      isFirstRender.current = false;
-      return;
-    }
     fetchUsers();
   }, [fetchUsers]);
-
 
   useEffect(() => {
     const timeout = setTimeout(() => {
