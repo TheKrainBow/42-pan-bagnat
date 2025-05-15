@@ -32,17 +32,17 @@ func GenerateOrderBy(order string) (dest []database.UserOrder) {
 		var field database.UserOrderField
 		switch arg {
 		case "id":
-			field = database.ID
+			field = database.UserID
 		case "ft_login":
-			field = database.FtLogin
+			field = database.UserFtLogin
 		case "last_seen":
-			field = database.LastSeen
+			field = database.UserLastSeen
 		case "is_staff":
-			field = database.IsStaff
+			field = database.UserIsStaff
 		case "ft_is_staff":
-			field = database.FtIsStaff
+			field = database.UserFtIsStaff
 		case "ft_id":
-			field = database.FtID
+			field = database.UserFtID
 		default:
 			continue
 		}

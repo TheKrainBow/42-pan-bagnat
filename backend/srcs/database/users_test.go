@@ -114,7 +114,7 @@ func TestGetAllUsers(t *testing.T) {
 			name: "ORDER TEST: Asc on FtLogin",
 			args: args{
 				orderBy: &[]UserOrder{
-					{Field: FtLogin, Order: Asc},
+					{Field: UserFtLogin, Order: Asc},
 				},
 				lastUser: nil,
 				limit:    0,
@@ -131,7 +131,7 @@ func TestGetAllUsers(t *testing.T) {
 			name: "ORDER TEST: Desc on FtLogin",
 			args: args{
 				orderBy: &[]UserOrder{
-					{Field: FtLogin, Order: Desc},
+					{Field: UserFtLogin, Order: Desc},
 				},
 				lastUser: nil,
 				limit:    0,
@@ -148,7 +148,7 @@ func TestGetAllUsers(t *testing.T) {
 			name: "ORDER TEST: Asc on LastSeen",
 			args: args{
 				orderBy: &[]UserOrder{
-					{Field: LastSeen, Order: Asc},
+					{Field: UserLastSeen, Order: Asc},
 				},
 				lastUser: nil,
 				limit:    0,
@@ -165,7 +165,7 @@ func TestGetAllUsers(t *testing.T) {
 			name: "ORDER TEST: Desc on LastSeen",
 			args: args{
 				orderBy: &[]UserOrder{
-					{Field: LastSeen, Order: Desc},
+					{Field: UserLastSeen, Order: Desc},
 				},
 				lastUser: nil,
 				limit:    0,
@@ -196,7 +196,7 @@ func TestGetAllUsers(t *testing.T) {
 			name: "PAGINATION: Page size 2, Page number 1, Ordered",
 			args: args{
 				orderBy: &[]UserOrder{
-					{Field: LastSeen, Order: Desc},
+					{Field: UserLastSeen, Order: Desc},
 				},
 				lastUser: nil,
 				limit:    2,
@@ -211,7 +211,7 @@ func TestGetAllUsers(t *testing.T) {
 			name: "PAGINATION: Page size 2, Page number 2, Ordered",
 			args: args{
 				orderBy: &[]UserOrder{
-					{Field: LastSeen, Order: Desc},
+					{Field: UserLastSeen, Order: Desc},
 				},
 				lastUser: &User{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
 				limit:    2,
@@ -280,7 +280,7 @@ func TestGetAllUsers(t *testing.T) {
 			name: "FILTER TEST: Filter \"2\", pagination 1 page 1, order FtLogin Asc",
 			args: args{
 				orderBy: &[]UserOrder{
-					{Field: FtLogin, Order: Asc},
+					{Field: UserFtLogin, Order: Asc},
 				},
 				filter:   "2",
 				lastUser: nil,
@@ -295,7 +295,7 @@ func TestGetAllUsers(t *testing.T) {
 			name: "FILTER TEST: Filter \"2\", pagination 1 page 2, order FtLogin Asc",
 			args: args{
 				orderBy: &[]UserOrder{
-					{Field: FtLogin, Order: Asc},
+					{Field: UserFtLogin, Order: Asc},
 				},
 				filter:   "2",
 				lastUser: &User{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
@@ -310,7 +310,7 @@ func TestGetAllUsers(t *testing.T) {
 			name: "FILTER TEST: Filter \"2\", pagination 1 page 1, order FtLogin Desc",
 			args: args{
 				orderBy: &[]UserOrder{
-					{Field: FtLogin, Order: Desc},
+					{Field: UserFtLogin, Order: Desc},
 				},
 				filter:   "2",
 				lastUser: nil,
@@ -325,7 +325,7 @@ func TestGetAllUsers(t *testing.T) {
 			name: "FILTER TEST: Filter \"2\", pagination 1 page 2, order FtLogin Desc",
 			args: args{
 				orderBy: &[]UserOrder{
-					{Field: FtLogin, Order: Desc},
+					{Field: UserFtLogin, Order: Desc},
 				},
 				filter:   "2",
 				lastUser: &User{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},

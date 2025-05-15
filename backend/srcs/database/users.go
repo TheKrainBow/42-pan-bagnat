@@ -16,12 +16,12 @@ const (
 )
 
 const (
-	ID        UserOrderField = "id"
-	FtLogin   UserOrderField = "ft_login"
-	LastSeen  UserOrderField = "last_seen"
-	IsStaff   UserOrderField = "is_staff"
-	FtIsStaff UserOrderField = "ft_is_staff"
-	FtID      UserOrderField = "ft_id"
+	UserID        UserOrderField = "id"
+	UserFtLogin   UserOrderField = "ft_login"
+	UserLastSeen  UserOrderField = "last_seen"
+	UserIsStaff   UserOrderField = "is_staff"
+	UserFtIsStaff UserOrderField = "ft_is_staff"
+	UserFtID      UserOrderField = "ft_id"
 )
 
 type UserOrder struct {
@@ -60,119 +60,142 @@ func GetRoleUsers(roleID string) ([]User, error) {
 	return users, nil
 }
 
-func GetAllUsers(orderBy *[]UserOrder, filter string, lastUser *User, limit int) ([]User, error) {
-	orderSTR := ""
-	where := ""
-	orderList := []string{}
-	paginationList := []string{}
-	paginationArgsList := []string{}
-	args := []any{}
-	argsCount := 1
-	hasID := orderBy == nil
-	comparaisonDirection := ""
-
-	if orderBy == nil {
-		tmp := []UserOrder{{Field: ID, Order: Asc}}
+func GetAllUsers(
+	orderBy *[]UserOrder,
+	filter string,
+	lastUser *User,
+	limit int,
+) ([]User, error) {
+	// 1) Default to ordering by ID ASC if none provided
+	if orderBy == nil || len(*orderBy) == 0 {
+		tmp := []UserOrder{{Field: UserID, Order: Asc}}
 		orderBy = &tmp
 	}
 
-	for _, order := range *orderBy {
-		if comparaisonDirection == "" {
-			if order.Order == Asc {
-				comparaisonDirection = ">"
-			} else {
-				comparaisonDirection = "<"
-			}
-		}
-		if order.Field == ID {
+	// 2) Build ORDER BY clauses
+	hasID := false
+	var orderClauses []string
+	for _, ord := range *orderBy {
+		orderClauses = append(orderClauses,
+			fmt.Sprintf("%s %s", ord.Field, ord.Order),
+		)
+		if ord.Field == UserID {
 			hasID = true
 		}
-		orderList = append(orderList, string(order.Field)+" "+string(order.Order))
-		if lastUser != nil {
-			paginationList = append(paginationList, string(order.Field))
-			switch order.Field {
-			case ID:
-				args = append(args, (*lastUser).ID)
-			case FtID:
-				args = append(args, (*lastUser).FtID)
-			case FtIsStaff:
-				args = append(args, (*lastUser).FtIsStaff)
-			case IsStaff:
-				args = append(args, (*lastUser).IsStaff)
-			case LastSeen:
-				formattedTimestamp := (*lastUser).LastSeen.Format("2006-01-02 15:04:05-07:00")
-				args = append(args, formattedTimestamp)
-			case FtLogin:
-				args = append(args, (*lastUser).FtLogin)
-			}
-			argsCount++
-		}
 	}
-
-	whereCondition := []string{}
-
-	if lastUser != nil {
-		if !hasID {
-			paginationList = append(paginationList, "id")
-			args = append(args, (*lastUser).ID)
-			argsCount++
-		}
-		for i := 1; i < argsCount; i++ {
-			paginationArgsList = append(paginationArgsList, fmt.Sprintf("$%d", i))
-		}
-		whereCondition = append(whereCondition, "("+strings.Join(paginationList, ", ")+") "+comparaisonDirection+" ("+strings.Join(paginationArgsList, ", ")+")")
-	}
-
-	if filter != "" {
-		whereCondition = append(whereCondition, fmt.Sprintf("(ft_login ILIKE '%%' || $%d || '%%' OR ft_id::text ILIKE '%%' || $%d || '%%')", argsCount, argsCount))
-		args = append(args, filter)
-		argsCount++
-	}
-	if len(whereCondition) != 0 {
-		where = "WHERE " + strings.Join(whereCondition, " AND ")
-	}
+	// Always append ID as a tie-breaker for deterministic pagination
 	if !hasID {
-		if comparaisonDirection == ">" {
-			orderList = append(orderList, "id ASC")
-		} else {
-			orderList = append(orderList, "id DESC")
-		}
+		orderClauses = append(orderClauses, "id "+string((*orderBy)[0].Order))
 	}
-	orderSTR = "ORDER BY " + strings.Join(orderList, ", ")
 
-	query := "SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff\n" +
-		"FROM users"
-	if where != "" {
-		query = fmt.Sprintf("%s\n%s", query, where)
+	// 3) Build WHERE conditions and collect args
+	var whereConds []string
+	var args []any
+	argPos := 1
+
+	// Cursor pagination: tuple comparison
+	if lastUser != nil {
+		var cols []string
+		var placeholders []string
+		// use the same order fields as in ORDER BY
+		for _, ord := range *orderBy {
+			cols = append(cols, string(ord.Field))
+			placeholders = append(placeholders,
+				fmt.Sprintf("$%d", argPos),
+			)
+			switch ord.Field {
+			case UserID:
+				args = append(args, lastUser.ID)
+			case UserFtLogin:
+				args = append(args, lastUser.FtLogin)
+			case UserFtID:
+				args = append(args, lastUser.FtID)
+			case UserFtIsStaff:
+				args = append(args, lastUser.FtIsStaff)
+			case UserIsStaff:
+				args = append(args, lastUser.IsStaff)
+			case UserLastSeen:
+				// pass time.Time directly
+				args = append(args, lastUser.LastSeen)
+			}
+			argPos++
+		}
+		if !hasID {
+			cols = append(cols, "id")
+			placeholders = append(placeholders,
+				fmt.Sprintf("$%d", argPos),
+			)
+			args = append(args, lastUser.ID)
+			argPos++
+		}
+
+		// Asc vs Desc on the first order field
+		dir := ">"
+		if (*orderBy)[0].Order == Desc {
+			dir = "<"
+		}
+
+		whereConds = append(whereConds,
+			fmt.Sprintf("(%s) %s (%s)",
+				strings.Join(cols, ", "),
+				dir,
+				strings.Join(placeholders, ", "),
+			),
+		)
 	}
-	query = fmt.Sprintf("%s\n%s", query, orderSTR)
+
+	// Text‐filter only on login
+	if filter != "" {
+		whereConds = append(whereConds,
+			fmt.Sprintf("(ft_login ILIKE '%%' || $%d || '%%' OR ft_id::text ILIKE '%%' || $%d || '%%')", argPos, argPos),
+		)
+		args = append(args, filter)
+		argPos++
+	}
+
+	// 4) Assemble SQL
+	var sb strings.Builder
+	sb.WriteString(
+		`SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff
+FROM users`,
+	)
+	if len(whereConds) > 0 {
+		sb.WriteString("\nWHERE ")
+		sb.WriteString(strings.Join(whereConds, " AND "))
+	}
+	sb.WriteString("\nORDER BY ")
+	sb.WriteString(strings.Join(orderClauses, ", "))
 	if limit > 0 {
-		query = fmt.Sprintf("%s\n%s", query, fmt.Sprintf("LIMIT %d;", limit))
+		sb.WriteString(fmt.Sprintf("\nLIMIT %d", limit))
 	}
-	query = query + "\n"
+	sb.WriteString(";")
+
+	query := sb.String()
+
+	// 5) Execute and scan
 	rows, err := mainDB.Query(query, args...)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var users []User
+	var out []User
 	for rows.Next() {
-		var user User
+		var u User
 		if err := rows.Scan(
-			&user.ID,
-			&user.FtLogin,
-			&user.FtID,
-			&user.FtIsStaff,
-			&user.PhotoURL,
-			&user.LastSeen,
-			&user.IsStaff,
+			&u.ID,
+			&u.FtLogin,
+			&u.FtID,
+			&u.FtIsStaff,
+			&u.PhotoURL,
+			&u.LastSeen,
+			&u.IsStaff,
 		); err != nil {
 			return nil, err
 		}
-		users = append(users, user)
+		out = append(out, u)
 	}
-	return users, nil
+	return out, nil
 }
 
 func AddUser(user User) error {
