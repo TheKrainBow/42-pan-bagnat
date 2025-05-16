@@ -36,12 +36,22 @@ local-back:																				## Local | Stop backend docker container, and run
 #########################################################################################
 #                                      DATABASE                                         #
 #########################################################################################
-.PHONY: db-clear db-test
+.PHONY: db-clear db-test db-clear-data db-init-schema
 db-clear:																				## Database | Clear database datas and schema
 	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
 
-db-test: db-clear																		## Database | Clear database and populate it with some test datas
-	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/init.sql
+db-init-schema: db-clear																## Database | Push schema to database
+	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/init/01_init.sql
+	docker exec -i pan-bagnat-db-1 \
+	  bash -lc "/docker-entrypoint-initdb.d/02_make_template.sh"
+
+db-clear-data:																			## Database | Clear database datas
+	docker exec -i pan-bagnat-db-1 \
+	  psql -U admin -d panbagnat -c "\
+	    TRUNCATE module_roles, user_roles, modules, roles, users RESTART IDENTITY CASCADE;\
+	  "
+
+db-test: db-clear-data																	## Database | Set database datas with test datas
 	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/test_data.sql
 
 #########################################################################################
