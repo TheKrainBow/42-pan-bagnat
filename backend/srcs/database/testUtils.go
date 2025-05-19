@@ -29,6 +29,42 @@ func formatModules(ms []Module) string {
 	return b.String()
 }
 
+func formatUsers(us []User) string {
+	var b strings.Builder
+	if us == nil {
+		return "nil"
+	}
+	b.WriteString("[]User{\n")
+	for _, u := range us {
+		y, mon, d := u.LastSeen.Date()
+		h, min, sec := u.LastSeen.Clock()
+		b.WriteString(fmt.Sprintf(
+			"\t{ID: %q, FtLogin: %q, FtID: %q, FtIsStaff: %t, PhotoURL: %q, LastSeen: time.Date(%d, %d, %d, %d, %d, %d, 0, time.UTC), IsStaff: %t},\n",
+			u.ID, u.FtLogin, u.FtID, u.FtIsStaff, u.PhotoURL,
+			y, int(mon), d, h, min, sec,
+			u.IsStaff,
+		))
+	}
+	b.WriteString("},")
+	return b.String()
+}
+
+func formatRoles(rs []Role) string {
+	var b strings.Builder
+	if rs == nil {
+		return "nil"
+	}
+	b.WriteString("[]Role{\n")
+	for _, r := range rs {
+		b.WriteString(fmt.Sprintf(
+			"\t{ID: %q, Name: %q, Color: %q},\n",
+			r.ID, r.Name, r.Color,
+		))
+	}
+	b.WriteString("},")
+	return b.String()
+}
+
 func DropDatabase(t *testing.T, dbName string) {
 	_, err := mainDB.Exec(fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", dbName))
 	if err != nil {

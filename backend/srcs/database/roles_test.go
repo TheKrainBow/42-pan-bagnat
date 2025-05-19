@@ -142,6 +142,8 @@ func TestGetAllRoles(t *testing.T) {
 			}
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("GetAllRoles() mismatch (-want +got):\n%s", diff)
+				t.Errorf("want:\n%s", formatRoles(tt.want))
+				t.Errorf(" got:\n%s", formatRoles(got))
 			}
 		})
 	}
