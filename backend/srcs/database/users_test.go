@@ -8,7 +8,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-//go:embed test_data/test_data.sql
+//go:embed test_data/test_data_users.sql
 var testDataSQL string
 
 func TestGetAllUsers(t *testing.T) {
