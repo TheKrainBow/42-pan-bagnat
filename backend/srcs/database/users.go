@@ -179,7 +179,7 @@ FROM users`,
 	}
 	defer rows.Close()
 
-	var out []User
+	out := []User{}
 	for rows.Next() {
 		var u User
 		if err := rows.Scan(

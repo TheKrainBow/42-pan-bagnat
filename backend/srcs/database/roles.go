@@ -215,7 +215,7 @@ FROM roles`,
 	}
 	defer rows.Close()
 
-	var out []Role
+	out := []Role{}
 	for rows.Next() {
 		var r Role
 		if err := rows.Scan(
