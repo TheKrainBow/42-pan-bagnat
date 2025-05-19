@@ -81,7 +81,22 @@ func GetRoles(pagination RolePagination) ([]Role, string, error) {
 		roles = roles[:pagination.Limit]
 	}
 
-	dest = DatabaseRolesToRoles(roles)
+	for _, role := range roles {
+		apiRole := DatabaseRoleToRole(role)
+		users, err := database.GetRoleUsers(apiRole.ID)
+		if err != nil {
+			fmt.Printf("couldn't get roles for user %s: %s\n", apiRole.ID, err.Error())
+		} else {
+			apiRole.Users = DatabaseUsersToUsers(users)
+		}
+		modules, err := database.GetRoleModules(apiRole.ID)
+		if err != nil {
+			fmt.Printf("couldn't get roles for user %s: %s\n", apiRole.ID, err.Error())
+		} else {
+			apiRole.Modules = DatabaseModulesToModules(modules)
+		}
+		dest = append(dest, apiRole)
+	}
 
 	if !hasMore {
 		return dest, "", nil

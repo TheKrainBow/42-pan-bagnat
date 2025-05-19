@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"backend/handlers/api"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -24,11 +25,11 @@ func DeleteModule(w http.ResponseWriter, r *http.Request) {
 	t := time.Now()
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
 	id := ulid.MustNew(ulid.Timestamp(t), entropy)
-	dest := Module{
+	dest := api.Module{
 		ID:            id.String(),
 		Name:          "Test",
 		Version:       "1.2",
-		Status:        Enabled,
+		Status:        api.Enabled,
 		URL:           "https://github.com/some-user/some-repo",
 		LatestVersion: "1.7",
 		LastUpdate:    time.Date(2025, 02, 18, 15, 0, 0, 0, time.UTC),
