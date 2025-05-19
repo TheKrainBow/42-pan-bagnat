@@ -83,3 +83,15 @@ build-front: 																			## Docker | Build frontend image and replace cur
 fprune: prune																			## Docker | Stop all containers, volumes, and networks
 	$(DOCKER_COMPOSE) down --volumes --remove-orphans
 	docker system prune -af --volumes
+
+#########################################################################################
+#                                       TESTS                                           #
+#########################################################################################
+.PHONY: test-backend test-backend-verbose
+test-backend:																			## Tests | Start tests for backend
+	@echo "🧪 Running backend tests…"
+	cd backend/srcs && DATABASE_URL=$(DATABASE_URL) go test -timeout 30s ./...
+
+test-backend-verbose: 																	## Tests | Start tests for backend with verbose enabled
+	@echo "🧪 Running backend tests…"
+	cd backend/srcs && DATABASE_URL=$(DATABASE_URL) go test -v -timeout 30s ./...
