@@ -1,28 +1,32 @@
 package roles
 
 import (
+	"backend/handlers/api"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
+	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/oklog/ulid/v2"
 )
 
 // @Summary      Post Role List
-// @Description  Download a new module for your campus
+// @Description  Download a new role for your campus
 // @Tags         roles
 // @Accept       json
 // @Produce      json
 // @Param        input body RolePatchInput true "Role input"
 // @Success      200 {object} Role
-// @Router       /roles/{roleID} [patch]
-func PatchRole(w http.ResponseWriter, r *http.Request) {
+// @Router       /roles [post]
+func PostRole(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	id := chi.URLParam(r, "roleID")
-
-	dest := Role{
-		ID:    id,
+	t := time.Now()
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	id := ulid.MustNew(ulid.Timestamp(t), entropy)
+	dest := api.Role{
+		ID:    id.String(),
 		Name:  "Test",
 		Color: "0xFF00FF",
 	}

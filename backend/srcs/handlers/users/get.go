@@ -2,6 +2,7 @@ package users
 
 import (
 	"backend/core"
+	"backend/handlers/api"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -57,7 +58,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dest.NextPage = nextToken
-	dest.Users = UsersToAPIUsers(users)
+	dest.Users = api.UsersToAPIUsers(users)
 
 	// Marshal the dest struct into JSON
 	destJSON, err := json.Marshal(dest)
@@ -91,7 +92,7 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	// }
 	// log.Printf("Backend id: %+v", chi.RouteContext(r.Context()).URLParams)
 
-	dest := User{
+	dest := api.User{
 		ID: id,
 	}
 

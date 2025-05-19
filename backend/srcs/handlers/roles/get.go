@@ -2,6 +2,7 @@ package roles
 
 import (
 	"backend/core"
+	"backend/handlers/api"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -57,7 +58,7 @@ func GetRoles(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	dest.NextPage = nextToken
-	dest.Roles = RolesToAPIRoles(roles)
+	dest.Roles = api.RolesToAPIRoles(roles)
 
 	// Marshal the dest struct into JSON
 	destJSON, err := json.Marshal(dest)
@@ -91,7 +92,7 @@ func GetRole(w http.ResponseWriter, r *http.Request) {
 	// }
 	// log.Printf("Backend id: %+v", chi.RouteContext(r.Context()).URLParams)
 
-	dest := Role{
+	dest := api.Role{
 		ID:    "01HZ0MMK4S6VQW4WPHB6NZ7R7X",
 		Name:  "Test",
 		Color: "0xFF00FF",

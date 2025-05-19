@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"backend/handlers/api"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -20,11 +21,11 @@ import (
 func GetModules(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	dest := Module{
+	dest := api.Module{
 		ID:            "01HZ0MMK4S6VQW4WPHB6NZ7R7X",
 		Name:          "Test",
 		Version:       "1.2",
-		Status:        Enabled,
+		Status:        api.Enabled,
 		URL:           "https://github.com/some-user/some-repo",
 		LatestVersion: "1.7",
 		LastUpdate:    time.Date(2025, 02, 18, 15, 0, 0, 0, time.UTC),
@@ -62,11 +63,11 @@ func GetModule(w http.ResponseWriter, r *http.Request) {
 	// }
 	// log.Printf("Backend id: %+v", chi.RouteContext(r.Context()).URLParams)
 
-	dest := Module{
+	dest := api.Module{
 		ID:            id,
 		Name:          "Test",
 		Version:       "1.2",
-		Status:        Enabled,
+		Status:        api.Enabled,
 		URL:           "https://github.com/some-user/some-repo",
 		LatestVersion: "1.7",
 		LastUpdate:    time.Date(2025, 02, 18, 15, 0, 0, 0, time.UTC),

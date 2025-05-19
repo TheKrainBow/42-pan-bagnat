@@ -1,6 +1,7 @@
 package roles
 
 import (
+	"backend/handlers/api"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -24,7 +25,7 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
 	t := time.Now()
 	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
 	id := ulid.MustNew(ulid.Timestamp(t), entropy)
-	dest := Role{
+	dest := api.Role{
 		ID:   id.String(),
 		Name: "Test",
 	}
