@@ -15,7 +15,7 @@ const Roles = () => {
   const [orderQuery, setOrderQuery] = useState('name');
   const [isLoading, setIsLoading] = useState(false);
   const loadingRef = useRef(false);
-  const scrollRef = useRef(null);
+  const scrollContainerRef = useRef(null);
   const isFirst = useRef(true);
 
   // fetch roles (with optional append for infinite‐scroll)
@@ -27,7 +27,9 @@ const Roles = () => {
     try {
       const params = new URLSearchParams();
       params.set('order', orderQuery);
-      if (debouncedFilter) params.set('filter', debouncedFilter);
+      if (debouncedFilter !== '') {
+        params.set('filter', debouncedFilter);
+      }
       if (token) {
         params.set('next_page_token', token);
       } else {
@@ -52,27 +54,38 @@ const Roles = () => {
     }
   }, [orderQuery, debouncedFilter]);
 
-  // infinite‐scroll handler
-  const onScroll = useCallback(() => {
+
+  const handleSort = (column) => {
+    const isDesc = orderQuery.startsWith(`-${column}`);
+    const newOrder = isDesc ? column : `-${column}`;
+    setOrderQuery(newOrder === orderQuery ? '' : newOrder); // toggle order
+  };
+
+  
+  const handleScroll = useCallback(() => {
     const el = scrollContainerRef.current;
     if (!el || isLoading || !nextPage) return;
     if (el.scrollTop + el.clientHeight >= el.scrollHeight - 10) {
       fetchRoles(true, nextPage);
     }
-  }, [fetchRoles, isLoading, nextPage]);
+  }, [nextPage, isLoading, fetchRoles]);
 
   // attach scroll listener
   useEffect(() => {
-    const el = scrollRef.current;
-    el?.addEventListener('scroll', onScroll);
-    return () => el?.removeEventListener('scroll', onScroll);
-  }, [onScroll]);
+    const el = scrollContainerRef.current;
+    el?.addEventListener('scroll', handleScroll);
+    return () => el?.removeEventListener('scroll', handleScroll);
+  }, [handleScroll]);
 
   // debounce filter
   useEffect(() => {
     const t = setTimeout(() => setDebouncedFilter(filterQuery), 300);
     return () => clearTimeout(t);
   }, [filterQuery]);
+
+  useEffect(() => {
+    fetchRoles();
+  }, [fetchRoles]);
 
   // initial load & on order/filter change
   useEffect(() => {
@@ -101,15 +114,26 @@ const Roles = () => {
     },
     {
       header: 'Members',
-      accessorKey: 'members_count',
+      accessorFn: row => row.users.length,
+      id: 'users',
       disableSort: true,
-      cell: info => (
-        <><img src="/icons/user.svg" alt="members" className="icon-small" /> {info.getValue()}</>
-      ),
+      cell: info => {
+        const count = info.getValue(); // this is row.users.length
+        return (
+          <>
+            <img
+              src="/icons/users.png"
+              alt="users"
+              className="icon-small"
+            />{' '}
+            {count}
+          </>
+        )
+      },
     },
     {
-      header: 'Applications',
-      accessorKey: 'applications',
+      header: 'Modules',
+      accessorKey: 'modules',
       disableSort: true,
       cell: info => (
         <div className="apps-cell">
@@ -132,11 +156,6 @@ const Roles = () => {
     if (orderQuery === colId) return 'asc';
     if (orderQuery === `-${colId}`) return 'desc';
     return '';
-  };
-  const toggleSort = colId => {
-    const isDesc = orderQuery === `-${colId}`;
-    const newOrder = isDesc ? colId : `-${colId}`;
-    setOrderQuery(newOrder === orderQuery ? '' : newOrder);
   };
 
   const table = useReactTable({
@@ -170,7 +189,7 @@ const Roles = () => {
         </div>
       </div>
 
-      <div className="roles-table-container" ref={scrollRef}>
+      <div className="roles-table-container" ref={scrollContainerRef}>
         <table className="roles-table">
           <thead>
             {table.getHeaderGroups().map(hg => (
@@ -184,7 +203,7 @@ const Roles = () => {
                     <th
                       key={colId}
                       className={sortable ? 'sortable' : ''}
-                      onClick={sortable ? () => toggleSort(colId) : undefined}
+                      onClick={sortable ? () => handleSort(colId) : undefined}
                     >
                       <div className="th-content">
                         {flexRender(header.column.columnDef.header, header.getContext())}
