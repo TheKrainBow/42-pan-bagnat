@@ -29,3 +29,30 @@ func DatabaseUserToUser(dbUser database.User) User {
 		Roles:     []Role{},
 	}
 }
+
+func DatabaseUsersToUsers(dbUsers []database.User) (dest []User) {
+	for _, user := range dbUsers {
+		dest = append(dest, DatabaseUserToUser(user))
+	}
+	return dest
+}
+
+func DatabaseModuleToModule(dbUser database.Module) Module {
+	return Module{
+		ID:            dbUser.ID,
+		Name:          dbUser.Name,
+		Version:       dbUser.Version,
+		Status:        ModuleStatus(dbUser.Status),
+		URL:           dbUser.URL,
+		LatestVersion: dbUser.LatestVersion,
+		LateCommits:   dbUser.LateCommits,
+		LastUpdate:    dbUser.LastUpdate,
+	}
+}
+
+func DatabaseModulesToModules(dbModules []database.Module) (dest []Module) {
+	for _, module := range dbModules {
+		dest = append(dest, DatabaseModuleToModule(module))
+	}
+	return dest
+}
