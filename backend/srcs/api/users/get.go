@@ -46,14 +46,14 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	if pageToken != "" {
 		pagination, err = core.DecodeUserPaginationToken(pageToken)
 		if err != nil {
-			http.Error(w, "Failed to core.GetUsers()", http.StatusInternalServerError)
+			http.Error(w, "Failed in core.GetUsers()", http.StatusInternalServerError)
 			fmt.Printf("Couldn't decode token:\n%s\n: %s\n", pageToken, err.Error())
 			return
 		}
 	}
 	users, nextToken, err = core.GetUsers(pagination)
 	if err != nil {
-		http.Error(w, "Failed to core.GetUsers()", http.StatusInternalServerError)
+		http.Error(w, "Failed in core.GetUsers()", http.StatusInternalServerError)
 		return
 	}
 	dest.NextPage = nextToken
