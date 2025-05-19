@@ -345,9 +345,10 @@ func TestGetAllUsers(t *testing.T) {
 				t.Errorf("GetAllUsers() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("GetAllUsers() mismatch (-want +got):\n%s", diff)
+				t.Errorf("want:\n%s", formatUsers(tt.want))
+				t.Errorf(" got:\n%s", formatUsers(got))
 			}
 		})
 	}
