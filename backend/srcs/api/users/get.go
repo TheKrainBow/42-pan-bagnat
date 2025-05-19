@@ -37,19 +37,24 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	dest := UserGetResponse{}
+	pagination := core.UserPagination{
+		OrderBy:  core.GenerateOrderBy(order),
+		Filter:   filter,
+		LastUser: nil,
+		Limit:    limit,
+	}
 	if pageToken != "" {
-		users, nextToken, err = core.GetUsersFromToken(pageToken)
+		pagination, err = core.DecodeUserPaginationToken(pageToken)
 		if err != nil {
 			http.Error(w, "Failed to core.GetUsers()", http.StatusInternalServerError)
-			fmt.Printf("Error for token:\n%s\n: %s\n", pageToken, err.Error())
+			fmt.Printf("Couldn't decode token:\n%s\n: %s\n", pageToken, err.Error())
 			return
 		}
-	} else {
-		users, nextToken, err = core.GetUsers(core.UserPagination{OrderBy: core.GenerateOrderBy(order), Filter: filter, LastUser: nil, Limit: limit})
-		if err != nil {
-			http.Error(w, "Failed to core.GetUsers()", http.StatusInternalServerError)
-			return
-		}
+	}
+	users, nextToken, err = core.GetUsers(pagination)
+	if err != nil {
+		http.Error(w, "Failed to core.GetUsers()", http.StatusInternalServerError)
+		return
 	}
 	dest.NextPage = nextToken
 	dest.Users = UsersToAPIUsers(users)
