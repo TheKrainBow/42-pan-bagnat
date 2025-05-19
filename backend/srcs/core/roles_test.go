@@ -78,7 +78,7 @@ func TestRolePaginationToken_RoundTrip(t *testing.T) {
 
 func TestEncodeRolePaginationToken(t *testing.T) {
 	empty := RolePagination{}
-	wantEmpty := "eyJPcmRlckJ5IjpudWxsLCJGaWx0ZXIiOiIiLCJMYXN0VXNlciI6bnVsbCwiTGltaXQiOjB9"
+	wantEmpty := "eyJPcmRlckJ5IjpudWxsLCJGaWx0ZXIiOiIiLCJMYXN0Um9sZSI6bnVsbCwiTGltaXQiOjB9"
 	// pre-computed base64 of {"OrderBy":[],"Filter":"","LastRole":null,"Limit":0}
 	got, err := EncodeRolePaginationToken(empty)
 	if err != nil {
@@ -90,7 +90,7 @@ func TestEncodeRolePaginationToken(t *testing.T) {
 }
 
 func TestDecodeRolePaginationToken(t *testing.T) {
-	const b64 = "eyJPcmRlckJ5IjpudWxsLCJGaWx0ZXIiOiIiLCJMYXN0VXNlciI6bnVsbCwiTGltaXQiOjB9"
+	const b64 = "eyJPcmRlckJ5IjpudWxsLCJGaWx0ZXIiOiIiLCJMYXN0Um9sZSI6bnVsbCwiTGltaXQiOjB9"
 	want := RolePagination{}
 	got, err := DecodeRolePaginationToken(b64)
 	if err != nil {
