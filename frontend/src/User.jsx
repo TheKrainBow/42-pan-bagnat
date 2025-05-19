@@ -17,9 +17,6 @@ const User = () => {
   const [isLoading, setIsLoading] = useState(false);
   const scrollContainerRef = useRef(null);
 
-  const isFirstRender = useRef(true);
-  
-
   const fetchUsers = useCallback(async (append = false, token = '') => {
     if (loadingRef.current) return;
     loadingRef.current = true;
@@ -50,7 +47,7 @@ const User = () => {
       if (!append) setUsers([]);
     } finally {
       loadingRef.current = false;
-      setIsLoading(false); // End loading
+      setIsLoading(false);
     }
   }, [orderQuery, debouncedFilter]);
 
@@ -79,20 +76,13 @@ const User = () => {
   useEffect(() => {
     const timeout = setTimeout(() => {
       setDebouncedFilter(filterQuery);
-    }, 300);  // Adjust debounce delay as needed
+    }, 300);
     return () => clearTimeout(timeout);
   }, [filterQuery]);
 
   useEffect(() => {
     fetchUsers();
   }, [fetchUsers]);
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setDebouncedFilter(filterQuery);
-    }, 300);
-    return () => clearTimeout(timeout);
-  }, [filterQuery]);
 
   const columns = useMemo(
     () => [
