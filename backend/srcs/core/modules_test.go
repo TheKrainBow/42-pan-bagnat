@@ -86,7 +86,7 @@ func TestModulePaginationToken_RoundTrip(t *testing.T) {
 
 func TestEncodeModulePaginationToken(t *testing.T) {
 	empty := ModulePagination{}
-	wantEmpty := "eyJPcmRlckJ5IjpudWxsLCJGaWx0ZXIiOiIiLCJMYXN0VXNlciI6bnVsbCwiTGltaXQiOjB9"
+	wantEmpty := "eyJPcmRlckJ5IjpudWxsLCJGaWx0ZXIiOiIiLCJMYXN0TW9kdWxlIjpudWxsLCJMaW1pdCI6MH0="
 	// pre-computed base64 of {"OrderBy":[],"Filter":"","LastModule":null,"Limit":0}
 	got, err := EncodeModulePaginationToken(empty)
 	if err != nil {
@@ -98,7 +98,7 @@ func TestEncodeModulePaginationToken(t *testing.T) {
 }
 
 func TestDecodeModulePaginationToken(t *testing.T) {
-	const b64 = "eyJPcmRlckJ5IjpudWxsLCJGaWx0ZXIiOiIiLCJMYXN0VXNlciI6bnVsbCwiTGltaXQiOjB9"
+	const b64 = "eyJPcmRlckJ5IjpudWxsLCJGaWx0ZXIiOiIiLCJMYXN0TW9kdWxlIjpudWxsLCJMaW1pdCI6MH0="
 	want := ModulePagination{}
 	got, err := DecodeModulePaginationToken(b64)
 	if err != nil {
