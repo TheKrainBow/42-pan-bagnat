@@ -144,7 +144,7 @@ func GetAllUsers(
 		)
 	}
 
-	// Text‐filter only on login
+	// Text‐filter on login and 42id
 	if filter != "" {
 		whereConds = append(whereConds,
 			fmt.Sprintf("(ft_login ILIKE '%%' || $%d || '%%' OR ft_id::text ILIKE '%%' || $%d || '%%')", argPos, argPos),
