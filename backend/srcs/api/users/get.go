@@ -38,7 +38,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 
 	dest := UserGetResponse{}
 	pagination := core.UserPagination{
-		OrderBy:  core.GenerateOrderBy(order),
+		OrderBy:  core.GenerateUserOrderBy(order),
 		Filter:   filter,
 		LastUser: nil,
 		Limit:    limit,
