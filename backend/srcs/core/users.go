@@ -74,7 +74,7 @@ func DecodeUserPaginationToken(encoded string) (UserPagination, error) {
 }
 
 func GetUsers(pagination UserPagination) ([]User, string, error) {
-	dest := []User{}
+	var dest []User
 	realLimit := pagination.Limit + 1
 
 	users, err := database.GetAllUsers(&pagination.OrderBy, pagination.Filter, pagination.LastUser, realLimit)
