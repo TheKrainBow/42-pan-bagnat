@@ -26,7 +26,7 @@
 
 .role-table th:not(.role-small-column),
 .role-table td:not(.role-small-column) {
-  text-align: left;
+  text-align: center;
 }
 
 /* last column takes remaining space */
@@ -112,6 +112,7 @@
   display: inline-block;
   padding: 4px 8px;
   border-radius: 6px;
+  margin-right: 6px;
   font-weight: 500;
   font-size: 0.9rem;
   color: #fff;
@@ -125,7 +126,7 @@
   background-color: rgba(255,255,255,0.03);
 }
 
-.header-content.sortable {
+.role-header-content.sortable {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -175,30 +176,4 @@
 
 .role-search.with-icon {
   padding-left: 40px; /* space for the icon */
-}
-
-.load-more-wrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: 20px;
-}
-
-.load-more-button {
-  padding: 10px 20px;
-  background-color: #5b9df9;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.load-more-button:hover {
-  background-color: #4a86c6;
-}
-
-.loading-icon {
-  text-align: center;
-  padding: 20px;
-  font-size: 16px;
-  color: #e0e0e0;
 }
