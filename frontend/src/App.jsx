@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
-import User from './User';
-import Roles from './Roles';
+import User from './pages/User';
+import Roles from './pages/Roles';
 
 function App() {
   const [page, setPage] = useState('users');
