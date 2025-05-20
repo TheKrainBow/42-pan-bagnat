@@ -37,10 +37,11 @@ local-back:																				## Local | Stop backend docker container, and run
 #                                      DATABASE                                         #
 #########################################################################################
 .PHONY: db-clear db-test db-clear-data db-init-schema
-db-clear:																				## Database | Clear database datas and schema
+db-prune:																				## Database | Prune database datas, schemas and templates
 	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	docker exec pan-bagnat-db-1 bash -lc "dropdb -U admin --if-exists schema_template"
 
-db-init-schema: db-clear																## Database | Push schema to database
+db-init-schema: db-prune																## Database | Push schema to database
 	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/init/01_init.sql
 	docker exec -i pan-bagnat-db-1 \
 	  bash -lc "/docker-entrypoint-initdb.d/02_make_template.sh"
