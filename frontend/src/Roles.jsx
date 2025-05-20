@@ -101,6 +101,26 @@ const Roles = () => {
   // table columns
   const columns = useMemo(() => [
     {
+      header: 'Members',
+      accessorFn: row => row.users.length,
+      id: 'users',
+      disableSort: true,
+      cell: info => {
+        const count = info.getValue(); // this is row.users.length
+        const classNamee = (count == 0) ? "icon-small empty" : "icon-small"
+        return (
+          <>
+            <img
+              src="/icons/users.png"
+              alt="users"
+              className={classNamee}
+            />{' '}
+            {count}
+          </>
+        )
+      },
+    },
+    {
       header: 'Role',
       accessorKey: 'name',
       cell: info => (
@@ -113,46 +133,36 @@ const Roles = () => {
       ),
     },
     {
-      header: 'Members',
-      accessorFn: row => row.users.length,
-      id: 'users',
-      disableSort: true,
-      cell: info => {
-        const count = info.getValue(); // this is row.users.length
-        return (
-          <>
-            <img
-              src="/icons/users.png"
-              alt="users"
-              className="icon-small"
-            />{' '}
-            {count}
-          </>
-        )
-      },
-    },
-    {
       header: 'Modules',
       accessorKey: 'modules',
       disableSort: true,
       cell: info => (
-        <div className="apps-cell">
-          {info.getValue().map(app => (
-            <img
-              key={app.id}
-              src={app.icon_url}
-              alt={app.name}
-              title={app.name}
-              className="app-icon"
-            />
-          ))}
+        <div className="role-apps-cell">
+          {info.getValue().map(app => {
+            const fallback = '/icons/modules.png';
+            return (
+              <img
+                key={app.id}
+                // src={app.icon_url}
+                src={fallback}
+                alt={app.name}
+                title={app.name}
+                className="role-apps-cell"
+                style={{ marginRight: 4}}
+                onError={e => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = fallback;
+                }}
+              />
+            );
+          })}
         </div>
       ),
     },
   ], []);
 
   // sort arrows
-  const getSortDir = colId => {
+  const getSortDirection = colId => {
     if (orderQuery === colId) return 'asc';
     if (orderQuery === `-${colId}`) return 'desc';
     return '';
@@ -164,53 +174,43 @@ const Roles = () => {
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
   });
-
   return (
     <div className="p-4">
-      <div className="roles-header">
-        <h2>Roles</h2>
-        <div className="roles-controls">
-          <div className="search-wrap">
-            <img src="/icons/search.png" alt="Search" className="search-icon" />
-            <input
-              type="text"
-              className="search-input"
-              placeholder="Search roles..."
-              value={filterQuery}
-              onChange={e => setFilterQuery(e.target.value)}
-            />
-          </div>
-          <button className="filter-btn">
-            <img src="/icons/filter.svg" alt="Filter" />
-          </button>
-          <button className="add-btn" onClick={() => {/* open add-role modal */}}>
-            <img src="/icons/plus.svg" alt="Add Role" />
-          </button>
+      <div className="role-header-bar">
+        <h2>Role List</h2>
+        <div className="role-search-container">
+          <img src="/icons/search.png" alt="Search" className="search-icon-inside" />
+          <input
+            className="role-search with-icon"
+            type="text"
+            placeholder="Search..."
+            value={filterQuery}
+            onChange={(e) => setFilterQuery(e.target.value)}
+          />
         </div>
       </div>
 
-      <div className="roles-table-container" ref={scrollContainerRef}>
-        <table className="roles-table">
-          <thead>
-            {table.getHeaderGroups().map(hg => (
-              <tr key={hg.id}>
-                {hg.headers.map(header => {
-                  const colId = header.id;
-                  const sortable = !header.column.columnDef.disableSort;
-                  const dir = getSortDir(colId);
+      <div className="role-table-container" ref={scrollContainerRef}>
+        <table className="role-table">
+          <thead className="role-header">
+            {table.getHeaderGroups().map(headerGroup => (
+              <tr key={headerGroup.id}>
+                {headerGroup.headers.map(header => {
+                  const isSortable = !header.column.columnDef.disableSort;
+                  const sortDir = getSortDirection(header.id);
 
                   return (
                     <th
-                      key={colId}
-                      className={sortable ? 'sortable' : ''}
-                      onClick={sortable ? () => handleSort(colId) : undefined}
+                      key={header.id}
+                      onClick={isSortable ? () => handleSort(header.id) : undefined}
+                      className={`role-cell ${isSortable ? 'sortable' : 'disabled-sort'} ${(header.column.columnDef.header === 'Picture') ? 'role-small-column' : ''}`}
                     >
-                      <div className="th-content">
+                      <div className={`header-content ${isSortable ? 'sortable' : 'disabled-sort'}`}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
-                        {sortable && (
-                          <span className="arrows">
-                            <span style={{opacity: dir==='asc'?1:0.3}}>▲</span>
-                            <span style={{opacity: dir==='desc'?1:0.3}}>▼</span>
+                        {isSortable && (
+                          <span className="sort-arrows">
+                            <span style={{ opacity: sortDir === 'asc' ? 1 : 0.5 }}>▲</span>
+                            <span style={{ opacity: sortDir === 'desc' ? 1 : 0.5 }}>▼</span>
                           </span>
                         )}
                       </div>
@@ -222,23 +222,28 @@ const Roles = () => {
           </thead>
           <tbody>
             {table.getRowModel().rows.map(row => (
-              <tr key={row.id}>
-                {row.getVisibleCells().map(cell => (
-                  <td key={cell.id}>
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </td>
-                ))}
+              <tr key={row.id} className="role-row">
+                {row.getVisibleCells().map(cell => {
+                  return (
+                    <td key={cell.id} className={cell.column.columnDef.header === 'Picture' ? 'role-small-column' : ''}>
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>
         </table>
-
-        {nextPage && !isLoading && (
-          <div className="load-more">
-            <button onClick={() => fetchRoles(true, nextPage)}>Load More</button>
+        {nextPage && (
+          <div className="load-more-wrapper">
+            <button className="load-more-button" onClick={() => fetchUsers(true, nextPage)}>
+              Load More
+            </button>
           </div>
         )}
-        {isLoading && <div className="loading">Loading…</div>}
+        {isLoading && (
+          <div className="loading-icon">Loading...</div>
+        )}
       </div>
     </div>
   );

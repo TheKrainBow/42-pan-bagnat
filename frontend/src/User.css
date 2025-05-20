@@ -11,10 +11,10 @@
 .user-table-container {
   display: flex;
   flex-direction: column;
-  flex-grow: 1; /* Ensure it grows to fill remaining space */
+  flex-grow: 1;
   max-height: calc(100vh - 155px);
   overflow-y: auto;
-  padding-bottom: 20px; /* To ensure the button isn't hidden */
+  padding-bottom: 20px;
 }
 
 .user-table th,
@@ -24,14 +24,14 @@
   word-wrap: break-word;
 }
 
-.user-table th:not(.small-column),
-.user-table td:not(.small-column) {
+.user-table th:not(.user-small-column),
+.user-table td:not(.user-small-column) {
   text-align: left;
 }
 
-
-.user-cell.disabled-sort {
-  cursor: default;
+.user-small-column {
+  width: 60px;
+  text-align: center;
 }
 
 .user-picture {
@@ -45,17 +45,26 @@
   background-color: #333;
   color: #fff;
   font-weight: bold;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 .user-cell {
   padding: 0 8px;
   position: relative;
   border-right: 1px solid #252525;
+  cursor: pointer;
 }
 
-.small-column {
-  width: 60px;
-  text-align: center;
+.user-cell.disabled-sort {
+  cursor: default;
+}
+
+.user-cell.sortable:hover {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+  border-radius: 4px;
 }
 
 .user-role {
@@ -67,6 +76,10 @@
   font-size: 0.75rem;
   font-weight: 500;
   background-color: #fff;
+}
+
+.user-row:hover {
+  background-color: rgba(255,255,255,0.03);
 }
 
 .sort-icon {
@@ -85,16 +98,6 @@
 
 .user-row {
   border-bottom: 1px solid #444;
-}
-
-.user-cell {
-  cursor: pointer;
-}
-
-.user-cell.sortable:hover {
-  outline: 2px solid #2563eb;
-  outline-offset: -2px;
-  border-radius: 4px;
 }
 
 .header-content.sortable {
@@ -139,7 +142,7 @@
 .staff-login::after {
   content: "PB Staff";
   position: absolute;
-  bottom: 130%; /* above the text */
+  bottom: 130%;
   left: 50%;
   transform: translateX(-50%);
   background-color: #333;
@@ -151,7 +154,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease-in-out;
-  z-index: 10;
+  z-index: 0.9;
 }
 
 .staff-login:hover::after {

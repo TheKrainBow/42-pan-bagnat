@@ -177,7 +177,7 @@ const User = () => {
                     <th
                       key={header.id}
                       onClick={isSortable ? () => handleSort(header.id) : undefined}
-                      className={`user-cell ${isSortable ? 'sortable' : 'disabled-sort'} ${(header.column.columnDef.header === 'Picture') ? 'small-column' : ''}`}
+                      className={`user-cell ${isSortable ? 'sortable' : 'disabled-sort'} ${(header.column.columnDef.header === 'Picture') ? 'user-small-column' : ''}`}
                     >
                       <div className={`header-content ${isSortable ? 'sortable' : 'disabled-sort'}`}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
@@ -199,7 +199,7 @@ const User = () => {
               <tr key={row.id} className="user-row">
                 {row.getVisibleCells().map(cell => {
                   return (
-                    <td key={cell.id} className={cell.column.columnDef.header === 'Picture' ? 'small-column' : ''}>
+                    <td key={cell.id} className={cell.column.columnDef.header === 'Picture' ? 'user-small-column' : ''}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   );
