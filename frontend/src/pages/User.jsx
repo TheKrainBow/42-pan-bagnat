@@ -6,6 +6,16 @@ import {
   flexRender,
 } from '@tanstack/react-table';
 import './User.css';
+import { getReadableStyles } from '../utils/ColorUtils';
+
+export function RoleBadge({ hexColor, children }) {
+  const styles = getReadableStyles(hexColor);
+  return (
+    <span className="role-badge" style={styles}>
+      {children}
+    </span>
+  );
+}
 
 const User = () => {
   const [filterQuery, setFilterQuery] = useState('');
@@ -117,13 +127,9 @@ const User = () => {
         disableSort: true,
         cell: info =>
           info.getValue().map(role => (
-            <span
-              key={role.id}
-              className="user-role"
-              style={{ backgroundColor: `#${role.color.replace('0x', '')}` }}
-            >
-              {role.name}
-            </span>
+              <RoleBadge key={role.id} hexColor={role.color}>
+                {role.name}
+              </RoleBadge>
           )),
       },
       {
@@ -179,7 +185,7 @@ const User = () => {
                       onClick={isSortable ? () => handleSort(header.id) : undefined}
                       className={`user-cell ${isSortable ? 'sortable' : 'disabled-sort'} ${(header.column.columnDef.header === 'Picture') ? 'user-small-column' : ''}`}
                     >
-                      <div className={`header-content ${isSortable ? 'sortable' : 'disabled-sort'}`}>
+                      <div className={`user-header-content ${isSortable ? 'sortable' : 'disabled-sort'}`}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {isSortable && (
                           <span className="sort-arrows">
