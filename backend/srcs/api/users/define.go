@@ -1,6 +1,6 @@
 package users
 
-import "backend/handlers/api"
+import api "backend/api/dto"
 
 // Define the model for the API User input
 // @Description API User model

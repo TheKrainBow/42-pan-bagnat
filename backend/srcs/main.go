@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"os"
 
+	"backend/api/modules"
+	"backend/api/roles"
+	"backend/api/users"
+	"backend/api/version"
 	_ "backend/docs"
-	"backend/handlers/modules"
-	"backend/handlers/roles"
-	"backend/handlers/users"
-	"backend/handlers/version"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

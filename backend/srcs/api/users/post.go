@@ -1,7 +1,7 @@
 package users
 
 import (
-	"backend/handlers/api"
+	api "backend/api/dto"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -11,14 +11,15 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
-// @Summary      Delete User
-// @Description  Delete a user for your campus (All user datas will be lost!)
+// @Summary      Post User List
+// @Description  Download a new user for your campus
 // @Tags         users
 // @Accept       json
 // @Produce      json
-// @Success      200
-// @Router       /users [delete]
-func DeleteUser(w http.ResponseWriter, r *http.Request) {
+// @Param        input body UserPostInput true "User input"
+// @Success      200 {object} User
+// @Router       /users [post]
+func PostUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	t := time.Now()
