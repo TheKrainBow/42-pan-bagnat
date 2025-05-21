@@ -25,7 +25,7 @@ type ModuleOrder struct {
 
 func GetRoleModules(roleID string) ([]Module, error) {
 	rows, err := mainDB.Query(`
-		SELECT mod.id, mod.name, mod.version, mod.status, mod.url, mod.latest_version, mod.late_commits, mod.last_update
+		SELECT mod.id, mod.name, mod.version, mod.status, mod.url, mod.icone_url, mod.latest_version, mod.late_commits, mod.last_update
 		FROM modules mod
 		JOIN module_roles ur ON ur.module_id = mod.id
 		WHERE ur.role_id = $1
@@ -44,6 +44,7 @@ func GetRoleModules(roleID string) ([]Module, error) {
 			&module.Version,
 			&module.Status,
 			&module.URL,
+			&module.IconeURL,
 			&module.LatestVersion,
 			&module.LateCommits,
 			&module.LastUpdate,
@@ -155,7 +156,7 @@ func GetAllModules(
 	// 4) Assemble SQL
 	var sb strings.Builder
 	sb.WriteString(
-		`SELECT id, name, version, status, url, icon_url, latest_version, late_commits, last_update
+		`SELECT id, name, version, status, url, icone_url, latest_version, late_commits, last_update
 FROM modules`,
 	)
 	if len(whereConds) > 0 {
