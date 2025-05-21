@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-table';
 import './Roles.css';
 import { getReadableStyles } from '../utils/ColorUtils';
+import { AppIcone } from '../components/AppIcone';
 
 export function RoleBadge({ hexColor, children }) {
   const styles = getReadableStyles(hexColor);
@@ -154,17 +155,7 @@ const Roles = () => {
         return (
           <div className="role-apps-cell">
             {modules.map(app => (
-              <img
-                key={app.id}
-                src={app.icone_url}
-                alt={app.name}
-                title={app.name}
-                className="role-apps-cell"
-                style={{ marginRight: 4 }}
-                onError={({ target }) => {
-                  target.src = fallback;
-                }}
-              />
+              <AppIcone key={app.id} app={app} fallback={fallback} />
             ))}
           </div>
         );
