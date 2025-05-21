@@ -22,8 +22,25 @@ func TestGetAllUsers(t *testing.T) {
 		name    string
 		args    args
 		want    []User
+		wantIDs []string
 		wantErr bool
 	}{
+		// STRUCTURE TEST
+		{
+			name: "STRUCTURE TEST: All datas",
+			args: args{
+				orderBy:  nil,
+				lastUser: nil,
+				limit:    -8,
+			},
+			want: []User{
+				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 4, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 4, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
+				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 4, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+				{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 4, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			},
+			wantErr: false,
+		},
 		// LIMIT TESTS:
 		{
 			name: "LIMIT TESTS: Negative",
@@ -32,11 +49,11 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    -8,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0420",
+				"user_01HZXYZDE0430",
+				"user_01HZXYZDE0440",
+				"user_01HZXYZDE0450",
 			},
 			wantErr: false,
 		},
@@ -47,11 +64,11 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    0,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0420",
+				"user_01HZXYZDE0430",
+				"user_01HZXYZDE0440",
+				"user_01HZXYZDE0450",
 			},
 			wantErr: false,
 		},
@@ -62,8 +79,8 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    1,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0420",
 			},
 			wantErr: false,
 		},
@@ -74,9 +91,9 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    2,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
+			wantIDs: []string{
+				"user_01HZXYZDE0420",
+				"user_01HZXYZDE0430",
 			},
 			wantErr: false,
 		},
@@ -87,10 +104,10 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    3,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0420",
+				"user_01HZXYZDE0430",
+				"user_01HZXYZDE0440",
 			},
 			wantErr: false,
 		},
@@ -101,11 +118,11 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    4,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0420",
+				"user_01HZXYZDE0430",
+				"user_01HZXYZDE0440",
+				"user_01HZXYZDE0450",
 			},
 			wantErr: false,
 		},
@@ -119,11 +136,11 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    0,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0420",
+				"user_01HZXYZDE0430",
+				"user_01HZXYZDE0440",
+				"user_01HZXYZDE0450",
 			},
 			wantErr: false,
 		},
@@ -136,11 +153,11 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    0,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0450",
+				"user_01HZXYZDE0440",
+				"user_01HZXYZDE0430",
+				"user_01HZXYZDE0420",
 			},
 			wantErr: false,
 		},
@@ -153,11 +170,11 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    0,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0430",
+				"user_01HZXYZDE0420",
+				"user_01HZXYZDE0450",
+				"user_01HZXYZDE0440",
 			},
 			wantErr: false,
 		},
@@ -170,11 +187,11 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    0,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
+			wantIDs: []string{
+				"user_01HZXYZDE0440",
+				"user_01HZXYZDE0450",
+				"user_01HZXYZDE0420",
+				"user_01HZXYZDE0430",
 			},
 			wantErr: false,
 		},
@@ -186,9 +203,9 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: &User{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
 				limit:    2,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0440",
+				"user_01HZXYZDE0450",
 			},
 			wantErr: false,
 		},
@@ -201,9 +218,9 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    2,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0440",
+				"user_01HZXYZDE0450",
 			},
 			wantErr: false,
 		},
@@ -216,9 +233,9 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: &User{ID: "user_01HZXYZDE0450", FtLogin: "yoshi", FtID: "78574", FtIsStaff: true, PhotoURL: "https://intra.42.fr/yoshi/78574", LastSeen: time.Date(2002, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
 				limit:    2,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
+			wantIDs: []string{
+				"user_01HZXYZDE0420",
+				"user_01HZXYZDE0430",
 			},
 			wantErr: false,
 		},
@@ -231,8 +248,8 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    4,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0420",
 			},
 			wantErr: false,
 		},
@@ -244,9 +261,9 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    4,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0430",
+				"user_01HZXYZDE0440",
 			},
 			wantErr: false,
 		},
@@ -258,8 +275,8 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    1,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
+			wantIDs: []string{
+				"user_01HZXYZDE0430",
 			},
 			wantErr: false,
 		},
@@ -271,8 +288,8 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: &User{ID: "user_01HZXYZDE0430", FtLogin: "ltcherep", FtID: "194037", FtIsStaff: false, PhotoURL: "https://intra.42.fr/ltcherep/194037", LastSeen: time.Date(2000, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: false},
 				limit:    1,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0440",
 			},
 			wantErr: false,
 		},
@@ -286,8 +303,8 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    1,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0420",
 			},
 			wantErr: false,
 		},
@@ -301,8 +318,8 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: &User{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
 				limit:    1,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0440",
 			},
 			wantErr: false,
 		},
@@ -316,8 +333,8 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: nil,
 				limit:    1,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0440",
 			},
 			wantErr: false,
 		},
@@ -331,8 +348,8 @@ func TestGetAllUsers(t *testing.T) {
 				lastUser: &User{ID: "user_01HZXYZDE0440", FtLogin: "tac", FtID: "79125", FtIsStaff: true, PhotoURL: "https://intra.42.fr/tac/79125", LastSeen: time.Date(2003, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
 				limit:    1,
 			},
-			want: []User{
-				{ID: "user_01HZXYZDE0420", FtLogin: "heinz", FtID: "220393", FtIsStaff: true, PhotoURL: "https://intra.42.fr/heinz/220393", LastSeen: time.Date(2001, 04, 16, 12, 0, 0, 0, time.UTC), IsStaff: true},
+			wantIDs: []string{
+				"user_01HZXYZDE0420",
 			},
 			wantErr: false,
 		},
@@ -345,10 +362,21 @@ func TestGetAllUsers(t *testing.T) {
 				t.Errorf("GetAllUsers() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("GetAllUsers() mismatch (-want +got):\n%s", diff)
-				t.Errorf("want:\n%s", formatUsers(tt.want))
-				t.Errorf(" got:\n%s", formatUsers(got))
+			if tt.want != nil {
+				if diff := cmp.Diff(tt.want, got); diff != "" {
+					t.Errorf("GetAllUsers() mismatch (-want +got):\n%s", diff)
+					t.Errorf("want:\n%s", formatUsers(tt.want))
+					t.Errorf(" got:\n%s", formatUsers(got))
+				}
+				return
+			}
+
+			var gotIDs []string
+			for _, m := range got {
+				gotIDs = append(gotIDs, m.ID)
+			}
+			if diff := cmp.Diff(tt.wantIDs, gotIDs); diff != "" {
+				t.Errorf("IDs mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
