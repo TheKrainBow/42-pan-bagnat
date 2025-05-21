@@ -1,6 +1,6 @@
 package roles
 
-import "backend/handlers/api"
+import api "backend/api/dto"
 
 // Define the model for the API Role input
 // @Description API Role model
