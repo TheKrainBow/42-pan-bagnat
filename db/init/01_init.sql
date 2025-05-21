@@ -10,7 +10,7 @@ CREATE TABLE modules (
   version TEXT,
   status TEXT,
   url TEXT,
-  icone_url TEXT,
+  icon_url TEXT,
   latest_version TEXT,
   late_commits INT,
   last_update TIMESTAMP WITH TIME ZONE NOT NULL
