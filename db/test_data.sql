@@ -39,10 +39,10 @@ VALUES
 
 INSERT INTO modules (id, name, version, status, url, icone_url, latest_version, late_commits, last_update)
 VALUES
-  ('module_01HZXYZDE0420','captain-hook',    '1.2','enabled', 'https://github.com/42nice/captain-hook', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',    '1.7',5,'2025-04-16 12:00:00+00'),
+  ('module_01HZXYZDE0420','captain-hook',    '1.2','enabled', 'https://github.com/42nice/captain-hook', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',    '1.7',5,'2025-04-16 12:00:00+00'),
   ('module_01HZXYZDE0430','adm-stud',        '1.5','enabled', 'https://github.com/42nice/adm-stud', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',         '1.5',0,'2025-04-16 12:00:00+00'),
-  ('module_01HZXYZDE0440','adm-manager',     '1.0','enabled', 'https://github.com/42nice/adm-manager', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',      '1.0',0,'2025-04-16 12:00:00+00'),
-  ('module_01HZXYZDE0450','student-info',    '1.8','enabled', 'https://github.com/42nice/student-info', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',     '1.9',1,'2025-04-16 12:00:00+00'),
+  ('module_01HZXYZDE0440','adm-manager',     '1.0','enabled', 'https://github.com/42nice/adm-manager', '',      '1.0',0,'2025-04-16 12:00:00+00'),
+  ('module_01HZXYZDE0450','student-info',    '1.8','enabled', 'https://github.com/42nice/student-info', 'https://aozkdaopkqopsfk/anissa.jpg',     '1.9',1,'2025-04-16 12:00:00+00'),
   ('module_01HZXYZDE0460','role-manager',    '1.0','enabled', 'https://github.com/42nice/role-manager', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',     '1.0',0,'2025-04-20 12:00:00+00'),
   ('module_01HZXYZDE0461','role-editor',     '1.1','enabled', 'https://github.com/42nice/role-editor', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',      '1.1',2,'2025-04-20 12:00:00+00'),
   ('module_01HZXYZDE0462','support-tool',    '2.0','enabled', 'https://github.com/42nice/support-tool', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',     '2.0',1,'2025-04-20 12:00:00+00'),
