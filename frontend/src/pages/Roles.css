@@ -181,3 +181,27 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* .members-cell {
+  display: flex;
+  align-items: center;
+  justify-content: left;
+  gap: 4px;
+  min-height: 32px;
+} */
+.members-cell {
+  display: grid;
+  grid-template-columns: 32px 1fr; /* icône fixe + espace restant */
+  align-items: center;
+  height: 100%;
+}
+
+.members-cell .icon-small {
+  width: 24px;
+  height: 24px;
+  margin: auto; /* pour centrer l’icône dans sa colonne */
+}
+
+.members-count {
+  text-align: center;
+}

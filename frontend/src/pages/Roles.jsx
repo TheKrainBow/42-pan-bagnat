@@ -117,18 +117,14 @@ const Roles = () => {
       id: 'users',
       disableSort: true,
       cell: info => {
-        const count = info.getValue(); // this is row.users.length
-        const classNamee = (count == 0) ? "icon-small empty" : "icon-small"
+        const count = info.getValue();
+        const classNamee = count === 0 ? "icon-small empty" : "icon-small";
         return (
-          <>
-            <img
-              src="/icons/users.png"
-              alt="users"
-              className={classNamee}
-            />{' '}
-            {count}
-          </>
-        )
+          <div className="members-cell">
+            <img src="/icons/users.png" alt="users" className={classNamee} />
+            <span className="members-count">{count}</span>
+          </div>
+        );
       },
     },
     {
