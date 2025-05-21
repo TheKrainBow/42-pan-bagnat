@@ -1,13 +1,14 @@
 package modules
 
 import (
-	"backend/handlers/api"
+	api "backend/api/dto"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
 
-	"github.com/go-chi/chi"
+	"github.com/oklog/ulid/v2"
 )
 
 // @Summary      Post Module List
@@ -17,14 +18,15 @@ import (
 // @Produce      json
 // @Param        input body ModulePatchInput true "Module input"
 // @Success      200 {object} Module
-// @Router       /modules/{moduleID} [patch]
-func PatchModule(w http.ResponseWriter, r *http.Request) {
+// @Router       /modules [post]
+func PostModule(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	id := chi.URLParam(r, "moduleID")
-
+	t := time.Now()
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
+	id := ulid.MustNew(ulid.Timestamp(t), entropy)
 	dest := api.Module{
-		ID:            id,
+		ID:            id.String(),
 		Name:          "Test",
 		Version:       "1.2",
 		Status:        api.Enabled,

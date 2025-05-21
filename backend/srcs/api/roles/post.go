@@ -1,7 +1,7 @@
 package roles
 
 import (
-	"backend/handlers/api"
+	api "backend/api/dto"
 	"encoding/json"
 	"fmt"
 	"math/rand"
