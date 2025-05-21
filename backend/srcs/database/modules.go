@@ -155,7 +155,7 @@ func GetAllModules(
 	// 4) Assemble SQL
 	var sb strings.Builder
 	sb.WriteString(
-		`SELECT id, name, version, status, url, latest_version, late_commits, last_update
+		`SELECT id, name, version, status, url, icon_url, latest_version, late_commits, last_update
 FROM modules`,
 	)
 	if len(whereConds) > 0 {
@@ -187,6 +187,7 @@ FROM modules`,
 			&m.Version,
 			&m.Status,
 			&m.URL,
+			&m.IconeURL,
 			&m.LatestVersion,
 			&m.LateCommits,
 			&m.LastUpdate,
