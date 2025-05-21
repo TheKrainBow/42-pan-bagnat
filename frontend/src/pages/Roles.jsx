@@ -112,7 +112,7 @@ const Roles = () => {
   const columns = useMemo(() => [
     {
       header: 'Members',
-      accessorFn: row => row.users.length,
+      accessorFn: row => Array.isArray(row.users) ? row.users.length : 0,
       id: 'users',
       disableSort: true,
       cell: info => {
@@ -143,28 +143,32 @@ const Roles = () => {
       header: 'Modules',
       accessorKey: 'modules',
       disableSort: true,
-      cell: info => (
-        <div className="role-apps-cell">
-          {info.getValue().map(app => {
-            const fallback = '/icons/modules.png';
-            return (
+      cell: info => {
+        const modules = info.getValue();
+        const fallback = '/icons/modules.png';
+      
+        if (!Array.isArray(modules) || modules.length === 0) {
+          return <span style={{ opacity: 0.5}}>No modules linked</span>;
+        }
+      
+        return (
+          <div className="role-apps-cell">
+            {modules.map(app => (
               <img
                 key={app.id}
-                // src={app.icon_url}
-                src={fallback}
+                src={app.icon_url}
                 alt={app.name}
                 title={app.name}
                 className="role-apps-cell"
-                style={{ marginRight: 4}}
-                onError={e => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = fallback;
+                style={{ marginRight: 4 }}
+                onError={({ target }) => {
+                  target.src = fallback;
                 }}
               />
-            );
-          })}
-        </div>
-      ),
+            ))}
+          </div>
+        );
+      }
     },
   ], []);
 

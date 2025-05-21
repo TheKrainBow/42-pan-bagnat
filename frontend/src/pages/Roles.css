@@ -6,6 +6,7 @@
   background-color: #252525;
   color: #fff;
   text-align: center;
+  word-wrap: break-word;
 }
 
 .role-table-container {
@@ -21,18 +22,13 @@
 .role-table td {
   padding: 8px;
   vertical-align: middle;
-  word-wrap: break-word;
-}
-
-.role-table th:not(.role-small-column),
-.role-table td:not(.role-small-column) {
-  text-align: center;
 }
 
 /* last column takes remaining space */
 .role-table th:nth-child(1),
 .role-table td:nth-child(1) {
   width: 5%;
+  text-align: center;
 }
 
 /* last column takes remaining space */
@@ -44,11 +40,7 @@
 .role-table th:nth-child(3),
 .role-table td:nth-child(3) {
   width: 100%;
-}
-
-.role-small-column {
-  width: 60px;
-  text-align: center;
+  text-align: left;
 }
 
 .role-header {
