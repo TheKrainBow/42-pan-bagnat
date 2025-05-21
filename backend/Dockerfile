@@ -13,8 +13,6 @@ RUN go mod download
 # 4. Copy the rest of the source code
 COPY ./srcs .
 
-COPY ./srcs/database/test_data/test_data.sql .
-
 # 5. Build the Go app
 RUN go build -o main .
 
