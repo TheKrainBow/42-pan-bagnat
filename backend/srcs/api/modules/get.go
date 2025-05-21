@@ -1,7 +1,7 @@
 package modules
 
 import (
-	"backend/handlers/api"
+	api "backend/api/dto"
 	"encoding/json"
 	"fmt"
 	"log"

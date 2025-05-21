@@ -1,8 +1,8 @@
 package users
 
 import (
+	api "backend/api/dto"
 	"backend/core"
-	"backend/handlers/api"
 	"encoding/json"
 	"fmt"
 	"log"
