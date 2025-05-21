@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export function AppIcone({ app, fallback }) {
+export function AppIcon({ app, fallback }) {
     const [status, setStatus] = useState('loading'); // 'loading', 'loaded', 'error'
     const [src, setSrc] = useState(fallback);
   
@@ -8,7 +8,7 @@ export function AppIcone({ app, fallback }) {
       const image = new Image();
   
       image.onload = () => {
-        setSrc(app.icone_url);
+        setSrc(app.icon_url);
         setStatus('loaded');
       };
   
@@ -17,12 +17,12 @@ export function AppIcone({ app, fallback }) {
         setStatus('error');
       };
   
-      if (app.icone_url && app.icone_url.trim() !== '') {
-        image.src = app.icone_url;
+      if (app.icon_url && app.icon_url.trim() !== '') {
+        image.src = app.icon_url;
       } else {
         setStatus('error');
       }
-    }, [app.icone_url, fallback]);
+    }, [app.icon_url, fallback]);
   
     return (
         <div

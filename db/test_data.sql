@@ -37,7 +37,7 @@ VALUES
   ('user_08709f24e1654487', 'ava', '792077', false, 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg', '2025-01-05 12:19:00', true),
   ('user_17f38dcc3c0b4a4a', 'ethan', '586788', true, 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg', '2025-04-09 20:35:00', false);
 
-INSERT INTO modules (id, name, version, status, url, icone_url, latest_version, late_commits, last_update)
+INSERT INTO modules (id, name, version, status, url, icon_url, latest_version, late_commits, last_update)
 VALUES
   ('module_01HZXYZDE0420','captain-hook',    '1.2','enabled', 'https://github.com/42nice/captain-hook', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',    '1.7',5,'2025-04-16 12:00:00+00'),
   ('module_01HZXYZDE0430','adm-stud',        '1.5','enabled', 'https://github.com/42nice/adm-stud', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',         '1.5',0,'2025-04-16 12:00:00+00'),
