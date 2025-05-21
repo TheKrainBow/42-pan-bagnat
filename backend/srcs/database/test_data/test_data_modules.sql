@@ -19,7 +19,7 @@ VALUES
   ('role_01HZXYZDE0462','Manager',     '0xCCCCCC');
 
 -- MODULES: initial 4
-INSERT INTO modules (id, name, version, status, url, icon_url, latest_version, late_commits, last_update)
+INSERT INTO modules (id, name, version, status, url, icone_url, latest_version, late_commits, last_update)
 VALUES
   ('module_01HZXYZDE0420','captain-hook',    '1.2','enabled', 'https://github.com/42nice/captain-hook', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',    '1.7',5,'2025-04-16 12:00:00+00'),
   ('module_01HZXYZDE0430','adm-stud',        '1.5','enabled', 'https://github.com/42nice/adm-stud', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',         '1.5',0,'2025-04-16 12:00:00+00'),

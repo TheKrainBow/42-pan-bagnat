@@ -156,7 +156,7 @@ const Roles = () => {
             {modules.map(app => (
               <img
                 key={app.id}
-                src={app.icon_url}
+                src={app.icone_url}
                 alt={app.name}
                 title={app.name}
                 className="role-apps-cell"
