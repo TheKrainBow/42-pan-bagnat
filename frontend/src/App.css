@@ -145,3 +145,15 @@ html, body {
 .sidebar-item.active img {
   transform: scale(1.1);
 }
+
+.sidebar-header:hover .sidebar-logo {
+  transform: scale(1.2);
+  transition: transform 0.1s ease;
+}
+
+.sidebar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: transform 0.1s ease;
+}
