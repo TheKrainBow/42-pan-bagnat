@@ -76,7 +76,7 @@ func GetRoles(pagination RolePagination) ([]Role, string, error) {
 		return nil, "", fmt.Errorf("couldn't get roles in db: %w", err)
 	}
 
-	hasMore := len(roles) > pagination.Limit
+	hasMore := len(roles) > pagination.Limit && pagination.Limit > 0
 	if hasMore {
 		roles = roles[:pagination.Limit]
 	}
@@ -86,7 +86,7 @@ func GetRoles(pagination RolePagination) ([]Role, string, error) {
 		users, err := database.GetRoleUsers(apiRole.ID)
 		if err != nil {
 			fmt.Printf("couldn't get roles for user %s: %s\n", apiRole.ID, err.Error())
-		} else {
+		} else if len(users) > 0 {
 			apiRole.Users = DatabaseUsersToUsers(users)
 		}
 		modules, err := database.GetRoleModules(apiRole.ID)
@@ -103,6 +103,7 @@ func GetRoles(pagination RolePagination) ([]Role, string, error) {
 	}
 
 	pagination.LastRole = &roles[len(roles)-1]
+
 	token, err := EncodeRolePaginationToken(pagination)
 	if err != nil {
 		return dest, "", fmt.Errorf("couldn't generate next token: %w", err)
