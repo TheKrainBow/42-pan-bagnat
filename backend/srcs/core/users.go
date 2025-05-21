@@ -75,14 +75,19 @@ func DecodeUserPaginationToken(encoded string) (UserPagination, error) {
 
 func GetUsers(pagination UserPagination) ([]User, string, error) {
 	var dest []User
-	realLimit := pagination.Limit + 1
+	var realLimit int
+	if pagination.Limit > 0 {
+		realLimit = pagination.Limit + 1
+	} else {
+		realLimit = 0
+	}
 
 	users, err := database.GetAllUsers(&pagination.OrderBy, pagination.Filter, pagination.LastUser, realLimit)
 	if err != nil {
 		return nil, "", fmt.Errorf("couldn't get users in db: %w", err)
 	}
 
-	hasMore := len(users) > pagination.Limit
+	hasMore := len(users) > pagination.Limit && pagination.Limit > 0
 	if hasMore {
 		users = users[:pagination.Limit]
 	}
@@ -103,6 +108,7 @@ func GetUsers(pagination UserPagination) ([]User, string, error) {
 	}
 
 	pagination.LastUser = &users[len(users)-1]
+
 	token, err := EncodeUserPaginationToken(pagination)
 	if err != nil {
 		return dest, "", fmt.Errorf("couldn't generate next token: %w", err)
