@@ -21,6 +21,7 @@ type Module struct {
 	Version       string    `json:"version" example:"1.2"`
 	Status        string    `json:"status" example:"enabled"`
 	URL           string    `json:"url" example:"https://github.com/some-user/some-repo"`
+	IconeURL      string    `json:"iconUrl" example:"https://someURL/image.png"`
 	LatestVersion string    `json:"lastestVersion" example:"1.7"`
 	LateCommits   int       `json:"lateCommits" example:"2"`
 	LastUpdate    time.Time `json:"lastUpdate" example:"2025-02-18T15:00:00Z"`
