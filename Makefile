@@ -58,8 +58,11 @@ db-test: db-clear-data																	## Database | Set database datas with tes
 #########################################################################################
 #                                       DOCKER                                          #
 #########################################################################################
-.PHONY: up down build build-back build-front prune fprune
-up:																						## Docker | Up latest built images. (Doesn't rebuild using your local files)
+.PHONY: up up-dev down build build-back build-front prune fprune
+up:																						## Docker | Up latest built images for all containers. (Doesn't rebuild using your local files)
+	$(DOCKER_COMPOSE) --profile dev up -d
+
+up-dev:																					## Docker | Up latest built images for all containers except front/back. (Doesn't rebuild using your local files)
 	$(DOCKER_COMPOSE) up -d
 
 down:																					## Docker | Down docker images. (Doesn't delete images)
@@ -75,11 +78,11 @@ build: 																					## Docker | Build all images and replace currently r
 
 build-back: 																			## Docker | Build backend image and replace currently running backend image
 	$(DOCKER_COMPOSE) build backend
-	$(DOCKER_COMPOSE) up -d
+	$(DOCKER_COMPOSE) --profile backend up -d
 
 build-front: 																			## Docker | Build frontend image and replace currently running frontend image
 	$(DOCKER_COMPOSE) build frontend
-	$(DOCKER_COMPOSE) up -d
+	$(DOCKER_COMPOSE) --profile frontend up -d
 
 fprune: prune																			## Docker | Stop all containers, volumes, and networks
 	$(DOCKER_COMPOSE) down --volumes --remove-orphans
