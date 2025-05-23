@@ -8,7 +8,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -93,16 +92,13 @@ func GetModule(w http.ResponseWriter, r *http.Request) {
 	// }
 	// log.Printf("Backend id: %+v", chi.RouteContext(r.Context()).URLParams)
 
-	dest := api.Module{
-		ID:            id,
-		Name:          "Test",
-		Version:       "1.2",
-		Status:        api.Enabled,
-		URL:           "https://github.com/some-user/some-repo",
-		LatestVersion: "1.7",
-		LastUpdate:    time.Date(2025, 02, 18, 15, 0, 0, 0, time.UTC),
+	module, err := core.GetModule(id)
+	if err != nil {
+		http.Error(w, "Failed fetching module info", http.StatusInternalServerError)
+		return
 	}
 
+	dest := api.ModuleToAPIModule(module)
 	// Marshal the dest struct into JSON
 	destJSON, err := json.Marshal(dest)
 	if err != nil {

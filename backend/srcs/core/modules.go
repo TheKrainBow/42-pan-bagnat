@@ -113,3 +113,19 @@ func GetModules(pagination ModulePagination) ([]Module, string, error) {
 	}
 	return dest, token, nil
 }
+
+func GetModule(moduleID string) (Module, error) {
+	var dest Module
+
+	module, err := database.GetModule(moduleID)
+	if err != nil || module == nil {
+		return Module{}, fmt.Errorf("couldn't get module in db: %w", err)
+	}
+	dest = DatabaseModuleToModule(*module)
+	roles, err := database.GetModuleRoles(moduleID)
+	if err != nil {
+		return dest, fmt.Errorf("couldn't get module's roles in db: %w", err)
+	}
+	dest.Roles = DatabaseRolesToRoles(roles)
+	return dest, nil
+}
