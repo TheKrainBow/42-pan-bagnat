@@ -144,15 +144,15 @@ const Roles = () => {
         const modules = info.getValue();
         const fallback = '/icons/modules.png';
       
-        if (!Array.isArray(modules) || modules.length === 0) {
-          return <span style={{ opacity: 0.5}}>No modules linked</span>;
-        }
-      
         return (
           <div className="role-apps-cell">
-            {modules.map(app => (
-              <AppIcon key={app.id} app={app} fallback={fallback} />
-            ))}
+            {!Array.isArray(modules) || modules.length === 0 ? (
+              <span style={{ opacity: 0.5 }}>No modules linked</span>
+            ) : (
+              modules.map(app => (
+                <AppIcon key={app.id} app={app} fallback={fallback} />
+              ))
+            )}
           </div>
         );
       }
