@@ -7,11 +7,12 @@ import (
 // Define the model for the API Role response
 // @Description API Role model
 type Role struct {
-	ID      string   `json:"id" example:"role_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
-	Name    string   `json:"name" example:"IT"`
-	Color   string   `json:"color" example:"0xFF00FF"`
-	Users   []User   `json:"users,omitempty"`
-	Modules []Module `json:"modules,omitempty"`
+	ID         string   `json:"id" example:"role_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	Name       string   `json:"name" example:"IT"`
+	Color      string   `json:"color" example:"0xFF00FF"`
+	UsersCount int      `json:"usersCount" example:"42"`
+	Users      []User   `json:"users,omitempty"`
+	Modules    []Module `json:"modules,omitempty"`
 }
 
 // Define the model for the API User Object

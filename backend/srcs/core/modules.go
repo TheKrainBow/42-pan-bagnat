@@ -83,7 +83,7 @@ func GetModules(pagination ModulePagination) ([]Module, string, error) {
 
 	modules, err := database.GetAllModules(&pagination.OrderBy, pagination.Filter, pagination.LastModule, realLimit)
 	if err != nil {
-		return nil, "", fmt.Errorf("couldn't get roles in db: %w", err)
+		return nil, "", fmt.Errorf("couldn't get modules in db: %w", err)
 	}
 
 	hasMore := len(modules) > pagination.Limit
@@ -91,7 +91,16 @@ func GetModules(pagination ModulePagination) ([]Module, string, error) {
 		modules = modules[:pagination.Limit]
 	}
 
-	dest = DatabaseModulesToModules(modules)
+	for _, module := range modules {
+		apiModule := DatabaseModuleToModule(module)
+		roles, err := database.GetModuleRoles(apiModule.ID)
+		if err != nil {
+			fmt.Printf("couldn't get modules for user %s: %s\n", apiModule.ID, err.Error())
+		} else if len(roles) > 0 {
+			apiModule.Roles = DatabaseRolesToRoles(roles)
+		}
+		dest = append(dest, apiModule)
+	}
 
 	if !hasMore {
 		return dest, "", nil
