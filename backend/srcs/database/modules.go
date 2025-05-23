@@ -23,37 +23,27 @@ type ModuleOrder struct {
 	Order OrderDirection
 }
 
-func GetRoleModules(roleID string) ([]Module, error) {
+func GetModuleRoles(moduleID string) ([]Role, error) {
 	rows, err := mainDB.Query(`
-		SELECT mod.id, mod.name, mod.version, mod.status, mod.url, mod.icon_url, mod.latest_version, mod.late_commits, mod.last_update
-		FROM modules mod
-		JOIN module_roles ur ON ur.module_id = mod.id
-		WHERE ur.role_id = $1
-	`, roleID)
+		SELECT r.id, r.name, r.color
+		FROM roles r
+		JOIN module_roles ur ON ur.role_id = r.id
+		WHERE ur.module_id = $1
+	`, moduleID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 
-	var modules []Module
+	var roles []Role
 	for rows.Next() {
-		var module Module
-		if err := rows.Scan(
-			&module.ID,
-			&module.Name,
-			&module.Version,
-			&module.Status,
-			&module.URL,
-			&module.IconURL,
-			&module.LatestVersion,
-			&module.LateCommits,
-			&module.LastUpdate,
-		); err != nil {
+		var role Role
+		if err := rows.Scan(&role.ID, &role.Name, &role.Color); err != nil {
 			return nil, err
 		}
-		modules = append(modules, module)
+		roles = append(roles, role)
 	}
-	return modules, nil
+	return roles, nil
 }
 
 func GetAllModules(

@@ -19,29 +19,6 @@ type RoleOrder struct {
 	Order OrderDirection
 }
 
-func GetUserRoles(userID string) ([]Role, error) {
-	rows, err := mainDB.Query(`
-		SELECT r.id, r.name, r.color
-		FROM roles r
-		JOIN user_roles ur ON ur.role_id = r.id
-		WHERE ur.user_id = $1
-	`, userID)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var roles []Role
-	for rows.Next() {
-		var role Role
-		if err := rows.Scan(&role.ID, &role.Name, &role.Color); err != nil {
-			return nil, err
-		}
-		roles = append(roles, role)
-	}
-	return roles, nil
-}
-
 func AddRole(role Role) error {
 	if role.ID == "" {
 		role.ID = utils.GenerateULID(utils.Role)
@@ -228,4 +205,88 @@ FROM roles`,
 		out = append(out, r)
 	}
 	return out, nil
+}
+
+func GetRoleUsers(roleID string) ([]User, error) {
+	rows, err := mainDB.Query(`
+		SELECT u.id, u.ft_login, u.ft_id, u.ft_is_staff, u.photo_url, u.last_seen, u.is_staff
+		FROM users u
+		JOIN user_roles ur ON ur.user_id = u.id
+		WHERE ur.role_id = $1
+	`, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []User
+	for rows.Next() {
+		var user User
+		if err := rows.Scan(
+			&user.ID,
+			&user.FtLogin,
+			&user.FtID,
+			&user.FtIsStaff,
+			&user.PhotoURL,
+			&user.LastSeen,
+			&user.IsStaff,
+		); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+	return users, nil
+}
+
+func GetRoleUserCount(roleID string) (int, error) {
+	rows, err := mainDB.Query(`
+		SELECT COUNT(*) 
+		FROM user_roles 
+		WHERE role_id = $1;
+	`, roleID)
+	if err != nil {
+		return 0, err
+	}
+	defer rows.Close()
+
+	var usersCount int
+	if rows.Next() {
+		if err := rows.Scan(&usersCount); err != nil {
+			return 0, err
+		}
+	}
+	return usersCount, nil
+}
+
+func GetRoleModules(roleID string) ([]Module, error) {
+	rows, err := mainDB.Query(`
+		SELECT mod.id, mod.name, mod.version, mod.status, mod.url, mod.icon_url, mod.latest_version, mod.late_commits, mod.last_update
+		FROM modules mod
+		JOIN module_roles ur ON ur.module_id = mod.id
+		WHERE ur.role_id = $1
+	`, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var modules []Module
+	for rows.Next() {
+		var module Module
+		if err := rows.Scan(
+			&module.ID,
+			&module.Name,
+			&module.Version,
+			&module.Status,
+			&module.URL,
+			&module.IconURL,
+			&module.LatestVersion,
+			&module.LateCommits,
+			&module.LastUpdate,
+		); err != nil {
+			return nil, err
+		}
+		modules = append(modules, module)
+	}
+	return modules, nil
 }
