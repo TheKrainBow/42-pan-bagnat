@@ -15,15 +15,15 @@ function Sidebar({ currentPage }) {
         <img src="/icons/panbagnat.png" alt="Logo" className="sidebar-logo" />
         <span className="sidebar-title">Pan Bagnat</span>
       </div>
-      <div className={`sidebar-item ${currentPage === 'modules' ? 'active' : 'inactive'}`} onClick={() => navigate('/modules')}>
-        <img src="/icons/modules.png" alt="Modules" className="sidebar-icon" />
+      <div className={`sidebar-item ${currentPage.startsWith('modules') ? 'active' : 'inactive'}`} onClick={() => navigate('/modules')}>
+        <img src="/icons/modules.png" alt="Roles" className="sidebar-icon" />
         Modules
       </div>
-      <div className={`sidebar-item ${currentPage === 'roles' ? 'active' : 'inactive'}`} onClick={() => navigate('/roles')}>
+      <div className={`sidebar-item ${currentPage.startsWith('roles') ? 'active' : 'inactive'}`} onClick={() => navigate('/roles')}>
         <img src="/icons/roles.png" alt="Roles" className="sidebar-icon" />
         Roles
       </div>
-      <div className={`sidebar-item ${currentPage === 'users' ? 'active' : 'inactive'}`} onClick={() => navigate('/users')}>
+      <div className={`sidebar-item ${currentPage.startsWith('users') ? 'active' : 'inactive'}`} onClick={() => navigate('/users')}>
         <img src="/icons/users.png" alt="Users" className="sidebar-icon" />
         Users
       </div>
@@ -33,8 +33,9 @@ function Sidebar({ currentPage }) {
 
 function Main() {
   const location = useLocation();
-  const path = location.pathname.slice(1) || 'modules';
+  var path = location.pathname.slice(1) || 'modules';
 
+  path = path.startsWith('modules') ? 'modules' : path;
   return (
     <div className="app-container">
       <Sidebar currentPage={path} />
