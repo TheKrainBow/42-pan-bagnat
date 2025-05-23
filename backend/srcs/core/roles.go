@@ -88,6 +88,7 @@ func GetRoles(pagination RolePagination) ([]Role, string, error) {
 			fmt.Printf("couldn't get roles for user %s: %s\n", apiRole.ID, err.Error())
 		} else if len(users) > 0 {
 			apiRole.Users = DatabaseUsersToUsers(users)
+			apiRole.UsersCount = len(users)
 		}
 		modules, err := database.GetRoleModules(apiRole.ID)
 		if err != nil {

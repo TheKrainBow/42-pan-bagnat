@@ -6,11 +6,12 @@ import (
 
 func RoleToAPIRole(role core.Role) Role {
 	return Role{
-		ID:      role.ID,
-		Name:    role.Name,
-		Color:   role.Color,
-		Users:   UsersToAPIUsers(role.Users),
-		Modules: ModulesToAPIModules(role.Modules),
+		ID:         role.ID,
+		Name:       role.Name,
+		Color:      role.Color,
+		UsersCount: role.UsersCount,
+		Users:      UsersToAPIUsers(role.Users),
+		Modules:    ModulesToAPIModules(role.Modules),
 	}
 }
 
