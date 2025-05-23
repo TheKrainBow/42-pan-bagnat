@@ -92,6 +92,14 @@
   align-items: center;
 }
 
+/* For text fallback */
+.role-apps-cell span {
+  min-height: 48px;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+}
+
 .sort-icon.up::after {
   content: '▲';
 }
