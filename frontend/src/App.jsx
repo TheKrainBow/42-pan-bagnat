@@ -2,6 +2,7 @@ import React from 'react';
 import './App.css';
 import User from './pages/User';
 import Roles from './pages/Roles';
+import Modules from './pages/Modules';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
 function Sidebar({ currentPage }) {
@@ -38,7 +39,7 @@ function Main() {
       <Sidebar currentPage={path} />
       <main className="main-content">
         <Routes>
-          <Route path="/modules" element={<h2>Modules (coming soon)</h2>} />
+          <Route path="/modules" element={<Modules onSort="name" />} />
           <Route path="/roles" element={<Roles onSort="name" />} />
           <Route path="/users" element={<User onSort="-last_seen" />} />
           <Route path="/" element={<Navigate to="/modules" replace />} />
