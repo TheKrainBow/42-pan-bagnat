@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Modules.css';
 import { AppIcon } from '../components/AppIcon';
+import { Link } from 'react-router-dom';
 
 const Modules = () => {
   const [modules, setModules] = useState([]);
@@ -93,7 +94,7 @@ const Modules = () => {
 
       <div className="modules-grid">
         {modules.map((mod) => (
-          <div key={mod.id} className={`module-card ${mod.status === 'enabled' ? 'active' : 'disabled'}`}>
+          <Link key={mod.id} to={`/modules/${mod.id}`} className={`module-card ${mod.status === 'enabled' ? 'active' : 'disabled'}`}>
             <div className="module-icon">
               <AppIcon app={{ icon_url: mod.icon_url, name: mod.name }} fallback="/icons/modules.png" />
             </div>
@@ -105,7 +106,7 @@ const Modules = () => {
               <p className="module-description">v{mod.version} • {mod.late_commits} late commits</p>
               <p className="module-updated">Last update: {new Date(mod.last_update).toLocaleDateString()}</p>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
       {isLoading && <div className="loading">Loading...</div>}
