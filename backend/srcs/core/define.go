@@ -22,11 +22,12 @@ type User struct {
 }
 
 type Role struct {
-	ID      string   `json:"id"`
-	Name    string   `json:"name"`
-	Color   string   `json:"color"`
-	Users   []User   `json:"users"`
-	Modules []Module `json:"modules"`
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	Color      string   `json:"color"`
+	Users      []User   `json:"users"`
+	UsersCount int      `json:"usersCount"`
+	Modules    []Module `json:"modules"`
 }
 
 type Module struct {
