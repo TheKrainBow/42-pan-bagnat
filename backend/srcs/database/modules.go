@@ -23,6 +23,30 @@ type ModuleOrder struct {
 	Order OrderDirection
 }
 
+func GetModule(moduleID string) (*Module, error) {
+	row := mainDB.QueryRow(`
+		SELECT id, name, version, status, url, icon_url, latest_version, late_commits, last_update
+		FROM modules
+		WHERE id = $1
+	`, moduleID)
+
+	var module Module
+	if err := row.Scan(
+		&module.ID,
+		&module.Name,
+		&module.Version,
+		&module.Status,
+		&module.URL,
+		&module.IconURL,
+		&module.LatestVersion,
+		&module.LateCommits,
+		&module.LastUpdate,
+	); err != nil {
+		return nil, err
+	}
+	return &module, nil
+}
+
 func GetModuleRoles(moduleID string) ([]Role, error) {
 	rows, err := mainDB.Query(`
 		SELECT r.id, r.name, r.color
