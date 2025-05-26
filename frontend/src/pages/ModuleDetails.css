@@ -24,6 +24,7 @@ line-height: 1.6;
 .back-button:hover {
     background-color: #4b5563;
 }
+
 .module-detail-header {
     display: flex;
     align-items: center;
