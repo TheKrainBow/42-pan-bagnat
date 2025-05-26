@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import './AppIcon.css';
 
 export function AppIcon({ app, fallback }) {
     const [status, setStatus] = useState('loading'); // 'loading', 'loaded', 'error'
