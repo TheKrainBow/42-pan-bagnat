@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Modules.css';
 import { AppIcon } from '../components/AppIcon';
+import { Header } from '../components/Header';
 import { Link } from 'react-router-dom';
 
 const Modules = () => {
@@ -77,39 +78,32 @@ const Modules = () => {
   }, [debouncedFilter, fetchModules]);
 
   return (
-    <div className="modules-container" ref={scrollContainerRef}>
-      <div className="role-header-bar">
-        <h2>Role List</h2>
-        <div className="role-search-container">
-          <img src="/icons/search.png" alt="Search" className="search-icon-inside" />
-          <input
-            className="role-search with-icon"
-            type="text"
-            placeholder="Search..."
-            value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <div className="modules-grid">
-        {modules.map((mod) => (
-          <Link key={mod.id} to={`/modules/${mod.id}`} className={`module-card ${mod.status === 'enabled' ? 'active' : 'disabled'}`}>
-            <div className="module-icon">
-              <AppIcon app={{ icon_url: mod.icon_url, name: mod.name }} fallback="/icons/modules.png" />
-            </div>
-            <div className="module-content">
-              <div className="module-title-row">
-                <strong>{mod.name}</strong>
-                <span className="module-status">{mod.status.toUpperCase()}</span>
+    <div className="p-4">
+      <Header
+        title="Modules"
+        value={filterQuery}
+        onChange={(e) => setFilterQuery(e.target.value)}
+      />
+      <div className="modules-container" ref={scrollContainerRef}>
+        <div className="modules-grid">
+          {modules.map((mod) => (
+            <Link key={mod.id} to={`/modules/${mod.id}`} className={`module-card ${mod.status === 'enabled' ? 'active' : 'disabled'}`}>
+              <div className="module-icon">
+                <AppIcon app={{ icon_url: mod.icon_url, name: mod.name }} fallback="/icons/modules.png" />
               </div>
-              <p className="module-description">v{mod.version} • {mod.late_commits} late commits</p>
-              <p className="module-updated">Last update: {new Date(mod.last_update).toLocaleDateString()}</p>
-            </div>
-          </Link>
-        ))}
+              <div className="module-content">
+                <div className="module-title-row">
+                  <strong>{mod.name}</strong>
+                  <span className="module-status">{mod.status.toUpperCase()}</span>
+                </div>
+                <p className="module-description">v{mod.version} • {mod.late_commits} late commits</p>
+                <p className="module-updated">Last update: {new Date(mod.last_update).toLocaleDateString()}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+        {isLoading && <div className="loading">Loading...</div>}
       </div>
-      {isLoading && <div className="loading">Loading...</div>}
     </div>
   );
 };
