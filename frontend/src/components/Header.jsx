@@ -1,5 +1,5 @@
 import React from 'react';
-import './Header.css'; // Optional: move relevant styles here or keep using global CSS
+import './Header.css';
 
 export const Header = ({ title, value, onChange }) => {
   return (
