@@ -8,6 +8,7 @@ import {
 import './User.css';
 import { Header } from '../components/Header';
 import { RoleBadge } from '../components/RoleBadge';
+import { ArrayHeader } from '../components/ArrayHeader';
 
 const User = () => {
   const [filterQuery, setFilterQuery] = useState('');
@@ -156,34 +157,11 @@ const User = () => {
 
       <div className="user-table-container" ref={scrollContainerRef}>
         <table className="user-table">
-          <thead className="user-array-header">
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => {
-                  const isSortable = !header.column.columnDef.disableSort;
-                  const sortDir = getSortDirection(header.id);
-
-                  return (
-                    <th
-                      key={header.id}
-                      onClick={isSortable ? () => handleSort(header.id) : undefined}
-                      className={`user-array-cell ${isSortable ? 'sortable' : 'disabled-sort'} ${(header.column.columnDef.header === 'Picture') ? 'user-small-column' : ''}`}
-                    >
-                      <div className={`user-array-header-content ${isSortable ? 'sortable' : 'disabled-sort'}`}>
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {isSortable && (
-                          <span className="sort-arrows">
-                            <span style={{ opacity: sortDir === 'asc' ? 1 : 0.5 }}>▲</span>
-                            <span style={{ opacity: sortDir === 'desc' ? 1 : 0.5 }}>▼</span>
-                          </span>
-                        )}
-                      </div>
-                    </th>
-                  );
-                })}
-              </tr>
-            ))}
-          </thead>
+          <ArrayHeader
+            table={table}
+            handleSort={handleSort}
+            getSortDirection={getSortDirection}
+          />
           <tbody>
             {table.getRowModel().rows.map(row => (
               <tr key={row.id} className="user-row">
