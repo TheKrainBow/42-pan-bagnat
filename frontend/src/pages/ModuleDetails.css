@@ -1,7 +1,9 @@
+/* ModuleDetails.css */
+
 .module-detail-container {
   padding: 24px;
   color: #f0f0f0;
-  background-color: #2a2a2a;
+  background-color: #1e1e1e;
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -9,6 +11,7 @@
   font-size: 15px;
   line-height: 1.6;
 }
+
 .back-button {
   background-color: #374151;
   color: #f0f0f0;
@@ -24,34 +27,62 @@
   background-color: #4b5563;
 }
 
-.module-detail-header {
+.module-header {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.module-version-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background-color: #2a2a2a;
+  padding: 16px;
+  border-radius: 8px;
+  gap: 24px;
   flex-wrap: wrap;
 }
 
-.module-header-text h2 {
-  margin: 0;
-}
-
-.module-header-text {
+.version-info {
   display: flex;
   flex-direction: column;
-  gap: 0px;
+  gap: 6px;
+  min-width: 250px;
+}
+
+.version-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.update-btn, .uninstall-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.update-btn {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.uninstall-btn {
+  background-color: #ef4444;
+  color: white;
 }
 
 .status-badge {
   font-size: 12px;
   padding: 4px 8px;
-  border-radius: 5px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 4px;
   text-transform: uppercase;
   font-weight: bold;
-  width: fit-content;
-  line-height: 1;
+  margin-left: 8px;
 }
 
 .status-badge.enabled {
@@ -64,17 +95,59 @@
   color: white;
 }
 
-.module-info-section {
-  display: grid;
-  gap: 16px;
-  font-size: 15px;
-  line-height: 1;
+.paused-tag {
+  background-color: #facc15;
+  color: #1e1e1e;
+  font-size: 12px;
+  padding: 2px 6px;
+  margin-left: 10px;
+  border-radius: 4px;
+  font-weight: bold;
 }
 
-.module-info-section div {
+.module-running-section {
+  background-color: #2a2a2a;
+  padding: 16px;
+  border-radius: 8px;
   display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tabs {
+  display: flex;
+  gap: 12px;
+}
+
+.tab {
+  padding: 6px 12px;
+  border-radius: 6px;
+  background-color: #374151;
+  cursor: pointer;
+  color: #f0f0f0;
+  transition: background-color 0.2s;
+}
+
+.tab.active {
+  background-color: #3b82f6;
+  font-weight: bold;
+}
+
+.tab-content {
+  background-color: #1f1f1f;
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.log-box {
+  background-color: #111;
+  border: 1px solid #333;
+  padding: 12px;
+  border-radius: 6px;
+  font-family: monospace;
+  color: #ccc;
+  max-height: 300px;
+  overflow-y: auto;
 }
 
 .module-link {
@@ -83,13 +156,59 @@
   word-break: break-word;
 }
 
-.module-roles-section {
+
+.role-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
   margin-top: 8px;
-  font-size: 15px;
 }
 
-.loading, .error {
-  padding: 24px;
-  font-size: 16px;
-  text-align: center;
+.switch-label {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: 16px;
+}
+
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #888;
+  transition: 0.4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #22c55e;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
 }
