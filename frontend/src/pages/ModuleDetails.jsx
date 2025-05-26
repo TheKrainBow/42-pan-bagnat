@@ -50,8 +50,7 @@ const ModuleDetails = () => {
       </div>
 
       <div className="module-roles-section">
-        <strong>🎭 Roles:</strong>
-        <div className="role-badges">
+        <strong>🎭 Roles: </strong>
           {Array.isArray(module.roles) && module.roles.length > 0 ? (
             module.roles.map(role => (
               <RoleBadge key={role.id} hexColor={role.color}>{role.name}</RoleBadge>
@@ -59,7 +58,6 @@ const ModuleDetails = () => {
           ) : (
             <span style={{ opacity: 0.5 }}>No roles assigned</span>
           )}
-        </div>
       </div>
     </div>
   );
