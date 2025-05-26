@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getReadableStyles } from '../utils/ColorUtils';
-import './AppIcon.css';
+import './RoleBadge.css';
 
 export function RoleBadge({ hexColor, children }) {
   const styles = getReadableStyles(hexColor);
