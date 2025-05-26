@@ -45,10 +45,13 @@
   font-size: 12px;
   padding: 4px 8px;
   border-radius: 5px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   text-transform: uppercase;
   font-weight: bold;
   width: fit-content;
+  line-height: 1;
 }
 
 .status-badge.enabled {
