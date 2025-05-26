@@ -24,19 +24,17 @@
   vertical-align: middle;
 }
 
-/* last column takes remaining space */
 .role-table th:nth-child(1),
 .role-table td:nth-child(1) {
   width: 5%;
   text-align: center;
 }
 
-/* last column takes remaining space */
 .role-table th:nth-child(2),
 .role-table td:nth-child(2) {
   width: 8%;
 }
-/* last column takes remaining space */
+
 .role-table th:nth-child(3),
 .role-table td:nth-child(3) {
   width: 100%;
@@ -68,12 +66,6 @@
   border-radius: 4px;
 }
 
-.sort-icon {
-  margin-left: 5px;
-  font-size: 0.75rem;
-  color: #e0e0e0;
-}
-
 .icon-small {
   width: 25px;
   vertical-align: middle;
@@ -100,14 +92,6 @@
   align-items: center;
 }
 
-.sort-icon.up::after {
-  content: '▲';
-}
-
-.sort-icon.down::after {
-  content: '▼';
-}
-
 .role-row {
   border-bottom: 1px solid #444;
 }
@@ -123,23 +107,9 @@
   width: 100%;
 }
 
-.sort-arrows {
-  display: flex;
-  flex-direction: row;
-  font-size: 0.75rem;
-  line-height: 0.8;
-}
-
-/* .members-cell {
-  display: flex;
-  align-items: center;
-  justify-content: left;
-  gap: 4px;
-  min-height: 32px;
-} */
 .members-cell {
   display: grid;
-  grid-template-columns: 32px 1fr; /* icône fixe + espace restant */
+  grid-template-columns: 32px 1fr;
   align-items: center;
   height: 100%;
 }

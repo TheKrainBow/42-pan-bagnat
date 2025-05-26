@@ -9,6 +9,7 @@ import './Roles.css';
 import { AppIcon } from '../components/AppIcon';
 import { Header } from '../components/Header';
 import { RoleBadge } from '../components/RoleBadge';
+import { ArrayHeader } from '../components/ArrayHeader';
 
 const Roles = () => {
   const [filterQuery, setFilterQuery] = useState('');
@@ -174,40 +175,17 @@ const Roles = () => {
 
       <div className="role-table-container" ref={scrollContainerRef}>
         <table className="role-table">
-          <thead className="role-array-header">
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => {
-                  const isSortable = !header.column.columnDef.disableSort;
-                  const sortDir = getSortDirection(header.id);
-
-                  return (
-                    <th
-                      key={header.id}
-                      onClick={isSortable ? () => handleSort(header.id) : undefined}
-                      className={`role-array-cell ${isSortable ? 'sortable' : 'disabled-sort'} ${(header.column.columnDef.header === 'Picture') ? 'role-small-column' : ''}`}
-                    >
-                      <div className={`role-array-header-content ${isSortable ? 'sortable' : 'disabled-sort'}`}>
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {isSortable && (
-                          <span className="sort-arrows">
-                            <span style={{ opacity: sortDir === 'asc' ? 1 : 0.5 }}>▲</span>
-                            <span style={{ opacity: sortDir === 'desc' ? 1 : 0.5 }}>▼</span>
-                          </span>
-                        )}
-                      </div>
-                    </th>
-                  );
-                })}
-              </tr>
-            ))}
-          </thead>
+          <ArrayHeader
+            table={table}
+            handleSort={handleSort}
+            getSortDirection={getSortDirection}
+          />
           <tbody>
             {table.getRowModel().rows.map(row => (
               <tr key={row.id} className="role-row">
                 {row.getVisibleCells().map(cell => {
                   return (
-                    <td key={cell.id} className={cell.column.columnDef.header === 'Picture' ? 'role-small-column' : ''}>
+                    <td key={cell.id}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
                   );

@@ -1,93 +1,92 @@
-/* ModuleDetails.css */
 .module-detail-container {
-padding: 24px;
-color: #f0f0f0;
-background-color: #2a2a2a;
-height: 100%;
-display: flex;
-flex-direction: column;
-gap: 24px;
-font-size: 15px;
-line-height: 1.6;
+  padding: 24px;
+  color: #f0f0f0;
+  background-color: #2a2a2a;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  font-size: 15px;
+  line-height: 1.6;
 }
 .back-button {
-    background-color: #374151;
-    color: #f0f0f0;
-    padding: 6px 12px;
-    border-radius: 6px;
-    text-decoration: none;
-    font-size: 14px;
-    width: fit-content;
-    transition: background-color 0.2s;
+  background-color: #374151;
+  color: #f0f0f0;
+  padding: 6px 12px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 14px;
+  width: fit-content;
+  transition: background-color 0.2s;
 }
 
 .back-button:hover {
-    background-color: #4b5563;
+  background-color: #4b5563;
 }
 
 .module-detail-header {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    flex-wrap: wrap;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
 .module-header-text h2 {
-    margin: 0;
+  margin: 0;
 }
 
 .module-header-text {
-    display: flex;
-    flex-direction: column;
-    gap: 0px;
+  display: flex;
+  flex-direction: column;
+  gap: 0px;
 }
 
 .status-badge {
-font-size: 12px;
-padding: 4px 8px;
-border-radius: 5px;
-display: inline-block;
-text-transform: uppercase;
-font-weight: bold;
-width: fit-content;
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 5px;
+  display: inline-block;
+  text-transform: uppercase;
+  font-weight: bold;
+  width: fit-content;
 }
 
 .status-badge.enabled {
-    background-color: #22c55e;
-    color: white;
+  background-color: #22c55e;
+  color: white;
 }
 
 .status-badge.disabled {
-background-color: #ef4444;
-color: white;
+  background-color: #ef4444;
+  color: white;
 }
 
 .module-info-section {
-display: grid;
-gap: 16px;
-font-size: 15px;
-line-height: 1;
+  display: grid;
+  gap: 16px;
+  font-size: 15px;
+  line-height: 1;
 }
 
 .module-info-section div {
-display: flex;
-align-items: center;
-gap: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .module-link {
-color: #60a5fa;
-text-decoration: underline;
-word-break: break-word;
+  color: #60a5fa;
+  text-decoration: underline;
+  word-break: break-word;
 }
 
 .module-roles-section {
-margin-top: 8px;
-font-size: 15px;
+  margin-top: 8px;
+  font-size: 15px;
 }
 
 .loading, .error {
-padding: 24px;
-font-size: 16px;
-text-align: center;
+  padding: 24px;
+  font-size: 16px;
+  text-align: center;
 }
