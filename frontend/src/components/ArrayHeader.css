@@ -1,0 +1,31 @@
+.array-header {
+  background-color: #333;
+  color: #fff;
+  font-weight: bold;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.array-header-cell {
+  position: relative;
+  border-right: 1px solid #252525;
+  cursor: pointer;
+}
+
+.array-header-cell.disabled-sort {
+  cursor: default;
+}
+
+.array-header-cell.sortable:hover {
+  outline: 2px solid #2563eb;
+  outline-offset: -2px;
+  border-radius: 4px;
+}
+
+.sort-arrows {
+  display: flex;
+  flex-direction: row;
+  font-size: 0.75rem;
+  line-height: 0.8;
+}
