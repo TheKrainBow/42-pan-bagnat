@@ -102,7 +102,11 @@ const Modules = () => {
             </Link>
           ))}
         </div>
-        {isLoading && <div className="loading">Loading...</div>}
+        {nextPage && (
+          <div className="load-more-wrapper">
+            <div className="loader" style={{ width: 24, height: 24 }} />
+          </div>
+        )}
       </div>
     </div>
   );
