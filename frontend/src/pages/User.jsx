@@ -7,6 +7,7 @@ import {
 } from '@tanstack/react-table';
 import './User.css';
 import { getReadableStyles } from '../utils/ColorUtils';
+import { Header } from '../components/Header';
 
 export function RoleBadge({ hexColor, children }) {
   const styles = getReadableStyles(hexColor);
@@ -156,23 +157,15 @@ const User = () => {
   });
   return (
     <div className="p-4">
-      <div className="user-header-bar">
-        <h2>User List</h2>
-        <div className="user-search-container">
-          <img src="/icons/search.png" alt="Search" className="search-icon-inside" />
-          <input
-            className="user-search with-icon"
-            type="text"
-            placeholder="Search..."
-            value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
-          />
-        </div>
-      </div>
+      <Header
+        title="Users"
+        value={filterQuery}
+        onChange={(e) => setFilterQuery(e.target.value)}
+      />
 
       <div className="user-table-container" ref={scrollContainerRef}>
         <table className="user-table">
-          <thead className="user-header">
+          <thead className="user-array-header">
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map(header => {
@@ -183,9 +176,9 @@ const User = () => {
                     <th
                       key={header.id}
                       onClick={isSortable ? () => handleSort(header.id) : undefined}
-                      className={`user-cell ${isSortable ? 'sortable' : 'disabled-sort'} ${(header.column.columnDef.header === 'Picture') ? 'user-small-column' : ''}`}
+                      className={`user-array-cell ${isSortable ? 'sortable' : 'disabled-sort'} ${(header.column.columnDef.header === 'Picture') ? 'user-small-column' : ''}`}
                     >
-                      <div className={`user-header-content ${isSortable ? 'sortable' : 'disabled-sort'}`}>
+                      <div className={`user-array-header-content ${isSortable ? 'sortable' : 'disabled-sort'}`}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {isSortable && (
                           <span className="sort-arrows">
