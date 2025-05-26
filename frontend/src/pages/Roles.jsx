@@ -196,13 +196,8 @@ const Roles = () => {
         </table>
         {nextPage && (
           <div className="load-more-wrapper">
-            <button className="load-more-button" onClick={() => fetchUsers(true, nextPage)}>
-              Load More
-            </button>
+            <div className="loader" style={{ width: 24, height: 24 }} />
           </div>
-        )}
-        {isLoading && (
-          <div className="loading-icon">Loading...</div>
         )}
       </div>
     </div>
