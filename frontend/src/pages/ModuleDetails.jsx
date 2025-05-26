@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './ModuleDetails.css';
 import { AppIcon } from '../components/AppIcon';
-import { RoleBadge } from './Roles';
+import { RoleBadge } from '../components/RoleBadge';
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();

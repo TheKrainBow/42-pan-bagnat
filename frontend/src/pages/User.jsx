@@ -6,17 +6,8 @@ import {
   flexRender,
 } from '@tanstack/react-table';
 import './User.css';
-import { getReadableStyles } from '../utils/ColorUtils';
 import { Header } from '../components/Header';
-
-export function RoleBadge({ hexColor, children }) {
-  const styles = getReadableStyles(hexColor);
-  return (
-    <span className="role-badge" style={styles}>
-      {children}
-    </span>
-  );
-}
+import { RoleBadge } from '../components/RoleBadge';
 
 const User = () => {
   const [filterQuery, setFilterQuery] = useState('');
