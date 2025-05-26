@@ -2,48 +2,11 @@
 .modules-container {
   padding: 16px;
   color: #f0f0f0;
-  background-color: #1e1e1e;
+  background-color: #2a2a2a;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
   height: 100%;
-}
-
-.modules-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.modules-search {
-  padding: 12px;
-  width: 100%;
-  max-width: 500px;
-  border-radius: 8px;
-  border: 1px solid #444;
-  background-color: #2a2a2a;
-  color: white;
-  margin-bottom: 20px;
-}
-
-.modules-search-container {
-  position: relative;
-  display: inline-block;
-}
-
-.search-icon-inside {
-  position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-100%);
-  width: 20px;
-  height: 20px;
-  pointer-events: none;
-}
-
-.modules-search.with-icon {
-  padding-left: 40px; /* space for the icon */
 }
 
 .import-button {
@@ -62,7 +25,7 @@
 }
 
 .module-card {
-  background-color: #2a2a2a;
+  background-color: #333;
   border-radius: 10px;
   padding: 16px;
   display: flex;

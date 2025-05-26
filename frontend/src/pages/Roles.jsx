@@ -8,6 +8,7 @@ import {
 import './Roles.css';
 import { getReadableStyles } from '../utils/ColorUtils';
 import { AppIcon } from '../components/AppIcon';
+import { Header } from '../components/Header';
 
 export function RoleBadge({ hexColor, children }) {
   const styles = getReadableStyles(hexColor);
@@ -174,23 +175,15 @@ const Roles = () => {
   });
   return (
     <div className="p-4">
-      <div className="role-header-bar">
-        <h2>Role List</h2>
-        <div className="role-search-container">
-          <img src="/icons/search.png" alt="Search" className="search-icon-inside" />
-          <input
-            className="role-search with-icon"
-            type="text"
-            placeholder="Search..."
-            value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
-          />
-        </div>
-      </div>
+      <Header
+        title="Roles"
+        value={filterQuery}
+        onChange={(e) => setFilterQuery(e.target.value)}
+      />
 
       <div className="role-table-container" ref={scrollContainerRef}>
         <table className="role-table">
-          <thead className="role-header">
+          <thead className="role-array-header">
             {table.getHeaderGroups().map(headerGroup => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map(header => {
@@ -201,9 +194,9 @@ const Roles = () => {
                     <th
                       key={header.id}
                       onClick={isSortable ? () => handleSort(header.id) : undefined}
-                      className={`role-cell ${isSortable ? 'sortable' : 'disabled-sort'} ${(header.column.columnDef.header === 'Picture') ? 'role-small-column' : ''}`}
+                      className={`role-array-cell ${isSortable ? 'sortable' : 'disabled-sort'} ${(header.column.columnDef.header === 'Picture') ? 'role-small-column' : ''}`}
                     >
-                      <div className={`role-header-content ${isSortable ? 'sortable' : 'disabled-sort'}`}>
+                      <div className={`role-array-header-content ${isSortable ? 'sortable' : 'disabled-sort'}`}>
                         {flexRender(header.column.columnDef.header, header.getContext())}
                         {isSortable && (
                           <span className="sort-arrows">
