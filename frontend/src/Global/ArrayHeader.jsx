@@ -2,7 +2,7 @@ import React from 'react';
 import { flexRender } from '@tanstack/react-table'; // adjust if you import it elsewhere
 import './ArrayHeader.css'
 
-export const ArrayHeader = ({ table, handleSort, getSortDirection }) => {
+const ArrayHeader = ({ table, handleSort, getSortDirection }) => {
   return (
     <thead className="array-header">
       {table.getHeaderGroups().map(headerGroup => (

@@ -1,9 +1,9 @@
 import React from 'react';
 import './App.css';
-import User from './pages/User';
-import Roles from './pages/Roles';
-import Modules from './pages/Modules';
-import ModuleDetails from './pages/ModuleDetails';
+import Users from './Pages/Users/Users';
+import Roles from './Pages/Roles/Roles';
+import Modules from './Pages/Modules/Modules';
+import ModuleDetails from './Pages/Modules/ModuleDetails';
 import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 
 function Sidebar({ currentPage }) {
@@ -44,7 +44,7 @@ function Main() {
           <Route path="/modules" element={<Modules onSort="name" />} />
           <Route path="/modules/:moduleId" element={<ModuleDetails />} />
           <Route path="/roles" element={<Roles onSort="name" />} />
-          <Route path="/users" element={<User onSort="-last_seen" />} />
+          <Route path="/users" element={<Users onSort="-last_seen" />} />
           <Route path="/" element={<Navigate to="/modules" replace />} />
         </Routes>
       </main>

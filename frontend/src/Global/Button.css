@@ -1,0 +1,101 @@
+/* BASE BUTTON STYLES */
+.custom-btn {
+  padding: 8px 16px;
+  font-size: 14px;
+  font-family: sans-serif;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  width: fit-content;
+  display: inline-block;
+  transition: background-color 0.1s ease;
+  color: white;
+}
+
+/* GRAY */
+.custom-btn.gray {
+  background-color: #6b7280;
+}
+.custom-btn.gray:hover {
+  background-color: #787e8b;
+}
+.custom-btn.gray:active {
+  background-color: #4b5563;
+}
+
+/* BLUE */
+.custom-btn.blue {
+  background-color: #3b82f6;
+}
+.custom-btn.blue:hover {
+  background-color: #5593f9;
+}
+.custom-btn.blue:active {
+  background-color: #2563eb;
+}
+
+/* RED */
+.custom-btn.red {
+  background-color: #ef4444;
+}
+.custom-btn.red:hover {
+  background-color: #f25555;
+}
+.custom-btn.red:active {
+  background-color: #dc2626;
+}
+
+/* GREEN */
+.custom-btn.green {
+  background-color: #22c55e;
+}
+.custom-btn.green:hover {
+  background-color: #38d976;
+}
+.custom-btn.green:active {
+  background-color: #16a34a;
+}
+
+/* YELLOW */
+.custom-btn.yellow {
+  background-color: #eab308;
+  color: black;
+}
+.custom-btn.yellow:hover {
+  background-color: #facc15;
+}
+.custom-btn.yellow:active {
+  background-color: #ca8a04;
+}
+
+/* PURPLE */
+.custom-btn.purple {
+  background-color: #8b5cf6;
+}
+.custom-btn.purple:hover {
+  background-color: #a078fa;
+}
+.custom-btn.purple:active {
+  background-color: #6d28d9;
+}
+
+/* BLACK */
+.custom-btn.black {
+  background-color: #111827;
+}
+.custom-btn.black:hover {
+  background-color: #1f2937;
+}
+.custom-btn.black:active {
+  background-color: #0f172a;
+}
+
+
+/* LINK */
+.custom-btn.link {
+  background-color: #374151;
+  text-decoration: none;
+}
+.custom-btn.link:hover {
+  background-color: #4b5563;
+}
