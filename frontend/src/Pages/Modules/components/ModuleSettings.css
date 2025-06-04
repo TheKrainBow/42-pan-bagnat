@@ -64,6 +64,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  margin-left: 35px;
 }
 
 .switch {
@@ -119,4 +120,10 @@ input:checked + .slider:before {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.module-settings-roles strong {
+  display: flex;
+  align-items: center; /* Vertically center the text */
+  height: 100%; /* Optional: forces full height for alignment */
 }
