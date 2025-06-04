@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "baseUrl": "src",
+    "paths": {
+      "Global/*": ["Global/*"],
+      "Pages/*": ["Pages/*"],
+      "Modules/*": ["Pages/Modules/*"]
+    }
+  },
+  "include": ["src"]
+}

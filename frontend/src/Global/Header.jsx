@@ -1,7 +1,7 @@
 import React from 'react';
 import './Header.css';
 
-export const Header = ({ title, value, onChange }) => {
+const Header = ({ title, value, onChange }) => {
   return (
     <div className="header-bar">
       <h2>{title}</h2>

@@ -5,12 +5,12 @@ import {
   getSortedRowModel,
   flexRender,
 } from '@tanstack/react-table';
-import './User.css';
-import { Header } from '../components/Header';
-import { RoleBadge } from '../components/RoleBadge';
-import { ArrayHeader } from '../components/ArrayHeader';
+import './Users.css';
+import Header from 'Global/Header';
+import RoleBadge from 'Global/RoleBadge';
+import ArrayHeader from 'Global/ArrayHeader';
 
-const User = () => {
+const Users = () => {
   const [filterQuery, setFilterQuery] = useState('');
   const [debouncedFilter, setDebouncedFilter] = useState('');
   const [users, setUsers] = useState([]);
@@ -186,4 +186,4 @@ const User = () => {
   );
 };
 
-export default User;
+export default Users;
