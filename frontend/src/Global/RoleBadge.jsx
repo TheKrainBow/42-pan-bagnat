@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { getReadableStyles } from '../utils/ColorUtils';
 import './RoleBadge.css';
 
-export function RoleBadge({ hexColor, children }) {
+const RoleBadge = ({ hexColor, children }) => {
   const styles = getReadableStyles(hexColor);
   return (
     <span className="role-badge" style={styles}>
@@ -10,3 +10,5 @@ export function RoleBadge({ hexColor, children }) {
     </span>
   );
 }
+
+export default RoleBadge;

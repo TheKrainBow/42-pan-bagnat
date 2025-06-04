@@ -1,8 +1,8 @@
 // Modules.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Modules.css';
-import { AppIcon } from '../components/AppIcon';
-import { Header } from '../components/Header';
+import AppIcon from 'Global/AppIcon';
+import Header from 'Global/Header';
 import { Link } from 'react-router-dom';
 
 const Modules = () => {

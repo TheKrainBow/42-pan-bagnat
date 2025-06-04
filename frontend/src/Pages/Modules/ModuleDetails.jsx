@@ -2,8 +2,10 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './ModuleDetails.css';
-import { AppIcon } from '../components/AppIcon';
-import { RoleBadge } from '../components/RoleBadge';
+import AppIcon from 'Global/AppIcon';
+import Button from 'Global/Button';
+import ModuleLogs from 'Modules/components/ModuleLogs';
+import ModuleSettings from 'Modules/components/ModuleSettings';
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();
@@ -47,7 +49,7 @@ const ModuleDetails = () => {
 
   return (
     <div className="module-detail-container">
-      <Link to="/modules" className="back-button">← Back to Modules</Link>
+      <Link to="/modules" className="custom-btn link">← Back to Modules</Link>
 
       <div className="module-header">
         <AppIcon app={{ icon_url: module.icon_url, name: module.name }} fallback="/icons/modules.png" />
@@ -64,51 +66,33 @@ const ModuleDetails = () => {
           <div><strong>🕒 Last Update:</strong> {new Date(module.last_update).toLocaleString()}</div>
           <div><strong>🔗 Repo:</strong> <a className="module-link" href={module.url} target="_blank" rel="noreferrer">{module.url}</a></div>
         </div>
-        <div className="version-actions">
-          <button className="update-btn">Update Module</button>
-          <button className="uninstall-btn">Uninstall Module</button>
-        </div>
       </div>
 
       {/* Running Info */}
       <div className="module-running-section">
-        <div className="module-status">
-          <strong>Status:</strong>
-            <label className="switch">
-              <input
-                type="checkbox"
-                checked={module.status === 'enabled'}
-                onChange={toggleModuleStatus}
-                disabled={statusUpdating}
-              />
-              <span className="slider round"></span>
-            </label>
-          <label className="switch-label">
-            <span>Toggle</span>
-          </label>
-        </div>
-
         <div className="tabs">
-          <div className={`tab ${activeTab === 'logs' ? 'active' : ''}`} onClick={() => setActiveTab('logs')}>Logs</div>
-          <div className={`tab ${activeTab === 'settings' ? 'active' : ''}`} onClick={() => setActiveTab('settings')}>Settings</div>
+          <Button
+            label="Logs"
+            className={`custom-btn ${activeTab === 'logs' ? 'blue' : 'gray'}`}
+            onClick={() => setActiveTab('logs')}
+          />
+          <Button
+            label="Settings"
+            className={`custom-btn ${activeTab === 'settings' ? 'blue' : 'gray'}`}
+            onClick={() => setActiveTab('settings')}
+          />
         </div>
 
         <div className="tab-content">
           {activeTab === 'logs' ? (
-            <pre className="log-box">[Sample logs will be displayed here]</pre>
+            <ModuleLogs />
           ) : (
-            <div>
-              <strong>Linked Roles:</strong>
-              <div className="role-badges">
-                {Array.isArray(module.roles) && module.roles.length > 0 ? (
-                  module.roles.map(role => (
-                    <RoleBadge key={role.id} hexColor={role.color}>{role.name}</RoleBadge>
-                  ))
-                ) : (
-                  <span style={{ opacity: 0.5 }}>No roles assigned</span>
-                )}
-              </div>
-            </div>
+            <ModuleSettings
+              roles={module.roles}
+              status={module.status}
+              onToggleStatus={toggleModuleStatus}
+              statusUpdating={statusUpdating}
+            />
           )}
         </div>
       </div>
