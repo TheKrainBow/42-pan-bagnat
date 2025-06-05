@@ -49,7 +49,10 @@ const ModuleDetails = () => {
 
   return (
     <div className="module-detail-container">
-      <Link to="/modules" className="custom-btn link">← Back to Modules</Link>
+      <Link to="/modules" className="custom-btn link">
+        <img src="/icons/arrow.png" alt="Back" style={{ width: "16px", marginRight: "8px", marginLeft: "-5px", verticalAlign: "middle" }} />
+        Back to Modules
+      </Link>
 
       <div className="module-header">
         <AppIcon app={{ icon_url: module.icon_url, name: module.name }} fallback="/icons/modules.png" />
