@@ -1,14 +1,20 @@
 import React from 'react';
 import './Button.css';
 
-const Button = ({ label, color = 'gray', onClick, ...props }) => {
+const Button = ({ label, icon, color = 'gray', onClick, ...props }) => {
+  const isIcon = Boolean(icon);
+
   return (
     <button
-      className={`custom-btn ${color}`}
+      className={`custom-btn ${color} ${isIcon ? 'icon-btn' : ''}`}
       onClick={onClick}
       {...props}
     >
-      {label}
+      {isIcon ? (
+        <img src={icon} alt={label || ''} className="btn-icon-image" />
+      ) : (
+        label
+      )}
     </button>
   );
 };

@@ -88,7 +88,6 @@ const Modules = () => {
         onChange={(e) => setFilterQuery(e.target.value)}
         actionButtonLabel="Import Module"
         onActionButtonClick={handleImport}
-        filterButtonLabel="Import Module"
         onFilterClick={handleImport}
       />
       <div className="modules-container" ref={scrollContainerRef}>
