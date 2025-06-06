@@ -36,7 +36,7 @@ const ModuleDetails = () => {
     setStatusUpdating(true);
     try {
       const newStatus = module.status === 'enabled' ? 'disabled' : 'enabled';
-      setModule({ ...module, status: newStatus }); // optimistic update
+      setModule({ ...module, status: newStatus });
     } catch (err) {
       console.error(err);
     } finally {

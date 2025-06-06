@@ -9,7 +9,7 @@ services:
       - nginx
     env_file:
       - ./frontend/.env
-  
+
   backend:
     profiles: ["backend", "dev"]
     build:
@@ -20,13 +20,15 @@ services:
       - ./backend/.env
     depends_on:
       - db
-  
+    volumes:
+      - ./repos:/data/repos
+
   nginx:
     build:
       context: ./nginx
     ports:
       - "80:80"
-  
+
   db:
     image: postgres:16
     restart: always
@@ -34,11 +36,14 @@ services:
       - "5432:5432"
     volumes:
       - ./db/init:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
     env_file:
       - ./db/.env
+
   adminer:
     image: adminer
     ports: ["8081:8080"]
 
 volumes:
   postgres_data:
+  git_repos:
