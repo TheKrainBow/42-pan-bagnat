@@ -1,7 +1,7 @@
 // components/ModuleSettings.jsx
 import React from 'react';
-import RoleBadge from '../../../Global/RoleBadge';
-import Button from '../../../Global/Button';
+import RoleBadge from 'Global/RoleBadge';
+import Button from 'Global/Button';
 import './ModuleSettings.css';
 
 const ModuleSettings = ({ roles, status, onToggleStatus, statusUpdating }) => {
