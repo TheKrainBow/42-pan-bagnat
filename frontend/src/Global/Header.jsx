@@ -39,7 +39,7 @@ const Header = ({
             <Button
               label={filterButtonLabel}
               icon="/icons/filter.png"
-              color="gray"
+              color="dark-gray"
               onClick={onFilterClick}
             />
           )}
