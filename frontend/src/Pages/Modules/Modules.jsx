@@ -77,12 +77,19 @@ const Modules = () => {
     }
   }, [debouncedFilter, fetchModules]);
 
+  const handleImport = () => {
+    console.log('Handling import...');
+  };
   return (
     <div className="p-4">
       <Header
         title="Modules"
         value={filterQuery}
         onChange={(e) => setFilterQuery(e.target.value)}
+        actionButtonLabel="Import Module"
+        onActionButtonClick={handleImport}
+        filterButtonLabel="Import Module"
+        onFilterClick={handleImport}
       />
       <div className="modules-container" ref={scrollContainerRef}>
         <div className="modules-grid">
