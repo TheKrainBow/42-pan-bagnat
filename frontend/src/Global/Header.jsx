@@ -35,9 +35,10 @@ const Header = ({
             />
           </div>
 
-          {filterButtonLabel && onFilterClick && (
+          {onFilterClick && (
             <Button
               label={filterButtonLabel}
+              icon="/icons/filter.png"
               color="gray"
               onClick={onFilterClick}
             />

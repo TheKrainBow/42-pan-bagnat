@@ -99,3 +99,27 @@
 .custom-btn.link:hover {
   background-color: #4b5563;
 }
+
+/* 1) Make the icon‐only button a fixed square and center its contents */
+.custom-btn.icon-btn {
+  width: 2.2rem;                 /* fixed square size (adjust as needed) */
+  height: 2.2rem;
+  padding: 0;                    /* remove extra padding so it stays exactly square */
+  display: flex;                 /* use flex to center the <img> inside */
+  align-items: center;           /* vertical centering */
+  justify-content: center;       /* horizontal centering */
+  border-radius: 0.5rem;         /* rounded corners (adjust radius to taste) */
+  /* keep your background/color rules inherited from .custom-btn.gray/.blue, etc. */
+}
+
+/* 2) Constrain the <img> to a smaller fixed size inside the square */
+.btn-icon-image {
+  width: 1.3rem;    /* icon width (you can tweak this) */
+  height: 1.3rem;   /* icon height */
+  object-fit: contain;
+}
+
+/* 3) (Optional) Hover state */
+.custom-btn.icon-btn:hover {
+  opacity: 0.85;
+}
