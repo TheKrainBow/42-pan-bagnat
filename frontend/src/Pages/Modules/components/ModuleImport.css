@@ -79,7 +79,7 @@
 
 .shake {
   animation: shake 0.3s ease-in-out;
-  border-color: #e74c3c; /* ensure red border while shaking */
+  border-color: #e74c3c;
 }
 
 /* Buttons row */

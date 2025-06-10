@@ -1,0 +1,64 @@
+/* Field.css */
+
+.field-wrapper {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.field-label {
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+}
+
+.field-asterisk {
+  color: #e74c3c;
+  margin-left: 0.25rem;
+}
+
+.field-input {
+  padding: 0.5rem;
+  border: 1px solid #444;
+  border-radius: 0.25rem;
+  background-color: #2a2a2a;
+  color: #fff;
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+  resize: vertical;
+  margin-bottom: 0.25rem;
+}
+
+.field-input.invalid {
+  border-color: #e74c3c !important;
+}
+
+.field-error {
+  color: #e74c3c;
+  font-size: 0.8rem;
+  margin-top: 0.1rem;
+}
+
+/* Shake animation */
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  20%  { transform: translateX(-6px); }
+  40%  { transform: translateX(6px); }
+  60%  { transform: translateX(-6px); }
+  80%  { transform: translateX(6px); }
+  100% { transform: translateX(0); }
+}
+
+.field-input.shake {
+  animation: shake 0.3s ease-in-out;
+}
+
+.field-error-list {
+  padding-left: 1.25rem;
+  margin-top: 0.25rem;
+  margin-bottom: 0;
+  color: #e74c3c;
+  font-size: 0.875rem;
+  list-style-type: disc;
+}
