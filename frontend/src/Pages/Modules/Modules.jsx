@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Modules.css';
 import AppIcon from 'Global/AppIcon';
 import Header from 'Global/Header';
+import ModuleImport from 'Modules/components/ModuleImport';
 import { Link } from 'react-router-dom';
 
 const Modules = () => {
@@ -14,6 +15,7 @@ const Modules = () => {
   const loadingRef = useRef(false);
   const scrollContainerRef = useRef(null);
   const isFirst = useRef(true);
+  const [showModal, setShowModal] = useState(false);
 
   const fetchModules = useCallback(async (append = false, token = '') => {
     if (loadingRef.current) return;
@@ -77,9 +79,23 @@ const Modules = () => {
     }
   }, [debouncedFilter, fetchModules]);
 
+
   const handleImport = () => {
-    console.log('Handling import...');
+    setShowModal(true);
   };
+
+  const handleClose = () => {
+    setShowModal(false);
+  };
+
+
+  const handleSubmit = ({ gitUrl, sshKey }) => {
+    console.log('Git URL:', gitUrl);
+    console.log('SSH Key:', sshKey);
+    // TODO: send gitUrl + sshKey to your backend, then refresh list, etc.
+    setShowModal(false);
+  };
+
   return (
     <div className="p-4">
       <Header
@@ -114,6 +130,10 @@ const Modules = () => {
           </div>
         )}
       </div>
+
+      {showModal && (
+        <ModuleImport onClose={handleClose} onSubmit={handleSubmit} />
+      )}
     </div>
   );
 };
