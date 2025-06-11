@@ -18,8 +18,8 @@ const Field = forwardRef(({
   const [shake, setShake] = useState(false);
 
   // Normalize validator output to an array of strings
-  const runValidation = () => {
-    if (!isTouched) return [];
+  const runValidation = (final = false) => {
+    if (!isTouched && !final) return [];
 
     if (required && value.trim() === '') {
       return ['This field is required.'];
@@ -48,8 +48,8 @@ const Field = forwardRef(({
   // Parent can call .triggerShake() via ref
   useImperativeHandle(ref, () => ({
     triggerShake,
-    isValid: () => {
-        const errs = runValidation();
+    isValid: (final) => {
+        const errs = runValidation(final);
         setErrors(errs);
         setIsTouched(true);
         return errs.length === 0;
