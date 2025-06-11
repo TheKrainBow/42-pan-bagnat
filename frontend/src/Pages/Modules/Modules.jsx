@@ -89,11 +89,34 @@ const Modules = () => {
   };
 
 
-  const handleSubmit = ({ gitUrl, sshKey }) => {
-    console.log('Git URL:', gitUrl);
-    console.log('SSH Key:', sshKey);
-    // TODO: send gitUrl + sshKey to your backend, then refresh list, etc.
-    setShowModal(false);
+  const handleSubmit = async ({ gitUrl, sshKey }) => {
+    try {
+      const response = await fetch('http://localhost:8080/api/v1/modules', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          git_url: gitUrl,
+          ssh_key: sshKey,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        console.error('Error from backend:', error);
+        return;
+      }
+
+      const result = await response.json();
+      console.log('Module created:', result);
+
+      // Optionally refresh module list or trigger UI update
+      fetchModules(false, '');
+      setShowModal(false);
+    } catch (err) {
+      console.error('Request failed:', err);
+    }
   };
 
   return (
