@@ -8,16 +8,8 @@ const ModuleImport = ({ onClose, onSubmit }) => {
   const gitInputRef = useRef();
   const sshInputRef = useRef();
 
-  const [gitUrl, setGitUrl] = useState('');
-  const [sshKey, setSshKey] = useState('');
-
-  // Track validation state:
-  const [gitUrlError, setGitUrlError] = useState('');
-  const [sshKeyError, setSshKeyError] = useState('');
-
-  // Shake
-  const [shakeGit, setShakeGit] = useState(false);
-  const [shakeSsh, setShakeSsh] = useState(false);
+  const [gitUrl, setGitUrl] = useState('ssh://git@someexample/yes.git');
+  const [sshKey, setSshKey] = useState('ssh-rsa a');
 
   // 1) Only accept SSH-style Git URLs: ssh://[user@]host[:port]/path/to/repo.git
   const sshUrlRegex = /^ssh:\/\/(?:[^\s@]+@)?[^\s/:]+(?::\d+)?\/[^\s]+\.git$/;
@@ -28,8 +20,8 @@ const ModuleImport = ({ onClose, onSubmit }) => {
   const sshRegex = /^(ssh-(rsa|ed25519|ecdsa|dss)) [A-Za-z0-9+/]+=*( [^\s]+)?$/;
   
   const handleSubmit = () => {
-    const isGitValid = gitInputRef.current.isValid();
-    const isSshValid = sshInputRef.current.isValid();
+    const isGitValid = gitInputRef.current.isValid(true);
+    const isSshValid = sshInputRef.current.isValid(true);
 
     if (!isGitValid) gitInputRef.current.triggerShake();
     if (!isSshValid) sshInputRef.current.triggerShake();
@@ -38,8 +30,6 @@ const ModuleImport = ({ onClose, onSubmit }) => {
 
     // All good: submit and reset
     onSubmit({ gitUrl, sshKey });
-    setGitUrl('');
-    setSshKey('');
   };
 
   const GitURLValidator = (value) => {
