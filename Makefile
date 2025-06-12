@@ -38,22 +38,22 @@ local-back:																				## Local | Stop backend docker container, and run
 #########################################################################################
 .PHONY: db-clear db-test db-clear-data db-init-schema
 db-prune:																				## Database | Prune database datas, schemas and templates
-	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-	docker exec pan-bagnat-db-1 bash -lc "dropdb -U admin --if-exists schema_template"
+	docker exec -i 42-pan-bagnat-db-1 psql -U admin -d panbagnat -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	docker exec 42-pan-bagnat-db-1 bash -lc "dropdb -U admin --if-exists schema_template"
 
 db-init-schema: db-prune																## Database | Push schema to database
-	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/init/01_init.sql
-	docker exec -i pan-bagnat-db-1 \
+	docker exec -i 42-pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/init/01_init.sql
+	docker exec -i 42-pan-bagnat-db-1 \
 	  bash -lc "/docker-entrypoint-initdb.d/02_make_template.sh"
 
 db-clear-data:																			## Database | Clear database datas
-	docker exec -i pan-bagnat-db-1 \
+	docker exec -i 42-pan-bagnat-db-1 \
 	  psql -U admin -d panbagnat -c "\
 	    TRUNCATE module_roles, user_roles, modules, roles, users RESTART IDENTITY CASCADE;\
 	  "
 
 db-test: db-clear-data																	## Database | Set database datas with test datas
-	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/test_data.sql
+	docker exec -i 42-pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/test_data.sql
 
 #########################################################################################
 #                                       DOCKER                                          #
@@ -85,8 +85,9 @@ build-front: 																			## Docker | Build frontend image and replace cur
 	$(DOCKER_COMPOSE) --profile frontend up -d
 
 fprune: prune																			## Docker | Stop all containers, volumes, and networks
-	$(DOCKER_COMPOSE) down --volumes --remove-orphans
-	docker system prune -af --volumes
+	$(DOCKER_COMPOSE) down --volumes --remove-orphans || true
+	docker network rm 42-pan-bagnat_default 2>/dev/null || true
+	docker system prune -af --volumes || true
 
 #########################################################################################
 #                                       TESTS                                           #
