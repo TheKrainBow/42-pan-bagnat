@@ -21,7 +21,7 @@ services:
     depends_on:
       - db
     volumes:
-      - ./repos:/data/repos
+      - ./repos:/data/repos:Z
 
   nginx:
     build:
@@ -30,17 +30,19 @@ services:
       - "80:80"
 
   db:
+    container_name: 42-pan-bagnat-db-1
     image: postgres:16
-    restart: always
+    restart: on-failure
     ports:
       - "5432:5432"
     volumes:
-      - ./db/init:/docker-entrypoint-initdb.d
+      - ./db/init:/docker-entrypoint-initdb.d:Z
       - postgres_data:/var/lib/postgresql/data
     env_file:
       - ./db/.env
 
   adminer:
+    container_name: 42-pan-bagnat-adminer-1
     image: adminer
     ports: ["8081:8080"]
 
