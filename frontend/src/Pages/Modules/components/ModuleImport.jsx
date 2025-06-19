@@ -1,92 +1,81 @@
-// ModuleImport.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import './ModuleImport.css';
 import Button from 'Global/Button';
 import Field from 'Global/Field';
+import { useNavigate } from 'react-router-dom';
 
-const ModuleImport = ({ onClose, onSubmit }) => {
+const ModuleImport = ({ onClose }) => {
   const gitInputRef = useRef();
-  const sshInputRef = useRef();
+  const nameInputRef = useRef();
+  const navigate = useNavigate();
 
-  const [gitUrl, setGitUrl] = useState('ssh://git@someexample/yes.git');
-  const [sshKey, setSshKey] = useState('ssh-rsa a');
+  const [moduleName, setModuleName] = useState('Hello World');
+  const [gitUrl, setGitUrl] = useState('git@github.com:pan-bagnat/hello-world.git');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // 1) Only accept SSH-style Git URLs: ssh://[user@]host[:port]/path/to/repo.git
-  const sshUrlRegex = /^ssh:\/\/(?:[^\s@]+@)?[^\s/:]+(?::\d+)?\/[^\s]+\.git$/;
+  const sshUrlRegex = /^git@[^\s]+:[^\s]+\.git$/;
 
-  // Helper: basic SSH key regex (ssh-rsa, ssh-ed25519, etc.)
-  // This checks that it starts with "ssh-(rsa|ed25519|ecdsa|dss)" followed by a space and a base64 blob.
-  // It does NOT check the contents of the key, only the general shape.
-  const sshRegex = /^(ssh-(rsa|ed25519|ecdsa|dss)) [A-Za-z0-9+/]+=*( [^\s]+)?$/;
-  
-  const handleSubmit = () => {
+  const validate = () => {
     const isGitValid = gitInputRef.current.isValid(true);
-    const isSshValid = sshInputRef.current.isValid(true);
-
+    const isNameValid = nameInputRef.current.isValid(true);
     if (!isGitValid) gitInputRef.current.triggerShake();
-    if (!isSshValid) sshInputRef.current.triggerShake();
-
-    if (!isGitValid || !isSshValid) return;
-
-    // All good: submit and reset
-    onSubmit({ gitUrl, sshKey });
+    if (!isNameValid) nameInputRef.current.triggerShake();
+    return isGitValid && isNameValid;
   };
 
-  const GitURLValidator = (value) => {
-    if (!sshUrlRegex.test(value)) {
-      return 'Please enter a valid SSH-style Git URL (e.g. ssh://git@host:port/path.git).';
-    }
-    return null;
-  }
+  const handleSubmit = async () => {
+    if (!validate()) return;
 
-  const SSHKeyValidator = (value) => {
-    if (!sshRegex.test(value)) {
-      return ['SSH key must start with "ssh-rsa", "ssh-ed25519", etc. and be valid base64.'];
+    setIsSubmitting(true);
+    try {
+      const res = await fetch('http://localhost:8080/api/v1/modules', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ moduleName, gitUrl }),
+      });
+
+      if (!res.ok) throw new Error('Failed to import module');
+      const data = await res.json();
+      navigate(`/modules/${data.id}`);
+    } catch (err) {
+      alert(err.message || 'An error occurred.');
+    } finally {
+      setIsSubmitting(false);
     }
-    return null;
-  }
+  };
 
   return (
     <div className="mi-overlay">
       <div className="mi-content">
         <h3>Import Module</h3>
 
-        {/* Git URL Field */}
         <Field
-          label="Git SSH URL:"
+          label="Module Name"
+          ref={nameInputRef}
+          value={moduleName}
+          onChange={e => setModuleName(e.target.value)}
+          placeholder="my-awesome-module"
+          required={true}
+          validator={value => !value ? 'Module name is required.' : null}
+        />
+
+        <Field
+          label="Git Repository URL (SSH)"
           ref={gitInputRef}
           value={gitUrl}
           onChange={e => setGitUrl(e.target.value)}
-          placeholder="ssh://git@host:port/namespace/repo.git"
+          placeholder="git@github.com:org/repo.git"
           required={true}
-          validator={GitURLValidator}
+          validator={value => sshUrlRegex.test(value) ? null : 'Must be a valid SSH URL.'}
         />
 
-        {/* SSH Key Field */}
-        <Field
-          label="SSH Key:"
-          ref={sshInputRef}
-          value={sshKey}
-          onChange={e => setSshKey(e.target.value)}
-          placeholder="ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQ…"
-          required={true}
-          validator={SSHKeyValidator}
-          multiline={true}
-          rows={4}
-        />
-
-        {/* Actions */}
         <div className="mi-actions">
+          <Button label="Cancel" color="gray" onClick={onClose} />
           <Button
-            label="Cancel"
-            color="gray"
-            onClick={onClose}
-          />
-          <Button
-            label="Submit"
+            label={isSubmitting ? 'Importing...' : 'Import Module'}
             color="blue"
             onClick={handleSubmit}
-            // disabled={!(sshUrlRegex.test(gitUrl.trim()) && sshKeyRegex.test(sshKey.trim()))}
+            disabled={isSubmitting}
           />
         </div>
       </div>
