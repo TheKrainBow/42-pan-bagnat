@@ -17,14 +17,16 @@ type Role struct {
 
 type Module struct {
 	ID            string    `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	SSHPublicKey  string    `json:"ssh_public_key" example:"ssh-rsa AAAA..."`
+	SSHPrivateKey string    `json:"ssh_private_key" example:"-----BEGIN OPENSSH PRIVATE KEY-----..."`
 	Name          string    `json:"name" example:"captain-hook"`
 	Version       string    `json:"version" example:"1.2"`
 	Status        string    `json:"status" example:"enabled"`
 	URL           string    `json:"url" example:"https://github.com/some-user/some-repo"`
-	IconURL       string    `json:"iconUrl" example:"https://someURL/image.png"`
-	LatestVersion string    `json:"lastestVersion" example:"1.7"`
-	LateCommits   int       `json:"lateCommits" example:"2"`
-	LastUpdate    time.Time `json:"lastUpdate" example:"2025-02-18T15:00:00Z"`
+	IconURL       string    `json:"icon_url" example:"https://someURL/image.png"`
+	LatestVersion string    `json:"latest_version" example:"1.7"`
+	LateCommits   int       `json:"late_commits" example:"2"`
+	LastUpdate    time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
 }
 
 type User struct {
@@ -45,13 +47,16 @@ type RolePatch struct {
 
 type ModulePatch struct {
 	ID            string     `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	SSHPublicKey  *string    `json:"ssh_public_key" example:"ssh-rsa AAAA..."`
+	SSHPrivateKey *string    `json:"ssh_private_key" example:"-----BEGIN OPENSSH PRIVATE KEY-----..."`
 	Name          *string    `json:"name" example:"captain-hook"`
 	Version       *string    `json:"version" example:"1.2"`
 	Status        *string    `json:"status" example:"enabled"`
 	URL           *string    `json:"url" example:"https://github.com/some-user/some-repo"`
-	LatestVersion *string    `json:"lastestVersion" example:"1.7"`
-	LateCommits   *int       `json:"lateCommits" example:"2"`
-	LastUpdate    *time.Time `json:"lastUpdate" example:"2025-02-18T15:00:00Z"`
+	IconURL       *string    `json:"icon_url" example:"https://someURL/image.png"`
+	LatestVersion *string    `json:"latest_version" example:"1.7"`
+	LateCommits   *int       `json:"late_commits" example:"2"`
+	LastUpdate    *time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
 }
 
 type UserPatch struct {

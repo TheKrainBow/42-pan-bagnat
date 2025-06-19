@@ -7,11 +7,13 @@ CREATE TABLE roles (
 CREATE TABLE modules (
   id TEXT PRIMARY KEY, -- module_ULID
   name TEXT NOT NULL,
-  version TEXT,
-  status TEXT,
   url TEXT,
-  icon_url TEXT,
-  latest_version TEXT,
+  ssh_public_key TEXT NOT NULL DEFAULT '',
+  ssh_private_key TEXT NOT NULL DEFAULT '',
+  version TEXT NOT NULL DEFAULT '',
+  status TEXT NOT NULL DEFAULT '',
+  icon_url TEXT NOT NULL DEFAULT '',
+  latest_version TEXT NOT NULL DEFAULT '',
   late_commits INT,
   last_update TIMESTAMP WITH TIME ZONE NOT NULL
 );
