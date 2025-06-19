@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 )
 
@@ -25,7 +26,7 @@ type ModuleOrder struct {
 
 func GetModule(moduleID string) (*Module, error) {
 	row := mainDB.QueryRow(`
-		SELECT id, name, version, status, url, icon_url, latest_version, late_commits, last_update
+		SELECT id, ssh_public_key, ssh_private_key, name, version, status, url, icon_url, latest_version, late_commits, last_update
 		FROM modules
 		WHERE id = $1
 	`, moduleID)
@@ -33,6 +34,8 @@ func GetModule(moduleID string) (*Module, error) {
 	var module Module
 	if err := row.Scan(
 		&module.ID,
+		&module.SSHPublicKey,
+		&module.SSHPrivateKey,
 		&module.Name,
 		&module.Version,
 		&module.Status,
@@ -170,7 +173,7 @@ func GetAllModules(
 	// 4) Assemble SQL
 	var sb strings.Builder
 	sb.WriteString(
-		`SELECT id, name, version, status, url, icon_url, latest_version, late_commits, last_update
+		`SELECT id, ssh_private_key, ssh_public_key, name, version, status, url, icon_url, latest_version, late_commits, last_update
 FROM modules`,
 	)
 	if len(whereConds) > 0 {
@@ -198,6 +201,8 @@ FROM modules`,
 		var m Module
 		if err := rows.Scan(
 			&m.ID,
+			&m.SSHPrivateKey,
+			&m.SSHPublicKey,
 			&m.Name,
 			&m.Version,
 			&m.Status,
@@ -213,4 +218,65 @@ FROM modules`,
 	}
 
 	return out, nil
+}
+
+func InsertModule(m Module) error {
+	_, err := mainDB.Exec(`
+		INSERT INTO modules (id, name, url, ssh_public_key, ssh_private_key, last_update)
+		VALUES ($1, $2, $3, $4, $5, NOW())
+	`, m.ID, m.Name, m.URL, m.SSHPublicKey, m.SSHPrivateKey)
+	return err
+}
+
+func PatchModule(patch ModulePatch) error {
+	if patch.ID == "" {
+		return fmt.Errorf("missing module ID")
+	}
+
+	v := reflect.ValueOf(patch)
+	t := reflect.TypeOf(patch)
+
+	var (
+		setClauses []string
+		args       []interface{}
+		argPos     = 1
+	)
+
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		if field.Name == "ID" {
+			continue
+		}
+
+		val := v.Field(i)
+		if val.IsNil() {
+			continue
+		}
+
+		dbField := field.Tag.Get("json")
+		if dbField == "" {
+			dbField = strings.ToLower(field.Name)
+		}
+
+		setClauses = append(setClauses, fmt.Sprintf("%s = $%d", dbField, argPos))
+		args = append(args, val.Elem().Interface())
+		argPos++
+	}
+
+	if len(setClauses) == 0 {
+		return nil // nothing to update
+	}
+
+	// Always update last_update to NOW()
+	setClauses = append(setClauses, "last_update = NOW()")
+
+	query := fmt.Sprintf(`
+		UPDATE modules
+		SET %s
+		WHERE id = $%d
+	`, strings.Join(setClauses, ", "), argPos)
+	args = append(args, patch.ID)
+
+	_, err := mainDB.Exec(query, args...)
+	return err
 }
