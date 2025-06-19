@@ -1,5 +1,6 @@
 services:
   frontend:
+    container_name: pan-bagnat-frontend-1
     profiles: ["backend", "dev"]
     build:
       context: ./frontend
@@ -11,6 +12,7 @@ services:
       - ./frontend/.env
 
   backend:
+    container_name: pan-bagnat-backend-1
     profiles: ["backend", "dev"]
     build:
       context: ./backend
@@ -20,8 +22,14 @@ services:
       - ./backend/.env
     depends_on:
       - db
+      - init-repos-perms
     volumes:
       - ./repos:/data/repos:Z
+  init-repos-perms:
+    image: busybox
+    command: ["sh", "-c", "mkdir -p /mnt/repos && chmod -R 777 /mnt/repos"]
+    volumes:
+      - ./repos:/mnt/repos
 
   nginx:
     build:
@@ -30,7 +38,7 @@ services:
       - "80:80"
 
   db:
-    container_name: 42-pan-bagnat-db-1
+    container_name: pan-bagnat-db-1
     image: postgres:16
     restart: on-failure
     ports:
@@ -42,7 +50,7 @@ services:
       - ./db/.env
 
   adminer:
-    container_name: 42-pan-bagnat-adminer-1
+    container_name: pan-bagnat-adminer-1
     image: adminer
     ports: ["8081:8080"]
 
