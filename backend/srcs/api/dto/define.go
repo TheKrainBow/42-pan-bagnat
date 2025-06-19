@@ -32,6 +32,7 @@ type User struct {
 // @Description API Module model
 type Module struct {
 	ID            string       `json:"id" example:"module_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	SSHPublicKey  string       `json:"ssh_public_key" example:"ssh-rsa AAAA..."`
 	Name          string       `json:"name" example:"captain-hook"`
 	Version       string       `json:"version" example:"1.2"`
 	Status        ModuleStatus `json:"status" example:"enabled"`

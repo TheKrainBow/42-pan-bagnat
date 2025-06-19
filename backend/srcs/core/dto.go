@@ -37,17 +37,19 @@ func DatabaseUsersToUsers(dbUsers []database.User) (dest []User) {
 	return dest
 }
 
-func DatabaseModuleToModule(dbUser database.Module) Module {
+func DatabaseModuleToModule(dbModule database.Module) Module {
 	return Module{
-		ID:            dbUser.ID,
-		Name:          dbUser.Name,
-		Version:       dbUser.Version,
-		Status:        ModuleStatus(dbUser.Status),
-		URL:           dbUser.URL,
-		IconURL:       dbUser.IconURL,
-		LatestVersion: dbUser.LatestVersion,
-		LateCommits:   dbUser.LateCommits,
-		LastUpdate:    dbUser.LastUpdate,
+		ID:            dbModule.ID,
+		SSHPublicKey:  dbModule.SSHPublicKey,
+		SSHPrivateKey: dbModule.SSHPrivateKey,
+		Name:          dbModule.Name,
+		Version:       dbModule.Version,
+		Status:        ModuleStatus(dbModule.Status),
+		URL:           dbModule.URL,
+		IconURL:       dbModule.IconURL,
+		LatestVersion: dbModule.LatestVersion,
+		LateCommits:   dbModule.LateCommits,
+		LastUpdate:    dbModule.LastUpdate,
 	}
 }
 

@@ -2,13 +2,12 @@ package modules
 
 import (
 	api "backend/api/dto"
+	"backend/core"
 	"encoding/json"
 	"fmt"
-	"math/rand"
+	"log"
 	"net/http"
-	"time"
-
-	"github.com/oklog/ulid/v2"
+	"strings"
 )
 
 // @Summary      Post Module List
@@ -25,27 +24,25 @@ func PostModule(w http.ResponseWriter, r *http.Request) {
 	// Parse input
 	var input struct {
 		GitURL string `json:"git_url"`
-		SSHKey string `json:"ssh_key"`
+		Name   string `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
-		http.Error(w, "Invalid input", http.StatusBadRequest)
+		http.Error(w, "Invalid JSON input", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(input.GitURL) == "" || strings.TrimSpace(input.Name) == "" {
+		http.Error(w, "Missing git_url or name", http.StatusBadRequest)
 		return
 	}
 
-	// Temporary dummy output
-	t := time.Now()
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
-	id := ulid.MustNew(ulid.Timestamp(t), entropy)
-	dest := api.Module{
-		ID:            id.String(),
-		Name:          "Test",
-		Version:       "1.2",
-		Status:        api.Enabled,
-		URL:           input.GitURL,
-		LatestVersion: "1.7",
-		LastUpdate:    time.Date(2025, 2, 18, 15, 0, 0, 0, time.UTC),
+	module, err := core.ImportModule(input.Name, input.GitURL)
+	if err != nil {
+		log.Printf("failed to import module: %v", err)
+		http.Error(w, "Failed to import module", http.StatusInternalServerError)
+		return
 	}
 
+	dest := api.ModuleToAPIModule(module)
 	destJSON, err := json.Marshal(dest)
 	if err != nil {
 		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)

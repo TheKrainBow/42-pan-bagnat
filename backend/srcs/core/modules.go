@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
 
 type ModulePagination struct {
@@ -127,5 +128,46 @@ func GetModule(moduleID string) (Module, error) {
 		return dest, fmt.Errorf("couldn't get module's roles in db: %w", err)
 	}
 	dest.Roles = DatabaseRolesToRoles(roles)
+	return dest, nil
+}
+
+func ImportModule(name string, gitURL string) (Module, error) {
+	var dest Module
+
+	// Generate a ULID for the module
+	moduleID, err := GenerateULID(ModuleKind)
+	if err != nil {
+		return Module{}, fmt.Errorf("failed to generate module ID: %w", err)
+	}
+
+	// Generate SSH keys
+	pubKey, privKey, err := GenerateSSHKeys()
+	if err != nil {
+		return Module{}, fmt.Errorf("failed to generate SSH keys: %w", err)
+	}
+
+	// Prepare module struct
+	now := time.Now().UTC()
+	dest = Module{
+		ID:            moduleID,
+		Name:          name,
+		URL:           gitURL,
+		SSHPublicKey:  pubKey,
+		SSHPrivateKey: privKey,
+		LastUpdate:    now,
+	}
+
+	// Insert into DB
+	if err := database.InsertModule(database.Module{
+		ID:            dest.ID,
+		Name:          dest.Name,
+		URL:           dest.URL,
+		SSHPublicKey:  dest.SSHPublicKey,
+		SSHPrivateKey: dest.SSHPrivateKey,
+		LastUpdate:    dest.LastUpdate,
+	}); err != nil {
+		return Module{}, fmt.Errorf("failed to insert module in DB: %w", err)
+	}
+
 	return dest, nil
 }

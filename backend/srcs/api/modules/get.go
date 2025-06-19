@@ -54,6 +54,7 @@ func GetModules(w http.ResponseWriter, r *http.Request) {
 	}
 	roles, nextToken, err = core.GetModules(pagination)
 	if err != nil {
+		log.Printf("error while getting modules: %s\n", err.Error())
 		http.Error(w, "Failed in core.GetModules()", http.StatusInternalServerError)
 		return
 	}
