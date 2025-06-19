@@ -19,7 +19,7 @@ RUN go build -o main .
 FROM ubuntu:22.04
 
 # Install required dependencies
-RUN apt-get update && apt-get install -y build-essential libc6
+RUN apt-get update && apt-get install -y build-essential libc6 git
 
 WORKDIR /app
 
