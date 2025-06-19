@@ -309,3 +309,46 @@ func TestGetAllModules(t *testing.T) {
 		})
 	}
 }
+
+func TestPatchModule(t *testing.T) {
+	CreateAndPopulateDatabase(t, "test_patch_module", moduleTestDataSQL)
+
+	// Original module for comparison
+	before, err := GetModule("module_01HZXYZDE0420")
+	if err != nil {
+		t.Fatalf("GetModule() before patch failed: %v", err)
+	}
+
+	name := "new-name"
+	version := "9.9"
+	lateCommits := 42
+	patch := ModulePatch{
+		ID:          before.ID,
+		Name:        &name,
+		Version:     &version,
+		LateCommits: &lateCommits,
+	}
+
+	err = PatchModule(patch)
+	if err != nil {
+		t.Fatalf("PatchModule() failed: %v", err)
+	}
+
+	after, err := GetModule(before.ID)
+	if err != nil {
+		t.Fatalf("GetModule() after patch failed: %v", err)
+	}
+
+	if after.Name != name {
+		t.Errorf("Name not patched: got %q, want %q", after.Name, name)
+	}
+	if after.Version != version {
+		t.Errorf("Version not patched: got %q, want %q", after.Version, version)
+	}
+	if after.LateCommits != lateCommits {
+		t.Errorf("LateCommits not patched: got %d, want %d", after.LateCommits, lateCommits)
+	}
+	if !after.LastUpdate.After(before.LastUpdate) {
+		t.Errorf("LastUpdate not updated: before %v, after %v", before.LastUpdate, after.LastUpdate)
+	}
+}
