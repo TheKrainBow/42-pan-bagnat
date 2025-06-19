@@ -14,7 +14,7 @@ CREATE TABLE modules (
   status TEXT NOT NULL DEFAULT '',
   icon_url TEXT NOT NULL DEFAULT '',
   latest_version TEXT NOT NULL DEFAULT '',
-  late_commits INT,
+  late_commits INT NOT NULL DEFAULT 0,
   last_update TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
