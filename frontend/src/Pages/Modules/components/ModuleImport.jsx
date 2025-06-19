@@ -14,6 +14,7 @@ const ModuleImport = ({ onClose }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const sshUrlRegex = /^git@[^\s]+:[^\s]+\.git$/;
+  const httpUrlRegex = /^https?:\/\/[^\s/]+\/[^\s/]+\/[^\s/]+\.git$/;
 
   const validate = () => {
     const isGitValid = gitInputRef.current.isValid(true);
@@ -66,7 +67,7 @@ const ModuleImport = ({ onClose }) => {
           onChange={e => setGitUrl(e.target.value)}
           placeholder="git@github.com:org/repo.git"
           required={true}
-          validator={value => sshUrlRegex.test(value) ? null : 'Must be a valid SSH URL.'}
+          validator={value => (sshUrlRegex.test(value) || httpUrlRegex.test(value)) ? null : 'Must be a valid URL.'}
         />
 
         <div className="mi-actions">
