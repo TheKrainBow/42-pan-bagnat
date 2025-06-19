@@ -31,7 +31,7 @@ const ModuleImport = ({ onClose }) => {
       const res = await fetch('http://localhost:8080/api/v1/modules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ moduleName, gitUrl }),
+        body: JSON.stringify({ name: moduleName, git_url: gitUrl }),
       });
 
       if (!res.ok) throw new Error('Failed to import module');
