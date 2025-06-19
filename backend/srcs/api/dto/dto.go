@@ -51,6 +51,7 @@ func UsersToAPIUsers(users []core.User) (dest []User) {
 func ModuleToAPIModule(module core.Module) Module {
 	return Module{
 		ID:            module.ID,
+		SSHPublicKey:  module.SSHPublicKey,
 		Name:          module.Name,
 		Version:       module.Version,
 		LatestVersion: module.LatestVersion,
