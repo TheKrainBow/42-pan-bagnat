@@ -14,100 +14,103 @@
 
 /* GRAY */
 .custom-btn.gray {
-  background-color: #6b7280;
+  background-color: var(--button-gray);
 }
 .custom-btn.gray:hover {
-  background-color: #787e8b;
+  background-color: var(--button-gray-hover);
 }
 .custom-btn.gray:active {
-  background-color: #4b5563;
+  background-color: var(--button-gray-active);
 }
 
 /* BLUE */
 .custom-btn.blue {
-  background-color: #3b82f6;
+  background-color: var(--button-blue);
 }
 .custom-btn.blue:hover {
-  background-color: #5593f9;
+  background-color: var(--button-blue-hover);
 }
 .custom-btn.blue:active {
-  background-color: #2563eb;
+  background-color: var(--button-blue-active);
 }
+
 
 /* RED */
 .custom-btn.red {
-  background-color: #ef4444;
+  background-color: var(--button-red);
 }
 .custom-btn.red:hover {
-  background-color: #f25555;
+  background-color: var(--button-red-hover);
 }
 .custom-btn.red:active {
-  background-color: #dc2626;
+  background-color: var(--button-red-active);
 }
+
 
 /* GREEN */
 .custom-btn.green {
-  background-color: #22c55e;
+  background-color: var(--button-green);
 }
 .custom-btn.green:hover {
-  background-color: #38d976;
+  background-color: var(--button-green-hover);
 }
 .custom-btn.green:active {
-  background-color: #16a34a;
+  background-color: var(--button-green-active);
 }
+
 
 /* YELLOW */
 .custom-btn.yellow {
-  background-color: #eab308;
+  background-color: var(--button-yellow);
   color: black;
 }
 .custom-btn.yellow:hover {
-  background-color: #facc15;
+  background-color: var(--button-yellow-hover);
 }
 .custom-btn.yellow:active {
-  background-color: #ca8a04;
+  background-color: var(--button-yellow-active);
 }
 
 /* PURPLE */
 .custom-btn.purple {
-  background-color: #8b5cf6;
+  background-color: var(--button-purple);
 }
 .custom-btn.purple:hover {
-  background-color: #a078fa;
+  background-color: var(--button-purple-hover);
 }
 .custom-btn.purple:active {
-  background-color: #6d28d9;
+  background-color: var(--button-purple-active);
 }
 
 /* BLACK */
 .custom-btn.black {
-  background-color: #111827;
+  background-color: var(--button-black);
 }
 .custom-btn.black:hover {
-  background-color: #1f2937;
+  background-color: var(--button-black-hover);
 }
 .custom-btn.black:active {
-  background-color: #0f172a;
+  background-color: var(--button-black-active);
 }
 
 /* DARK GRAY */
 .custom-btn.dark-gray {
-  background-color: #2a2a2a;
+  background-color: var(--button-dark-gray);
 }
 .custom-btn.dark-gray:hover {
-  background-color: #333;
+  background-color: var(--button-dark-gray-hover);
 }
 .custom-btn.dark-gray:active {
-  background-color: #222222;
+  background-color: var(--button-dark-gray-active);
 }
 
 /* LINK */
 .custom-btn.link {
-  background-color: #374151;
+  background-color: var(--button-link);
   text-decoration: none;
 }
 .custom-btn.link:hover {
-  background-color: #4b5563;
+  background-color: var(--button-link-hover);
 }
 
 .custom-btn.icon-btn {
@@ -118,8 +121,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 0.5rem;
-  border: 1px solid #444;
-  background-color: #2a2a2a;
+  border: 1px solid var(--button-icon-border);
+  background-color: var(--button-icon-bg);
 }
 
 .btn-icon-image {

@@ -6,19 +6,20 @@
   text-transform: uppercase;
   font-weight: bold;
   margin-left: 8px;
+  white-space: nowrap;
 }
 
 .status-badge.enabled {
-  background-color: #22c55e;
+  background-color: var(--status-enabled);
   color: white;
 }
 
 .status-badge.disabled {
-  background-color: #ef4444;
+  background-color: var(--status-disabled);
   color: white;
 }
 
 .status-badge.waiting_for_action {
-  background-color: #d97706; /* Tailwind yellow-400 */
+  background-color: var(--status-waiting); /* Tailwind yellow-400 */
   color: white;
 }
