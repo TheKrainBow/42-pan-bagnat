@@ -221,10 +221,15 @@ FROM modules`,
 }
 
 func InsertModule(m Module) error {
+	status := m.Status
+	if m.LastUpdate.IsZero() {
+		status = "waiting_for_action"
+	}
+
 	_, err := mainDB.Exec(`
-		INSERT INTO modules (id, name, url, ssh_public_key, ssh_private_key, last_update)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, m.ID, m.Name, m.URL, m.SSHPublicKey, m.SSHPrivateKey, m.LastUpdate)
+		INSERT INTO modules (id, name, url, ssh_public_key, ssh_private_key, last_update, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)
+	`, m.ID, m.Name, m.URL, m.SSHPublicKey, m.SSHPrivateKey, m.LastUpdate, status)
 	return err
 }
 
