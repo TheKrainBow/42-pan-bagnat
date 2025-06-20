@@ -1,0 +1,99 @@
+
+.module-warning-section {
+  background-color: #2b1e1e;
+  border: 1px solid #864444;
+  color: #f8caca;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.public-key-display {
+  background-color: #1e1e1e;
+  border: 1px dashed #864444;
+  padding: 0.75rem;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #ffdede;
+  border-radius: 6px;
+}
+
+.public-key-wrapper {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.copy-button {
+  background-color: #3a2e2e;
+  border: 1px solid #864444;
+  color: #f8caca;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.2s;
+}
+
+.copy-button:hover {
+  background-color: #503838;
+}
+.public-key-wrapper {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.copy-container {
+  position: relative;
+}
+
+.copy-button {
+  background-color: #3a2e2e;
+  border: 1px solid #864444;
+  color: #f8caca;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.2s;
+}
+
+.copy-button:hover {
+  background-color: #503838;
+}
+
+.copy-tooltip {
+  position: absolute;
+  top: -2.0rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #444;
+  color: #eee;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  white-space: nowrap;
+  opacity: 0.95;
+}
+
+.warning-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.warning-icon {
+  font-size: 1.4rem;
+}
+
+.warning-text {
+  color: #f8d7da;
+  font-size: 0.95rem;
+  line-height: 1.3;
+}
