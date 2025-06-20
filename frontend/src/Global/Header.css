@@ -5,7 +5,7 @@
   align-items: flex-start;
   padding-left: 30px;
   padding-right: 30px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--border);
 }
 
 .header-controls {

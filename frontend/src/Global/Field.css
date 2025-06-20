@@ -14,16 +14,16 @@
 }
 
 .field-asterisk {
-  color: #e74c3c;
+  color: var(--input-red);
   margin-left: 0.25rem;
 }
 
 .field-input {
   padding: 0.5rem;
-  border: 1px solid #444;
+  border: 1px solid var(--light-border);
   border-radius: 0.25rem;
-  background-color: #2a2a2a;
-  color: #fff;
+  background-color: var(--background);
+  color: var(--input-text);
   font-size: 0.9rem;
   transition: border-color 0.2s;
   resize: vertical;
@@ -31,11 +31,11 @@
 }
 
 .field-input.invalid {
-  border-color: #e74c3c !important;
+  border-color: var(--input-red) !important;
 }
 
 .field-error {
-  color: #e74c3c;
+  color: var(--input-red);
   font-size: 0.8rem;
   margin-top: 0.1rem;
 }
@@ -58,7 +58,7 @@
   padding-left: 1.25rem;
   margin-top: 0.25rem;
   margin-bottom: 0;
-  color: #e74c3c;
+  color: var(--input-red);
   font-size: 0.875rem;
   list-style-type: disc;
 }

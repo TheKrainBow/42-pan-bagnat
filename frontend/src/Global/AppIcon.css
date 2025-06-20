@@ -1,6 +1,6 @@
 .loader {
-  border: 3px solid #444;
-  border-top: 3px solid #999;
+  border: 3px solid var(--loader-bg);
+  border-top: 3px solid var(--loader-color);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

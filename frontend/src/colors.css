@@ -1,0 +1,58 @@
+:root {
+  --status-enabled: #22c55e;
+  --status-disabled: #ef4444;
+  --status-waiting: #d97706;
+
+  --background: #252525;
+  --border: #333;
+  --light-border: #444;
+  --text-primary: #fff;
+  --text-secondary: #fff;
+
+  --active: #3b82f6;
+
+  /* BUTTONS */
+  --button-gray: #6b7280;
+  --button-gray-hover: #787e8b;
+  --button-gray-active: #4b5563;
+
+  --button-blue: #3b82f6;
+  --button-blue-hover: #5593f9;
+  --button-blue-active: #2563eb;
+
+  --button-red: #ef4444;
+  --button-red-hover: #f25555;
+  --button-red-active: #dc2626;
+
+  --button-yellow: #eab308;
+  --button-yellow-hover: #facc15;
+  --button-yellow-active: #ca8a04;
+
+  --button-purple: #8b5cf6;
+  --button-purple-hover: #a078fa;
+  --button-purple-active: #6d28d9;
+
+  --button-black: #111827;
+  --button-black-hover: #1f2937;
+  --button-black-active: #0f172a;
+
+  --button-dark-gray: #2a2a2a;
+  --button-dark-gray-hover: #333;
+  --button-dark-gray-active: #222222;
+
+  --button-link: #374151;
+  --button-link-hover: #4b5563;
+  --button-link-active: #222222;
+
+  --button-icon-bg: #2a2a2a;
+  --button-icon-border: #444;
+
+  /* LOADER */
+  --loader-bg: #444;
+  --loader-color: #999;
+
+  /* INPUT */
+  --input-bg: #2a2a2a;
+  --input-text: #fff;
+  --input-red: #e74c3c;
+}
