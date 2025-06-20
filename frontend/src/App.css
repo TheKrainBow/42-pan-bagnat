@@ -1,26 +1,3 @@
-.App {
-  text-align: center;
-  background-color: #252525; /* Dark background */
-  color: #e0e0e0; /* Light text */
-  min-height: 100vh;
-}
-
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-.App-header {
-  background-color: #1f1f1f; /* Slightly lighter dark for header */
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: #e0e0e0;
-}
-
 .app-container {
   display: flex;
   height: 100vh;
@@ -31,8 +8,8 @@
   width: 220px;
   flex-shrink: 0;
   padding: 16px;
-  background-color: #252525;
-  border-right: 2px solid #333;
+  background-color: var(--background);
+  border-right: 2px solid var(--border);
   height: 100%; /* Make sidebar stretch to the full height */
   box-sizing: border-box;
   overflow-y: auto; /* Allow the sidebar to scroll if needed */
@@ -44,7 +21,7 @@
   height: 100%;
   flex: 1;
   overflow-y: auto;
-  background-color: #2a2a2a;
+  background-color: var(--background);
 }
 
 .sidebar ul {
@@ -61,16 +38,15 @@
 .content {
   flex: 1;
   padding: 24px;
-  background-color: #252525;
+  background-color: var(--background);
 }
 
 html, body {
-  background-color: #252525;
+  background-color: var(--background);
   margin: 0;
   padding: 0;
   height: 100%;
   overflow: hidden;
-  color: #e0e0e0;
   font-family: sans-serif;
 }
 
@@ -81,7 +57,7 @@ html, body {
   margin-bottom: 15px;
   padding: 15px;
   padding-top: 0px;
-  border-bottom: 2px solid #333; /* Add a border separating the header */
+  border-bottom: 2px solid var(--border); /* Add a border separating the header */
 }
 
 .sidebar-logo {
@@ -93,7 +69,6 @@ html, body {
 .sidebar-title {
   font-size: 18px;
   font-weight: bold;
-  color: #e0e0e0;
 }
 
 .sidebar-item {
@@ -117,7 +92,7 @@ html, body {
 .sidebar-item.active {
   background-color: rgba(255, 255, 255, 0.1);
   font-weight: bold;
-  border-left: 2px #5b9df9; /* Solid blue border when active */
+  border-left: 2px var(--active); /* Solid blue border when active */
 }
 
 .sidebar-item::before {
@@ -127,7 +102,7 @@ html, body {
   top: 0;
   bottom: 0;
   width: 2px;
-  background-color: #5b9df9;
+  background-color: var(--active);
   transform: scaleY(0);
   transition: transform 0.3s ease;
 }
