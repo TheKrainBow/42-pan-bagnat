@@ -45,9 +45,10 @@ type Module struct {
 }
 
 const (
-	Enabled     ModuleStatus = "enabled"
-	Disabled    ModuleStatus = "disabled"
-	Downloading ModuleStatus = "downloading"
+	Enabled          ModuleStatus = "enabled"
+	Disabled         ModuleStatus = "disabled"
+	Downloading      ModuleStatus = "downloading"
+	WaitingForAction ModuleStatus = "waiting_for_action"
 )
 
 type ModuleStatus string
