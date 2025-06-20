@@ -1,0 +1,24 @@
+
+.status-badge {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  font-weight: bold;
+  margin-left: 8px;
+}
+
+.status-badge.enabled {
+  background-color: #22c55e;
+  color: white;
+}
+
+.status-badge.disabled {
+  background-color: #ef4444;
+  color: white;
+}
+
+.status-badge.waiting_for_action {
+  background-color: #d97706; /* Tailwind yellow-400 */
+  color: white;
+}

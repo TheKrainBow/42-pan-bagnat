@@ -41,13 +41,17 @@
   transform: scale(1.02);
 }
 
-.module-card.active {
+.module-card.enabled {
   border-left: 4px solid #22c55e;
 }
 
 .module-card.disabled {
   border-left: 4px solid #ef4444;
   opacity: 0.6;
+}
+
+.module-card.waiting_for_action {
+  border-left: 4px solid #d97706;
 }
 
 .module-icon {
@@ -104,4 +108,9 @@
   text-align: center;
   margin-top: 20px;
   font-size: 16px;
+}
+
+.module-waiting {
+  font-style: italic;
+  color: #d97706; /* Or a lighter amber/yellow suitable for dark theme */
 }
