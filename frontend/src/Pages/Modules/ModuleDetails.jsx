@@ -6,6 +6,8 @@ import AppIcon from 'Global/AppIcon';
 import Button from 'Global/Button';
 import ModuleLogs from 'Modules/components/ModuleLogs';
 import ModuleSettings from 'Modules/components/ModuleSettings';
+import ModuleWarningSection from 'Modules/components/ModuleWarningSection';
+import ModuleAboutSection from './components/ModuleAboutSection';
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();
@@ -47,6 +49,8 @@ const ModuleDetails = () => {
   if (loading) return <div className="loading">Loading...</div>;
   if (!module) return <div className="error">Module not found.</div>;
 
+  const isCloned = module.last_update && new Date(module.last_update).getFullYear() > 2000;
+
   return (
     <div className="module-detail-container">
       <Link to="/modules" className="custom-btn link">
@@ -61,15 +65,8 @@ const ModuleDetails = () => {
       </div>
 
       {/* Version Info */}
-      <div className="module-version-section">
-        <div className="version-info">
-          <div><strong>📦 Version:</strong> {module.version}</div>
-          <div><strong>🔄 Latest:</strong> {module.latest_version}</div>
-          <div><strong>🧱 Late Commits:</strong> {module.late_commits}</div>
-          <div><strong>🕒 Last Update:</strong> {new Date(module.last_update).toLocaleString()}</div>
-          <div><strong>🔗 Repo:</strong> <a className="module-link" href={module.url} target="_blank" rel="noreferrer">{module.url}</a></div>
-        </div>
-      </div>
+      {!isCloned && <ModuleWarningSection sshKey={module.ssh_public_key}> </ModuleWarningSection>}
+      <ModuleAboutSection module={module}></ModuleAboutSection>
 
       {/* Running Info */}
       <div className="module-running-section">
