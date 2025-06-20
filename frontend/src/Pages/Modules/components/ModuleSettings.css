@@ -120,3 +120,8 @@ input:checked + .slider:before {
   flex-wrap: wrap;
   gap: 8px;
 }
+
+.switch.waiting .slider {
+  cursor: not-allowed;
+  opacity: 0.5;
+}

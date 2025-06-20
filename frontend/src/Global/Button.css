@@ -132,3 +132,29 @@
 .custom-btn.icon-btn:hover {
   opacity: 0.85;
 }
+
+.custom-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.custom-btn.disabled:hover {
+  filter: none;
+}
+
+.custom-btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.custom-btn.shake {
+  animation: shake 0.3s;
+}
+
+@keyframes shake {
+  0%   { transform: translateX(0); }
+  25%  { transform: translateX(-3px); }
+  50%  { transform: translateX(3px); }
+  75%  { transform: translateX(-3px); }
+  100% { transform: translateX(0); }
+}

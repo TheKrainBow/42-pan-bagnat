@@ -7,6 +7,7 @@ import Button from 'Global/Button';
 import ModuleLogs from 'Modules/components/ModuleLogs';
 import ModuleSettings from 'Modules/components/ModuleSettings';
 import ModuleWarningSection from 'Modules/components/ModuleWarningSection';
+import ModuleStatusBadge from 'Modules/components/ModuleStatusBadge';
 import ModuleAboutSection from './components/ModuleAboutSection';
 
 const ModuleDetails = () => {
@@ -61,7 +62,7 @@ const ModuleDetails = () => {
       <div className="module-header">
         <AppIcon app={{ icon_url: module.icon_url, name: module.name }} fallback="/icons/modules.png" />
         <h2>{module.name}</h2>
-        <span className={`status-badge ${module.status}`}>{module.status.toUpperCase()}</span>
+        <ModuleStatusBadge status={module.status} />
       </div>
 
       {/* Version Info */}

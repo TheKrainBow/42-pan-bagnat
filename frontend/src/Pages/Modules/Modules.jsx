@@ -4,6 +4,7 @@ import './Modules.css';
 import AppIcon from 'Global/AppIcon';
 import Header from 'Global/Header';
 import ModuleImport from 'Modules/components/ModuleImport';
+import ModuleStatusBadge from 'Modules/components/ModuleStatusBadge';
 import { Link } from 'react-router-dom';
 
 const Modules = () => {
@@ -132,17 +133,23 @@ const Modules = () => {
       <div className="modules-container" ref={scrollContainerRef}>
         <div className="modules-grid">
           {modules.map((mod) => (
-            <Link key={mod.id} to={`/modules/${mod.id}`} className={`module-card ${mod.status === 'enabled' ? 'active' : 'disabled'}`}>
+            <Link key={mod.id} to={`/modules/${mod.id}`} className={`module-card ${mod.status}`}>
               <div className="module-icon">
                 <AppIcon app={{ icon_url: mod.icon_url, name: mod.name }} fallback="/icons/modules.png" />
               </div>
               <div className="module-content">
                 <div className="module-title-row">
                   <strong>{mod.name}</strong>
-                  <span className="module-status">{mod.status.toUpperCase()}</span>
+                  <ModuleStatusBadge status={mod.status} />
                 </div>
-                <p className="module-description">v{mod.version} • {mod.late_commits} late commits</p>
-                <p className="module-updated">Last update: {new Date(mod.last_update).toLocaleDateString()}</p>
+                  {mod.last_update && new Date(mod.last_update).getFullYear() > 2000 ? (
+                  <>
+                    <p className="module-description">v{mod.version} • {mod.late_commits} late commits</p>
+                    <p className="module-updated">Last update: {new Date(mod.last_update).toLocaleDateString()}</p>
+                  </>
+                ) : (
+                  <p className="module-waiting">Action required</p>
+                )}
               </div>
             </Link>
           ))}
