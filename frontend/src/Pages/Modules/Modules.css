@@ -1,8 +1,7 @@
 /* Modules.css */
 .modules-container {
   padding: 16px;
-  color: #f0f0f0;
-  background-color: #2a2a2a;
+  background-color: var(--background);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
@@ -25,14 +24,16 @@
 }
 
 .module-card {
-  background-color: #333;
+  background-color: var(--border);
   border-radius: 10px;
+  white-space: nowrap;
   padding: 16px;
   display: flex;
   align-items: center;
   gap: 12px;
   transition: transform 0.2s;
-  max-width: 400px;
+  max-width: 500px;
+  min-width: 295px;
   text-decoration: none;
   color: inherit;
 }
@@ -42,16 +43,16 @@
 }
 
 .module-card.enabled {
-  border-left: 4px solid #22c55e;
+  border-left: 4px solid var(--status-enabled);
 }
 
 .module-card.disabled {
-  border-left: 4px solid #ef4444;
+  border-left: 4px solid var(--status-disabled);
   opacity: 0.6;
 }
 
 .module-card.waiting_for_action {
-  border-left: 4px solid #d97706;
+  border-left: 4px solid var(--status-waiting);
 }
 
 .module-icon {
