@@ -2,7 +2,6 @@ package core
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -27,7 +26,6 @@ func CloneModuleRepo(gitURL, moduleName, privateKey string) error {
 	}
 	targetDir := filepath.Join(baseRepoPath, moduleName)
 
-	log.Printf("Private key:\n%s\n", privateKey)
 	tmpKey, err := os.CreateTemp("", "id_rsa_")
 	if err != nil {
 		return fmt.Errorf("failed to create temp key file: %w", err)

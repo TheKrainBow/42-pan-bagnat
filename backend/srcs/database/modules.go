@@ -223,8 +223,8 @@ FROM modules`,
 func InsertModule(m Module) error {
 	_, err := mainDB.Exec(`
 		INSERT INTO modules (id, name, url, ssh_public_key, ssh_private_key, last_update)
-		VALUES ($1, $2, $3, $4, $5, NOW())
-	`, m.ID, m.Name, m.URL, m.SSHPublicKey, m.SSHPrivateKey)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, m.ID, m.Name, m.URL, m.SSHPublicKey, m.SSHPrivateKey, m.LastUpdate)
 	return err
 }
 

@@ -146,19 +146,17 @@ func ImportModule(name string, gitURL string) (Module, error) {
 		return Module{}, fmt.Errorf("failed to generate SSH keys: %w", err)
 	}
 
-	if err := CloneModuleRepo(gitURL, name, privKey); err != nil {
-		return Module{}, fmt.Errorf("failed to clone repository: %w", err)
-	}
-
 	// Prepare module struct
-	now := time.Now().UTC()
 	dest = Module{
 		ID:            moduleID,
 		Name:          name,
 		URL:           gitURL,
 		SSHPublicKey:  pubKey,
 		SSHPrivateKey: privKey,
-		LastUpdate:    now,
+	}
+
+	if err := CloneModuleRepo(gitURL, name, privKey); err == nil {
+		dest.LastUpdate = time.Now()
 	}
 
 	// Insert into DB
