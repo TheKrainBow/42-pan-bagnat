@@ -22,7 +22,7 @@ type Module struct {
 	Name          string    `json:"name" example:"captain-hook"`
 	Version       string    `json:"version" example:"1.2"`
 	Status        string    `json:"status" example:"enabled"`
-	URL           string    `json:"url" example:"https://github.com/some-user/some-repo"`
+	GitURL        string    `json:"git_url" example:"https://github.com/some-user/some-repo"`
 	IconURL       string    `json:"icon_url" example:"https://someURL/image.png"`
 	LatestVersion string    `json:"latest_version" example:"1.7"`
 	LateCommits   int       `json:"late_commits" example:"2"`
@@ -32,11 +32,11 @@ type Module struct {
 type User struct {
 	ID        string    `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
 	FtLogin   string    `json:"login" example:"heinz"`
-	FtID      string    `json:"ftId" example:"1492"`
-	FtIsStaff bool      `json:"ftIsStaff" example:"true"`
-	PhotoURL  string    `json:"url" example:"https://intra.42.fr/some-login/some-id"`
-	LastSeen  time.Time `json:"lastUpdate" example:"2025-02-18T15:00:00Z"`
-	IsStaff   bool      `json:"isStaff" example:"true"`
+	FtID      string    `json:"ft_id" example:"1492"`
+	FtIsStaff bool      `json:"ft_is_staff" example:"true"`
+	PhotoURL  string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id"`
+	LastSeen  time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
+	IsStaff   bool      `json:"is_staff" example:"true"`
 }
 
 type RolePatch struct {
@@ -52,7 +52,7 @@ type ModulePatch struct {
 	Name          *string    `json:"name" example:"captain-hook"`
 	Version       *string    `json:"version" example:"1.2"`
 	Status        *string    `json:"status" example:"enabled"`
-	URL           *string    `json:"url" example:"https://github.com/some-user/some-repo"`
+	GitURL        *string    `json:"git_url" example:"https://github.com/some-user/some-repo"`
 	IconURL       *string    `json:"icon_url" example:"https://someURL/image.png"`
 	LatestVersion *string    `json:"latest_version" example:"1.7"`
 	LateCommits   *int       `json:"late_commits" example:"2"`
@@ -62,11 +62,11 @@ type ModulePatch struct {
 type UserPatch struct {
 	ID        string     `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
 	FtLogin   *string    `json:"login" example:"heinz"`
-	FtID      *string    `json:"ftId" example:"1492"`
-	FtIsStaff *bool      `json:"ftIsStaff" example:"true"`
-	PhotoURL  *string    `json:"url" example:"https://intra.42.fr/some-login/some-id"`
-	LastSeen  *time.Time `json:"lastUpdate" example:"2025-02-18T15:00:00Z"`
-	IsStaff   *bool      `json:"isStaff" example:"true"`
+	FtID      *string    `json:"ft_id" example:"1492"`
+	FtIsStaff *bool      `json:"ft_is_staff" example:"true"`
+	PhotoURL  *string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id"`
+	LastSeen  *time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
+	IsStaff   *bool      `json:"is_staff" example:"true"`
 }
 
 var mainDB *sql.DB

@@ -57,7 +57,7 @@ func ModuleToAPIModule(module core.Module) Module {
 		LatestVersion: module.LatestVersion,
 		LateCommits:   module.LateCommits,
 		LastUpdate:    module.LastUpdate,
-		URL:           module.URL,
+		GitURL:        module.GitURL,
 		IconURL:       module.IconURL,
 		Status:        ModuleStatus(module.Status),
 		Roles:         RolesToAPIRoles(module.Roles),

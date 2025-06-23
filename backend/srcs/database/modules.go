@@ -13,7 +13,7 @@ const (
 	ModuleName          ModuleOrderField = "name"
 	ModuleVersion       ModuleOrderField = "version"
 	ModuleStatus        ModuleOrderField = "status"
-	ModuleURL           ModuleOrderField = "url"
+	ModuleURL           ModuleOrderField = "git_url"
 	ModuleLatestVersion ModuleOrderField = "latest_version"
 	ModuleLateCommits   ModuleOrderField = "late_commits"
 	ModuleLastUpdate    ModuleOrderField = "last_update"
@@ -26,7 +26,7 @@ type ModuleOrder struct {
 
 func GetModule(moduleID string) (*Module, error) {
 	row := mainDB.QueryRow(`
-		SELECT id, ssh_public_key, ssh_private_key, name, version, status, url, icon_url, latest_version, late_commits, last_update
+		SELECT id, ssh_public_key, ssh_private_key, name, version, status, git_url, icon_url, latest_version, late_commits, last_update
 		FROM modules
 		WHERE id = $1
 	`, moduleID)
@@ -39,7 +39,7 @@ func GetModule(moduleID string) (*Module, error) {
 		&module.Name,
 		&module.Version,
 		&module.Status,
-		&module.URL,
+		&module.GitURL,
 		&module.IconURL,
 		&module.LatestVersion,
 		&module.LateCommits,
@@ -127,7 +127,7 @@ func GetAllModules(
 			case ModuleStatus:
 				args = append(args, lastModule.Status)
 			case ModuleURL:
-				args = append(args, lastModule.URL)
+				args = append(args, lastModule.GitURL)
 			case ModuleLatestVersion:
 				args = append(args, lastModule.LatestVersion)
 			case ModuleLateCommits:
@@ -173,7 +173,7 @@ func GetAllModules(
 	// 4) Assemble SQL
 	var sb strings.Builder
 	sb.WriteString(
-		`SELECT id, ssh_private_key, ssh_public_key, name, version, status, url, icon_url, latest_version, late_commits, last_update
+		`SELECT id, ssh_private_key, ssh_public_key, name, version, status, git_url, icon_url, latest_version, late_commits, last_update
 FROM modules`,
 	)
 	if len(whereConds) > 0 {
@@ -206,7 +206,7 @@ FROM modules`,
 			&m.Name,
 			&m.Version,
 			&m.Status,
-			&m.URL,
+			&m.GitURL,
 			&m.IconURL,
 			&m.LatestVersion,
 			&m.LateCommits,
@@ -227,9 +227,9 @@ func InsertModule(m Module) error {
 	}
 
 	_, err := mainDB.Exec(`
-		INSERT INTO modules (id, name, url, ssh_public_key, ssh_private_key, last_update, status)
+		INSERT INTO modules (id, name, git_url, ssh_public_key, ssh_private_key, last_update, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
-	`, m.ID, m.Name, m.URL, m.SSHPublicKey, m.SSHPrivateKey, m.LastUpdate, status)
+	`, m.ID, m.Name, m.GitURL, m.SSHPublicKey, m.SSHPrivateKey, m.LastUpdate, status)
 	return err
 }
 

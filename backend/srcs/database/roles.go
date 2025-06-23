@@ -260,7 +260,7 @@ func GetRoleUserCount(roleID string) (int, error) {
 
 func GetRoleModules(roleID string) ([]Module, error) {
 	rows, err := mainDB.Query(`
-		SELECT mod.id, mod.name, mod.version, mod.status, mod.url, mod.icon_url, mod.latest_version, mod.late_commits, mod.last_update
+		SELECT mod.id, mod.name, mod.version, mod.status, mod.git_url, mod.icon_url, mod.latest_version, mod.late_commits, mod.last_update
 		FROM modules mod
 		JOIN module_roles ur ON ur.module_id = mod.id
 		WHERE ur.role_id = $1
@@ -278,7 +278,7 @@ func GetRoleModules(roleID string) ([]Module, error) {
 			&module.Name,
 			&module.Version,
 			&module.Status,
-			&module.URL,
+			&module.GitURL,
 			&module.IconURL,
 			&module.LatestVersion,
 			&module.LateCommits,

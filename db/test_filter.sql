@@ -51,7 +51,7 @@ VALUES
   ('user_25HZXYZDE8451', 'SomeUser', '138548',  true, 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',     '1999-04-18 12:00:00', false),
   ('user_01HZXYZDE0460', 'yoshi',    '78574',  true,  'https://cdn.intra.42.fr/users/dc17821ef0dc39f998f340e9db0fe604/yoshi.jpg',    '2001-04-16 12:00:00', true);
 
-INSERT INTO modules (id, name, version, status, url, latest_version, late_commits, last_update)
+INSERT INTO modules (id, name, version, status, git_url, latest_version, late_commits, last_update)
 VALUES
   ('module_01HZXYZDE0420', 'captain-hook', '1.2', 'enabled', 'https://github.com/42nice/captain-hook', '1.7', 5, '2025-04-16 12:00:00'),
   ('module_01HZXYZDE0430', 'adm-stud', '1.5', 'enabled', 'https://github.com/42nice/adm-stud', '1.5', 0, '2025-04-16 12:00:00'),

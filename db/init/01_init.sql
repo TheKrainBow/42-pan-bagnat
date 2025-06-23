@@ -7,7 +7,7 @@ CREATE TABLE roles (
 CREATE TABLE modules (
   id TEXT PRIMARY KEY, -- module_ULID
   name TEXT NOT NULL,
-  url TEXT,
+  git_url TEXT,
   ssh_public_key TEXT NOT NULL DEFAULT '',
   ssh_private_key TEXT NOT NULL DEFAULT '',
   version TEXT NOT NULL DEFAULT '',

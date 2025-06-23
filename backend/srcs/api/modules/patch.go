@@ -28,7 +28,7 @@ func PatchModule(w http.ResponseWriter, r *http.Request) {
 		Name:          "Test",
 		Version:       "1.2",
 		Status:        api.Enabled,
-		URL:           "https://github.com/some-user/some-repo",
+		GitURL:        "https://github.com/some-user/some-repo",
 		LatestVersion: "1.7",
 		LastUpdate:    time.Date(2025, 02, 18, 15, 0, 0, 0, time.UTC),
 	}

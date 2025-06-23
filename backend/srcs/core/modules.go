@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 )
 
 type ModulePagination struct {
@@ -119,8 +118,11 @@ func GetModule(moduleID string) (Module, error) {
 	var dest Module
 
 	module, err := database.GetModule(moduleID)
-	if err != nil || module == nil {
+	if err != nil {
 		return Module{}, fmt.Errorf("couldn't get module in db: %w", err)
+	}
+	if module == nil {
+		return Module{}, nil
 	}
 	dest = DatabaseModuleToModule(*module)
 	roles, err := database.GetModuleRoles(moduleID)
@@ -150,20 +152,16 @@ func ImportModule(name string, gitURL string) (Module, error) {
 	dest = Module{
 		ID:            moduleID,
 		Name:          name,
-		URL:           gitURL,
+		GitURL:        gitURL,
 		SSHPublicKey:  pubKey,
 		SSHPrivateKey: privKey,
-	}
-
-	if err := CloneModuleRepo(gitURL, name, privKey); err == nil {
-		dest.LastUpdate = time.Now()
 	}
 
 	// Insert into DB
 	if err := database.InsertModule(database.Module{
 		ID:            dest.ID,
 		Name:          dest.Name,
-		URL:           dest.URL,
+		GitURL:        dest.GitURL,
 		SSHPublicKey:  dest.SSHPublicKey,
 		SSHPrivateKey: dest.SSHPrivateKey,
 		LastUpdate:    dest.LastUpdate,
