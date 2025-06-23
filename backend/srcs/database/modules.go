@@ -11,6 +11,7 @@ type ModuleOrderField string
 const (
 	ModuleID            ModuleOrderField = "id"
 	ModuleName          ModuleOrderField = "name"
+	ModuleSlug          ModuleOrderField = "slug"
 	ModuleVersion       ModuleOrderField = "version"
 	ModuleStatus        ModuleOrderField = "status"
 	ModuleGitURL        ModuleOrderField = "git_url"
@@ -27,7 +28,7 @@ type ModuleOrder struct {
 
 func GetModule(moduleID string) (*Module, error) {
 	row := mainDB.QueryRow(`
-		SELECT id, ssh_public_key, ssh_private_key, name, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update
+		SELECT id, ssh_public_key, ssh_private_key, name, slug, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update
 		FROM modules
 		WHERE id = $1
 	`, moduleID)
@@ -38,6 +39,7 @@ func GetModule(moduleID string) (*Module, error) {
 		&module.SSHPublicKey,
 		&module.SSHPrivateKey,
 		&module.Name,
+		&module.Slug,
 		&module.Version,
 		&module.Status,
 		&module.GitURL,
@@ -124,6 +126,8 @@ func GetAllModules(
 				args = append(args, lastModule.ID)
 			case ModuleName:
 				args = append(args, lastModule.Name)
+			case ModuleSlug:
+				args = append(args, lastModule.Slug)
 			case ModuleVersion:
 				args = append(args, lastModule.Version)
 			case ModuleStatus:
@@ -177,7 +181,7 @@ func GetAllModules(
 	// 4) Assemble SQL
 	var sb strings.Builder
 	sb.WriteString(
-		`SELECT id, ssh_private_key, ssh_public_key, name, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update
+		`SELECT id, ssh_private_key, ssh_public_key, name, slug, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update
 FROM modules`,
 	)
 	if len(whereConds) > 0 {
@@ -208,6 +212,7 @@ FROM modules`,
 			&m.SSHPrivateKey,
 			&m.SSHPublicKey,
 			&m.Name,
+			&m.Slug,
 			&m.Version,
 			&m.Status,
 			&m.GitURL,
@@ -232,9 +237,9 @@ func InsertModule(m Module) error {
 	}
 
 	_, err := mainDB.Exec(`
-		INSERT INTO modules (id, name, git_url, git_branch, ssh_public_key, ssh_private_key, last_update, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-	`, m.ID, m.Name, m.GitURL, m.GitBranch, m.SSHPublicKey, m.SSHPrivateKey, m.LastUpdate, status)
+		INSERT INTO modules (id, name, slug, git_url, git_branch, ssh_public_key, ssh_private_key, last_update, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	`, m.ID, m.Name, m.Slug, m.GitURL, m.GitBranch, m.SSHPublicKey, m.SSHPrivateKey, m.LastUpdate, status)
 	return err
 }
 

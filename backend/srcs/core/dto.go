@@ -43,6 +43,7 @@ func DatabaseModuleToModule(dbModule database.Module) Module {
 		SSHPublicKey:  dbModule.SSHPublicKey,
 		SSHPrivateKey: dbModule.SSHPrivateKey,
 		Name:          dbModule.Name,
+		Slug:          dbModule.Slug,
 		Version:       dbModule.Version,
 		Status:        ModuleStatus(dbModule.Status),
 		GitURL:        dbModule.GitURL,
