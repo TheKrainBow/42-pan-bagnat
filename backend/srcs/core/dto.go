@@ -46,6 +46,7 @@ func DatabaseModuleToModule(dbModule database.Module) Module {
 		Version:       dbModule.Version,
 		Status:        ModuleStatus(dbModule.Status),
 		GitURL:        dbModule.GitURL,
+		GitBranch:     dbModule.GitBranch,
 		IconURL:       dbModule.IconURL,
 		LatestVersion: dbModule.LatestVersion,
 		LateCommits:   dbModule.LateCommits,

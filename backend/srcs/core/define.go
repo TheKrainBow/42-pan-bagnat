@@ -40,6 +40,7 @@ type Module struct {
 	Version       string       `json:"version"`
 	Status        ModuleStatus `json:"status"`
 	GitURL        string       `json:"git_url"`
+	GitBranch     string       `json:"git_branch"`
 	IconURL       string       `json:"icon_url"`
 	LatestVersion string       `json:"latest_Version"`
 	LateCommits   int          `json:"late_commits"`
@@ -51,11 +52,11 @@ type ModulePostInput struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	GitURL    string `json:"git_url"`
-	GitBranch string `json:"gitBranch"`
+	GitBranch string `json:"git_branch"`
 }
 
 type ModulePatchInput struct {
 	Name      string `json:"name"`
 	GitURL    string `json:"git_url"`
-	GitBranch string `json:"gitBranch"`
+	GitBranch string `json:"git_branch"`
 }
