@@ -8,6 +8,10 @@ const ModuleAboutSection = ({ module }) => {
     <div className="module-version-section">
       <div>
         <div>
+          <strong>🪪 Slug:</strong>{' '}
+          {module.slug}
+        </div>
+        <div>
           <strong>📦 Version:</strong>{' '}
           {isCloned ? module.version : <em>Waiting for clone</em>}
         </div>

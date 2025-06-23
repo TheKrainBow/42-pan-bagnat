@@ -54,6 +54,19 @@ func GetModule(moduleID string) (*Module, error) {
 	return &module, nil
 }
 
+func IsSlugTaken(slug string) (bool, error) {
+	var exists bool
+	err := mainDB.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1 FROM modules WHERE slug = $1
+		)
+	`, slug).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
 func GetModuleRoles(moduleID string) ([]Role, error) {
 	rows, err := mainDB.Query(`
 		SELECT r.id, r.name, r.color
