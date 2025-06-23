@@ -23,8 +23,9 @@ func PostModule(w http.ResponseWriter, r *http.Request) {
 
 	// Parse input
 	var input struct {
-		GitURL string `json:"git_url"`
-		Name   string `json:"name"`
+		GitURL    string `json:"git_url"`
+		GitBranch string `json:"git_branch"`
+		Name      string `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid JSON input", http.StatusBadRequest)
@@ -35,7 +36,7 @@ func PostModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := core.ImportModule(input.Name, input.GitURL)
+	module, err := core.ImportModule(input.Name, input.GitURL, input.GitBranch)
 	if err != nil {
 		log.Printf("failed to import module: %v", err)
 		http.Error(w, "Failed to import module", http.StatusInternalServerError)

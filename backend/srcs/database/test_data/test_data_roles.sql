@@ -5,12 +5,12 @@ VALUES
   ('user_01HZXYZDE0440', 'tac',      '79125',  true,  'https://intra.42.fr/tac/79125',      '2003-04-16 12:00:00', true),
   ('user_01HZXYZDE0450', 'yoshi',    '78574',  true,  'https://intra.42.fr/yoshi/78574',    '2002-04-16 12:00:00', true);
 
-INSERT INTO modules (id, name, version, status, git_url, latest_version, late_commits, last_update)
+INSERT INTO modules (id, name, slug, version, status, git_url, latest_version, late_commits, last_update)
 VALUES
-  ('module_01HZXYZDE0420', 'captain-hook', '1.2', 'enabled', 'https://github.com/42nice/captain-hook', '1.7', 5, '2025-04-16 12:00:00'),
-  ('module_01HZXYZDE0430', 'adm-stud', '1.5', 'enabled', 'https://github.com/42nice/adm-stud', '1.5', 0, '2025-04-16 12:00:00'),
-  ('module_01HZXYZDE0440', 'adm-manager', '1.0', 'enabled', 'https://github.com/42nice/adm-manager', '1.0', 0, '2025-04-16 12:00:00'),
-  ('module_01HZXYZDE0450', 'student-info', '1.8', 'enabled', 'https://github.com/42nice/student-info', '1.9', 1, '2025-04-16 12:00:00');
+  ('module_01HZXYZDE0420', 'captain-hook', 'captain-hook', '1.2', 'enabled', 'https://github.com/42nice/captain-hook', '1.7', 5, '2025-04-16 12:00:00'),
+  ('module_01HZXYZDE0430', 'adm-stud', 'adm-stud', '1.5', 'enabled', 'https://github.com/42nice/adm-stud', '1.5', 0, '2025-04-16 12:00:00'),
+  ('module_01HZXYZDE0440', 'adm-manager', 'adm-manager', '1.0', 'enabled', 'https://github.com/42nice/adm-manager', '1.0', 0, '2025-04-16 12:00:00'),
+  ('module_01HZXYZDE0450', 'student-info', 'student-info', '1.8', 'enabled', 'https://github.com/42nice/student-info', '1.9', 1, '2025-04-16 12:00:00');
 
 
 INSERT INTO roles (id, name, color)
@@ -75,15 +75,15 @@ INSERT INTO roles (id, name, color) VALUES
   ('role_01HZXYZDE0479', 'Strategist',  '0xF0F0F0');
 
 -- 3) Add some new modules (applications) for testing
-INSERT INTO modules (id, name, version, status, git_url, latest_version, late_commits, last_update) VALUES
-  ('module_01HZXYZDE0460', 'role-manager',    '1.0', 'enabled', 'https://github.com/42nice/role-manager',    '1.0', 0, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0461', 'role-editor',     '1.1', 'enabled', 'https://github.com/42nice/role-editor',     '1.1', 2, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0462', 'support-tool',    '2.0', 'enabled', 'https://github.com/42nice/support-tool',    '2.0', 1, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0463', 'analytics',       '3.2', 'enabled', 'https://github.com/42nice/analytics',       '3.2', 4, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0464', 'design-proto',    '0.9', 'enabled', 'https://github.com/42nice/design-proto',    '0.9', 0, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0465', 'test-suite',      '5.4', 'enabled', 'https://github.com/42nice/test-suite',      '5.4', 3, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0466', 'deploy-automate', '1.5', 'enabled', 'https://github.com/42nice/deploy-automate', '1.5', 0, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0467', 'strategy-dash',   '4.0', 'enabled', 'https://github.com/42nice/strategy-dash',   '4.0', 2, '2025-04-20 12:00:00+00');
+INSERT INTO modules (id, name, slug, version, status, git_url, latest_version, late_commits, last_update) VALUES
+  ('module_01HZXYZDE0460', 'role-manager',     'role-manager',    '1.0', 'enabled', 'https://github.com/42nice/role-manager',    '1.0', 0, '2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0461', 'role-editor',      'role-editor',     '1.1', 'enabled', 'https://github.com/42nice/role-editor',     '1.1', 2, '2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0462', 'support-tool',     'support-tool',    '2.0', 'enabled', 'https://github.com/42nice/support-tool',    '2.0', 1, '2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0463', 'analytics',        'analytics',       '3.2', 'enabled', 'https://github.com/42nice/analytics',       '3.2', 4, '2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0464', 'design-proto',     'design-proto',    '0.9', 'enabled', 'https://github.com/42nice/design-proto',    '0.9', 0, '2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0465', 'test-suite',       'test-suite',      '5.4', 'enabled', 'https://github.com/42nice/test-suite',      '5.4', 3, '2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0466', 'deploy-automate',  'deploy-automate', '1.5', 'enabled', 'https://github.com/42nice/deploy-automate', '1.5', 0, '2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0467', 'strategy-dash',    'strategy-dash',   '4.0', 'enabled', 'https://github.com/42nice/strategy-dash',   '4.0', 2, '2025-04-20 12:00:00+00');
 
 -- 4) Assign users to roles (varied member counts)
 INSERT INTO user_roles (user_id, role_id) VALUES

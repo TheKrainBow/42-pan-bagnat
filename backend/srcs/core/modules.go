@@ -133,7 +133,7 @@ func GetModule(moduleID string) (Module, error) {
 	return dest, nil
 }
 
-func ImportModule(name string, gitURL string) (Module, error) {
+func ImportModule(name string, gitURL string, gitBranch string) (Module, error) {
 	var dest Module
 
 	// Generate a ULID for the module
@@ -153,6 +153,7 @@ func ImportModule(name string, gitURL string) (Module, error) {
 		ID:            moduleID,
 		Name:          name,
 		GitURL:        gitURL,
+		GitBranch:     gitBranch,
 		SSHPublicKey:  pubKey,
 		SSHPrivateKey: privKey,
 	}
@@ -162,6 +163,7 @@ func ImportModule(name string, gitURL string) (Module, error) {
 		ID:            dest.ID,
 		Name:          dest.Name,
 		GitURL:        dest.GitURL,
+		GitBranch:     dest.GitBranch,
 		SSHPublicKey:  dest.SSHPublicKey,
 		SSHPrivateKey: dest.SSHPrivateKey,
 		LastUpdate:    dest.LastUpdate,
