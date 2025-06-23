@@ -1,31 +1,11 @@
-.ssh-key-container {
-  display: inline-block;
-  position: relative;
-  cursor: pointer;
-}
-
-.module-link {
-  color: #60a5fa;
-  text-decoration: underline;
-  word-break: break-word;
-  cursor: pointer;
-  margin-left: 0.5rem;
-}
-
-.module-link:hover {
-  text-decoration: underline;
-  color: #a8cfff;
-}
-
-.copy-tooltip {
-  position: absolute;
-  top: -1.5rem;
-  left: 2rem;
-  background-color: #333;
-  color: white;
-  padding: 2px 6px;
-  font-size: 0.8rem;
-  border-radius: 4px;
-  white-space: nowrap;
-  z-index: 10;
+.module-version-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background-color: var(--light-background);
+  padding: 16px;
+  border-radius: 8px;
+  gap: 24px;
+  flex-wrap: wrap;
+  border: 1px solid var(--border);
 }

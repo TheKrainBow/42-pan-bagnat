@@ -10,49 +10,6 @@
   gap: 12px;
 }
 
-.fetch-btn,
-.update-btn,
-.uninstall-btn {
-  padding: 8px 16px;
-  font-size: 14px;
-  font-family: sans-serif;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  width: fit-content;
-}
-
-.fetch-btn {
-  background-color: #6b7280;
-  color: white;
-}
-
-.update-btn {
-  background-color: #3b82f6;
-  color: white;
-}
-
-.uninstall-btn {
-  background-color: #ef4444;
-  color: white;
-}
-
-.back-button:hover {
-  background-color: #4b5563;
-}
-
-.fetch-btn:active {
-  background-color: #4b5563;
-}
-
-.update-btn:active {
-  background-color: #2563eb;
-}
-
-.uninstall-btn:active {
-  background-color: #dc2626;
-}
-
 .module-settings-toggle {
   display: flex;
   align-items: center;
@@ -83,7 +40,7 @@
   position: absolute;
   cursor: pointer;
   top: 0; left: 0; right: 0; bottom: 0;
-  background-color: #888;
+  background-color: var(--slider-disabled);
   transition: 0.4s;
   border-radius: 24px;
 }
@@ -101,7 +58,7 @@
 }
 
 input:checked + .slider {
-  background-color: #22c55e;
+  background-color: var(--slider-enabled);
 }
 
 input:checked + .slider:before {
