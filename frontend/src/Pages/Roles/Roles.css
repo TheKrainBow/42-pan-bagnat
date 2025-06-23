@@ -114,7 +114,7 @@
 .members-cell .icon-small {
   width: 24px;
   height: 24px;
-  margin: auto; /* pour centrer l’icône dans sa colonne */
+  margin: auto;
 }
 
 .members-count {
