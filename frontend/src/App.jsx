@@ -1,4 +1,4 @@
-import React from 'react';
+import {React, useEffect} from 'react';
 import './App.css';
 import Users from './Pages/Users/Users';
 import Roles from './Pages/Roles/Roles';
@@ -8,6 +8,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate, useLocat
 
 function Sidebar({ currentPage }) {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    document.body.classList.add('theme-dark');
+    document.body.classList.remove('theme-light');
+    // document.body.classList.add('theme-light');
+    // document.body.classList.remove('theme-dark');
+  }, []);
 
   return (
     <aside className="sidebar"> 

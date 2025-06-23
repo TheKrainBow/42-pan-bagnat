@@ -1,8 +1,9 @@
 :root {
-  /* ========== BASE COLORS ========== */
+  /* ========== BASE COLORS (DARK + LIGHT SUPPORT) ========== */
   --white: #ffffff;
   --black: #000000;
 
+  /* Red variants */
   --red-light: #f25555;
   --red: #ef4444;
   --red-dark: #dc2626;
@@ -11,43 +12,82 @@
   --red-bg-light: #3a2e2e;
   --red-bg-hover: #503838;
 
+  --red-bg-light-theme: #fcebea;
+  --red-bg-light-hover-theme: #f5c0c0;
+  --red-clay-light: #c88c8c;
+
+  /* Green variants */
   --green-light: #38d976;
   --green: #22c55e;
   --green-dark: #16a34a;
 
+  /* Yellow variants */
   --yellow-light: #facc15;
   --yellow: #eab308;
   --yellow-dark: #ca8a04;
   --yellow-strong: #d97706;
 
+  /* Blue variants */
   --blue-light: #5593f9;
   --blue: #3b82f6;
   --blue-dark: #2563eb;
+  --blue-link: #4ea1f3;
 
+  /* Purple variants */
   --purple-light: #a078fa;
   --purple: #8b5cf6;
   --purple-dark: #6d28d9;
 
+  /* Gray variants for dark theme */
   --gray-light: #787e8b;
   --gray: #6b7280;
   --gray-dark: #4b5563;
   --gray-border: #444;
   --gray-border-light: #333;
 
+  /* Gray variants for light theme */
+  --gray-xlight: #f4f4f4;
+  --gray-light-theme: #e0e0e0;
+  --gray-theme: #ccc;
+  --gray-dark-theme: #999;
+  --gray-border-theme: #d1d5db;
+  --gray-border-light-theme: #e5e7eb;
+
+  /* Backgrounds */
   --bg: #1e1e1e;
   --bg-light: #252525;
   --bg-dark: #111;
 
+  --bg-theme: #ffffff;
+  --bg-light-theme: #f9f9f9;
+  --bg-dark-theme: #f0f0f0;
+
+  /* Text */
   --text-white: #fff;
   --text-red-light: #f8d7da;
   --text-gray: #666;
 
-  --blue-link: #4ea1f3;
+  --text-black: #000;
+  --text-dark: #111111;
+  --text-muted-light: #333333;
+  --text-gray-light-theme: #666;
 
+  /* Loader */
   --loader-gray: #999;
+  --loader-light: #ccc;
+  --loader-bg-light: #e0e0e0;
 
-  /* ========== COMPONENT COLORS (USING BASE) ========== */
+  /* Input / surface */
+  --surface-light: #ffffff;
+  --surface-muted-light: #f3f3f3;
 
+  /* Shadows */
+  --shadow-light: rgba(0, 0, 0, 0.05);
+  --shadow-medium: rgba(0, 0, 0, 0.15);
+  --shadow-strong: rgba(0, 0, 0, 0.25);
+}
+
+.theme-dark {
   /* STATUS */
   --status-enabled: var(--green);
   --status-disabled: var(--red);
@@ -67,7 +107,7 @@
   --red-border: var(--red-clay);
 
   /* TEXT */
-  --text-primary: var(--text-white);
+  --text-primary: var(--white);
   --red-text: var(--text-red-light);
 
   /* ACTIVE */
@@ -133,6 +173,97 @@
   --tooltip-bg: var(--button-dark-gray);
   --tooltip-border: var(--white);
   --tooltip-text: var(--white);
+
+  /* ARRAY HEADER */
+  --header-hover: var(--blue-dark);
+}
+
+.theme-light {
+  /* STATUS */
+  --status-enabled: var(--green);
+  --status-disabled: var(--red);
+  --status-waiting: var(--yellow-strong);
+
+  /* BACKGROUNDS */
+  --background: var(--bg-theme);
+  --light-background: var(--bg-light-theme);
+  --dark-background: var(--bg-dark-theme);
+  --red-background: var(--red-bg-light-theme);
+  --light-red-background: var(--red-bg-light-theme);
+  --light-red-background-hover: var(--red-bg-light-hover-theme);
+
+  /* BORDERS */
+  --border: var(--gray-border-theme);
+  --light-border: var(--gray-border-light-theme);
+  --red-border: var(--red-clay-light);
+
+  /* TEXT */
+  --text-primary: var(--text-dark);
+  --red-text: var(--text-red-light);
+
+  /* ACTIVE */
+  --active: var(--blue);
+
+  /* BUTTONS */
+  --button-green: var(--green);
+  --button-green-hover: var(--green-light);
+  --button-green-active: var(--green-dark);
+
+  --button-gray: var(--gray-theme);
+  --button-gray-hover: var(--gray-light-theme);
+  --button-gray-active: var(--gray-dark-theme);
+
+  --button-blue: var(--blue);
+  --button-blue-hover: var(--blue-light);
+  --button-blue-active: var(--blue-dark);
+
+  --button-red: var(--red);
+  --button-red-hover: var(--red-light);
+  --button-red-active: var(--red-dark);
+
+  --button-yellow: var(--yellow);
+  --button-yellow-hover: var(--yellow-light);
+  --button-yellow-active: var(--yellow-dark);
+
+  --button-purple: var(--purple);
+  --button-purple-hover: var(--purple-light);
+  --button-purple-active: var(--purple-dark);
+
+  --button-black: var(--gray-border-theme);
+  --button-black-hover: var(--gray-border-light-theme);
+  --button-black-active: #cbd5e1;
+
+  --button-dark-gray: var(--gray-light-theme);
+  --button-dark-gray-hover: var(--gray-theme);
+  --button-dark-gray-active: var(--gray-dark-theme);
+
+  --button-link: var(--gray-border-light-theme);
+  --button-link-hover: var(--gray-theme);
+  --button-link-active: var(--gray-dark-theme);
+
+  --button-icon-bg: var(--gray-xlight);
+  --button-icon-border: var(--gray-border-theme);
+
+  /* LOADER */
+  --loader-bg: var(--loader-bg-light);
+  --loader-color: var(--loader-light);
+
+  /* SLIDER */
+  --slider-enabled: var(--green);
+  --slider-disabled: var(--red);
+
+  /* INPUT */
+  --input-bg: var(--surface-light);
+  --input-text: var(--text-dark);
+  --input-red: var(--red);
+
+  /* LINK */
+  --link-text: var(--blue-link);
+
+  /* TOOLTIP */
+  --tooltip-bg: var(--surface-muted-light);
+  --tooltip-border: var(--gray-dark-theme);
+  --tooltip-text: var(--text-dark);
 
   /* ARRAY HEADER */
   --header-hover: var(--blue-dark);
