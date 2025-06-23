@@ -39,21 +39,21 @@ VALUES
 
 INSERT INTO modules (id, name, slug, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update)
 VALUES
-  ('module_01HZXYZDE0420','captain-hook','captain-hook',    '1.2','enabled', 'https://github.com/42nice/captain-hook', 'main', 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',    '1.7',5,'2025-04-16 12:00:00+00'),
-  ('module_01HZXYZDE0430','adm-stud','adm-stud',        '1.5','enabled', 'https://github.com/42nice/adm-stud', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',         '1.5',0,'2025-04-16 12:00:00+00'),
-  ('module_01HZXYZDE0440','adm-manager','adm-manager',     '1.0','enabled', 'https://github.com/42nice/adm-manager', 'main', '',      '1.0',0,'2025-04-16 12:00:00+00'),
-  ('module_01HZXYZDE0450','student-info','student-info',    '1.8','enabled', 'https://github.com/42nice/student-info', 'main', 'https://aozkdaopkqopsfk/anissa.jpg',     '1.9',1,'2025-04-16 12:00:00+00'),
-  ('module_01HZXYZDE0460','role-manager','role-manager',    '1.0','enabled', 'https://github.com/42nice/role-manager', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',     '1.0',0,'2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0461','role-editor','role-editor',     '1.1','enabled', 'https://github.com/42nice/role-editor', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',      '1.1',2,'2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0462','support-tool','support-tool',    '2.0','enabled', 'https://github.com/42nice/support-tool', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',     '2.0',1,'2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0463','analytics','analytics',       '3.2','enabled', 'https://github.com/42nice/analytics', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',        '3.2',4,'2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0464','design-proto','design-proto',    '0.9','enabled', 'https://github.com/42nice/design-proto', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',     '0.9',0,'2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0465','test-suite','test-suite',      '5.4','enabled', 'https://github.com/42nice/test-suite', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',       '5.4',3,'2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0466','deploy-automate','deploy-automate', '1.5','enabled', 'https://github.com/42nice/deploy-automate', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',  '1.5',0,'2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0467','strategy-dash','strategy-dash',   '4.0','enabled', 'https://github.com/42nice/strategy-dash', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',    '4.0',2,'2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0468','zorbi-app','zorbi-app',       '1.0','disabled','https://example.com/zorbi', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',                  '1.0',0,'2025-04-21 08:00:00+00'),
-  ('module_01HZXYZDE0469','alpha-tool','alpha-tool',      '2.2','disabled','https://example.com/alpha', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',                  '2.2',1,'2025-04-21 08:00:00+00'),
-  ('module_01HZXYZDE0470','beta-service','beta-service',    '3.5','enabled', 'https://example.com/beta', 'main', 'https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg',                   '3.5',1,'2025-04-21 08:00:00+00');
+  ('module_01HZXYZDE0420','Captain Hook','captain-hook-main','1.2','enabled','https://github.com/42nice/captain-hook','main','https://www.youtube.com/watch?v=dQw4w9WgXcQ','1.7',5,'2025-04-16 12:00:00+00'),
+  ('module_01HZXYZDE0430','ADM Student','adm-student-main','1.5','enabled','https://github.com/42nice/adm-stud','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','1.5',0,'2025-04-16 12:00:00+00'),
+  ('module_01HZXYZDE0440','ADM Manager','adm-manager-main','1.0','enabled','https://github.com/42nice/adm-manager','main','','1.0',0,'2025-04-16 12:00:00+00'),
+  ('module_01HZXYZDE0450','Student Info','student-info-main','1.8','enabled','https://github.com/42nice/student-info','main','https://aozkdaopkqopsfk/anissa.jpg','1.9',1,'2025-04-16 12:00:00+00'),
+  ('module_01HZXYZDE0460','Role Manager','role-manager-main','1.0','enabled','https://github.com/42nice/role-manager','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','1.0',0,'2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0461','Role Editor','role-editor-main','1.1','enabled','https://github.com/42nice/role-editor','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','1.1',2,'2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0462','Support Tool','support-tool-main','2.0','enabled','https://github.com/42nice/support-tool','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','2.0',1,'2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0463','Analytics','analytics-main','3.2','enabled','https://github.com/42nice/analytics','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','3.2',4,'2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0464','Design Proto','design-proto-main','0.9','enabled','https://github.com/42nice/design-proto','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','0.9',0,'2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0465','Test Suite','test-suite-main','5.4','enabled','https://github.com/42nice/test-suite','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','5.4',3,'2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0466','Deploy Automate','deploy-automate-main','1.5','enabled','https://github.com/42nice/deploy-automate','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','1.5',0,'2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0467','Strategy Dash','strategy-dash-main','4.0','enabled','https://github.com/42nice/strategy-dash','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','4.0',2,'2025-04-20 12:00:00+00'),
+  ('module_01HZXYZDE0468','Zorbi App','zorbi-app-main','1.0','disabled','https://example.com/zorbi','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','1.0',0,'2025-04-21 08:00:00+00'),
+  ('module_01HZXYZDE0469','Alpha Tool','alpha-tool-main','2.2','disabled','https://example.com/alpha','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','2.2',1,'2025-04-21 08:00:00+00'),
+  ('module_01HZXYZDE0470','Beta Service','beta-service-main','3.5','enabled','https://example.com/beta','main','https://cdn.intra.42.fr/users/43445ac80da38e73e2af06b5897339fd/anissa.jpg','3.5',1,'2025-04-21 08:00:00+00');
 
 INSERT INTO roles (id, name, color)
 VALUES

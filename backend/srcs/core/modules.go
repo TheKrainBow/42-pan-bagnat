@@ -5,6 +5,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"log"
+	"regexp"
 	"strings"
 )
 
@@ -133,6 +135,25 @@ func GetModule(moduleID string) (Module, error) {
 	return dest, nil
 }
 
+func GenerateModuleSlug(name, branch string) string {
+	slugBase := strings.ToLower(name)
+	slugBase = strings.TrimSpace(slugBase)
+	slugBase = regexp.MustCompile(`\s+`).ReplaceAllString(slugBase, "-")
+	slug := fmt.Sprintf("%s-%s", slugBase, strings.ToLower(branch))
+	attempt := ""
+	for {
+		isTaken, err := database.IsSlugTaken(slug + attempt)
+		if err != nil {
+			log.Printf("error while generating slug `%s`: %s\n", slug+attempt, err)
+			return ""
+		}
+		if !isTaken {
+			return slug + attempt
+		}
+		attempt += "-"
+	}
+}
+
 func ImportModule(name string, gitURL string, gitBranch string) (Module, error) {
 	var dest Module
 
@@ -152,16 +173,22 @@ func ImportModule(name string, gitURL string, gitBranch string) (Module, error) 
 	dest = Module{
 		ID:            moduleID,
 		Name:          name,
+		Slug:          GenerateModuleSlug(name, gitBranch),
 		GitURL:        gitURL,
 		GitBranch:     gitBranch,
 		SSHPublicKey:  pubKey,
 		SSHPrivateKey: privKey,
 	}
 
+	if dest.Slug == "" {
+		return Module{}, fmt.Errorf("failed to generate a valid slug: %w", err)
+	}
+
 	// Insert into DB
 	if err := database.InsertModule(database.Module{
 		ID:            dest.ID,
 		Name:          dest.Name,
+		Slug:          dest.Slug,
 		GitURL:        dest.GitURL,
 		GitBranch:     dest.GitBranch,
 		SSHPublicKey:  dest.SSHPublicKey,

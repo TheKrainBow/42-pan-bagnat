@@ -50,5 +50,10 @@ func PostModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err = core.CloneModuleRepo(module.GitURL, module.Name, module.SSHPrivateKey)
+	if err != nil {
+		log.Printf("error while cloning module %s: %s\n", module.ID, err.Error())
+	}
+
 	fmt.Fprint(w, string(destJSON))
 }
