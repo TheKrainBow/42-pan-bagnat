@@ -6,11 +6,13 @@ import { useNavigate } from 'react-router-dom';
 
 const ModuleImport = ({ onClose }) => {
   const gitInputRef = useRef();
+  const gitBranchInputRef = useRef();
   const nameInputRef = useRef();
   const navigate = useNavigate();
 
   const [moduleName, setModuleName] = useState('Hello World');
   const [gitUrl, setGitUrl] = useState('git@github.com:pan-bagnat/hello-world.git');
+  const [gitBranch, setGitBranch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const sshUrlRegex = /^git@[^\s]+:[^\s]+\.git$/;
@@ -28,11 +30,12 @@ const ModuleImport = ({ onClose }) => {
     if (!validate()) return;
 
     setIsSubmitting(true);
+    const finalBranch = gitBranch.trim() === '' ? 'main' : gitBranch;
     try {
       const res = await fetch('http://localhost:8080/api/v1/modules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: moduleName, git_url: gitUrl }),
+        body: JSON.stringify({ name: moduleName, git_url: gitUrl, git_branch: finalBranch }),
       });
 
       if (!res.ok) throw new Error('Failed to import module');
@@ -68,6 +71,15 @@ const ModuleImport = ({ onClose }) => {
           placeholder="git@github.com:org/repo.git"
           required={true}
           validator={value => (sshUrlRegex.test(value) || httpUrlRegex.test(value)) ? null : 'Must be a valid URL.'}
+        />
+
+        <Field
+          label="Git Branch Name"
+          ref={gitInputRef}
+          value={gitBranch}
+          onChange={e => setGitBranch(e.target.value)}
+          placeholder="main"
+          required={false}
         />
 
         <div className="mi-actions">

@@ -26,7 +26,11 @@ const ModuleAboutSection = ({ module }) => {
             : <em>Waiting for clone</em>}
         </div>
         <div>
-          <strong>🔗 Repo:</strong> <Link url={module.git_url} />
+          <strong>🔗 Git Repo:</strong> <Link url={module.git_url} />
+        </div>
+        <div>
+          <strong>🌿 Git Branch:</strong>{' '}
+          {module.git_branch}
         </div>
         <div>
           <strong>🔑 SSH Key:</strong>{' '}

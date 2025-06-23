@@ -53,6 +53,7 @@ func ModuleToAPIModule(module core.Module) Module {
 		ID:            module.ID,
 		SSHPublicKey:  module.SSHPublicKey,
 		Name:          module.Name,
+		Slug:          module.Slug,
 		Version:       module.Version,
 		LatestVersion: module.LatestVersion,
 		LateCommits:   module.LateCommits,
