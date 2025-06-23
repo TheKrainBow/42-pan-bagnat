@@ -16,21 +16,22 @@ const ModuleDetails = () => {
   const [loading, setLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [activeTab, setActiveTab] = useState('logs');
+  const [showWarning, setShowWarning] = useState(false);
+
+  const fetchModule = async () => {
+    try {
+      const res = await fetch(`http://localhost:8080/api/v1/modules/${moduleId}`);
+      const data = await res.json();
+      setModule(data);
+    } catch (err) {
+      console.error(err);
+      setModule(null);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchModule = async () => {
-      try {
-        const res = await fetch(`http://localhost:8080/api/v1/modules/${moduleId}`);
-        const data = await res.json();
-        setModule(data);
-      } catch (err) {
-        console.error(err);
-        setModule(null);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchModule();
   }, [moduleId]);
 
@@ -46,6 +47,13 @@ const ModuleDetails = () => {
       setStatusUpdating(false);
     }
   };
+
+  useEffect(() => {
+    if (module) {
+      const cloned = module.last_update && new Date(module.last_update).getFullYear() > 2000;
+      setShowWarning(!cloned);
+    }
+  }, [module]);
 
   if (loading) return <div className="loading">Loading...</div>;
   if (!module) return <div className="error">Module not found.</div>;
@@ -66,7 +74,16 @@ const ModuleDetails = () => {
       </div>
 
       {/* Version Info */}
-      {!isCloned && <ModuleWarningSection sshKey={module.ssh_public_key} moduleID={module.id}> </ModuleWarningSection>}
+      {showWarning && (
+        <ModuleWarningSection
+          sshKey={module.ssh_public_key}
+          moduleID={module.id}
+          onRetrySuccess={() => {
+            setShowWarning(false);
+            fetchModule();
+          }}
+        />
+      )}
       <ModuleAboutSection module={module}></ModuleAboutSection>
 
       {/* Running Info */}
