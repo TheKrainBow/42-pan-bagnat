@@ -1,7 +1,7 @@
 import { useState } from "react";
 import './ModuleWarningSection.css';
 
-const ModuleWarningSection = ({ sshKey, moduleID }) => {
+const ModuleWarningSection = ({ sshKey, moduleID, onRetrySuccess }) => {
   const [copied, setCopied] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [retrySuccess, setRetrySuccess] = useState(null);
@@ -20,6 +20,9 @@ const ModuleWarningSection = ({ sshKey, moduleID }) => {
         method: 'POST'
       });
       setRetrySuccess(res.ok);
+      if (res.ok && onRetrySuccess) {
+        onRetrySuccess();
+      }
     } catch (err) {
       setRetrySuccess(false);
     } finally {
