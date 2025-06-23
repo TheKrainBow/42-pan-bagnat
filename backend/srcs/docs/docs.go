@@ -455,7 +455,7 @@ const docTemplate = `{
                     ],
                     "example": "enabled"
                 },
-                "url": {
+                "git_url": {
                     "type": "string",
                     "example": "https://github.com/some-user/some-repo"
                 },
@@ -477,7 +477,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "captain-hook"
                 },
-                "url": {
+                "git_url": {
                     "type": "string",
                     "example": "https://github.com/some-user/some-repo"
                 }
@@ -584,7 +584,7 @@ const docTemplate = `{
                     "type": "string",
                     "example": "heinz"
                 },
-                "url": {
+                "photo_url": {
                     "type": "string",
                     "example": "https://intra.42.fr/some-login/some-id"
                 }

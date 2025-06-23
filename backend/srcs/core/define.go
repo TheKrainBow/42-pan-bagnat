@@ -14,11 +14,11 @@ const (
 type User struct {
 	ID        string    `json:"id"`
 	FtLogin   string    `json:"ftLogin"`
-	FtID      string    `json:"ftID"`
-	FtIsStaff bool      `json:"ftIsStaff"`
-	PhotoURL  string    `json:"url"`
-	LastSeen  time.Time `json:"lastUpdate"`
-	IsStaff   bool      `json:"isStaff"`
+	FtID      string    `json:"ft_id"`
+	FtIsStaff bool      `json:"ft_is_staff"`
+	PhotoURL  string    `json:"photo_url"`
+	LastSeen  time.Time `json:"last_update"`
+	IsStaff   bool      `json:"is_staff"`
 	Roles     []Role    `json:"roles"`
 }
 
@@ -36,10 +36,11 @@ type Module struct {
 	SSHPublicKey  string       `json:"ssh_public_key"`
 	SSHPrivateKey string       `json:"ssh_private_key"`
 	Name          string       `json:"name"`
+	Slug          string       `json:"slug"`
 	Version       string       `json:"version"`
 	Status        ModuleStatus `json:"status"`
-	URL           string       `json:"url"`
-	IconURL       string       `json:"iconUrl"`
+	GitURL        string       `json:"git_url"`
+	IconURL       string       `json:"icon_url"`
 	LatestVersion string       `json:"latest_Version"`
 	LateCommits   int          `json:"late_commits"`
 	LastUpdate    time.Time    `json:"last_update"`
@@ -49,12 +50,12 @@ type Module struct {
 type ModulePostInput struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
-	URL       string `json:"url"`
+	GitURL    string `json:"git_url"`
 	GitBranch string `json:"gitBranch"`
 }
 
 type ModulePatchInput struct {
 	Name      string `json:"name"`
-	URL       string `json:"url"`
+	GitURL    string `json:"git_url"`
 	GitBranch string `json:"gitBranch"`
 }
