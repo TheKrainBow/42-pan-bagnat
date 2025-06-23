@@ -39,8 +39,8 @@ func GenerateModuleOrderBy(order string) (dest []database.ModuleOrder) {
 			field = database.ModuleVersion
 		case string(database.ModuleStatus):
 			field = database.ModuleStatus
-		case string(database.ModuleURL):
-			field = database.ModuleURL
+		case string(database.ModuleGitURL):
+			field = database.ModuleGitURL
 		case string(database.ModuleLatestVersion):
 			field = database.ModuleLatestVersion
 		case string(database.ModuleLateCommits):

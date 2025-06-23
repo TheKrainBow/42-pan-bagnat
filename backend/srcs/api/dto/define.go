@@ -37,6 +37,7 @@ type Module struct {
 	Version       string       `json:"version" example:"1.2"`
 	Status        ModuleStatus `json:"status" example:"enabled"`
 	GitURL        string       `json:"git_url" example:"https://github.com/some-user/some-repo"`
+	GitBranch     string       `json:"git_branch" example:"main"`
 	IconURL       string       `json:"icon_url" example:"https://someURL/image.png"`
 	LatestVersion string       `json:"latest_version" example:"1.7"`
 	LateCommits   int          `json:"late_commits" example:"2"`
