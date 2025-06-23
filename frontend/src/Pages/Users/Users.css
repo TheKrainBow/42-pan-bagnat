@@ -3,8 +3,8 @@
   border-collapse: collapse;
   table-layout: fixed;
   cursor: default;
-  background-color: #252525;
-  color: #fff;
+  background-color: var(--background);
+  color: var(--text-primary);
   text-align: center;
 }
 
@@ -68,10 +68,9 @@
   padding: 4px 8px;
   margin: 2px;
   border-radius: 6px;
-  color: black;
   font-size: 0.75rem;
   font-weight: 500;
-  background-color: #fff;
+  background-color: var(--text-primary);
 }
 
 .user-row:hover {
@@ -79,7 +78,7 @@
 }
 
 .user-row {
-  border-bottom: 1px solid #444;
+  border-bottom: 1px solid var(--light-border);
 }
 
 .array-header-content.sortable {
@@ -92,7 +91,7 @@
 .staff-login {
   position: relative;
   font-weight: bold;
-  color: #e44141;
+  color: var(--primary-red);
 }
 
 .staff-login::after {
@@ -101,8 +100,8 @@
   bottom: 130%;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #333;
-  color: #fff;
+  background-color: var(--background);
+  color: var(--text-primary);
   padding: 4px 6px;
   border-radius: 4px;
   white-space: nowrap;
@@ -110,7 +109,8 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s ease-in-out;
-  z-index: 0.9;
+  z-index: 10;
+  border: 1px solid var(--tooltip-border);
 }
 
 .staff-login:hover::after {
@@ -121,24 +121,4 @@
   display: flex;
   justify-content: center;
   margin-top: 20px;
-}
-
-.load-more-button {
-  padding: 10px 20px;
-  background-color: #5b9df9;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-}
-
-.load-more-button:hover {
-  background-color: #4a86c6;
-}
-
-.loading-icon {
-  text-align: center;
-  padding: 20px;
-  font-size: 16px;
-  color: #e0e0e0;
 }

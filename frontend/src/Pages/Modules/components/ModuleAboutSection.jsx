@@ -6,7 +6,7 @@ const ModuleAboutSection = ({ module }) => {
 
   return (
     <div className="module-version-section">
-      <div className="version-info">
+      <div>
         <div>
           <strong>📦 Version:</strong>{' '}
           {isCloned ? module.version : <em>Waiting for clone</em>}
