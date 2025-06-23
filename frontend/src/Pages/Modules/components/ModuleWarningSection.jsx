@@ -1,13 +1,30 @@
 import { useState } from "react";
 import './ModuleWarningSection.css';
 
-const ModuleWarningSection = ({ sshKey }) => {
+const ModuleWarningSection = ({ sshKey, moduleID }) => {
   const [copied, setCopied] = useState(false);
+  const [retrying, setRetrying] = useState(false);
+  const [retrySuccess, setRetrySuccess] = useState(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(sshKey);
     setCopied(true);
     setTimeout(() => setCopied(false), 1500);
+  };
+
+  const handleRetryClone = async () => {
+    setRetrying(true);
+    setRetrySuccess(null);
+    try {
+      const res = await fetch(`http://localhost:8080/api/v1/modules/${moduleID}/git/clone`, {
+        method: 'POST'
+      });
+      setRetrySuccess(res.ok);
+    } catch (err) {
+      setRetrySuccess(false);
+    } finally {
+      setRetrying(false);
+    }
   };
 
   return (
@@ -24,9 +41,20 @@ const ModuleWarningSection = ({ sshKey }) => {
           <button className="copy-button" onClick={handleCopy}>📋 Copy</button>
           {copied && <div className="copy-tooltip">Copied!</div>}
         </div>
+        <div className="retry-clone-container">
+          <button
+            className="copy-button"
+            onClick={handleRetryClone}
+            disabled={retrying}
+          >
+            🔁 Retry Clone
+          </button>
+        </div>
+        {retrySuccess === true && <div className="retry-status success">✅ Clone triggered</div>}
+        {retrySuccess === false && <div className="retry-status error">❌ Clone failed</div>}
       </div>
     </div>
   );
-}
+};
 
 export default ModuleWarningSection;

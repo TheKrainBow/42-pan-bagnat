@@ -1,26 +1,19 @@
 package modules
 
 import (
-	"backend/api/modules/git"
-
 	"github.com/go-chi/chi/v5"
 )
 
 func RegisterRoutes(r chi.Router) {
-	r.Get("/", GetModules)
-	r.Post("/", PostModule)
-	r.Get("/{moduleID}", GetModule)
+	r.Get("/", GetModules)          // GET /api/v1/modules
+	r.Post("/", PostModule)         // POST /api/v1/modules
+	r.Get("/{moduleID}", GetModule) // GET /api/v1/modules/{moduleID}
 	r.Patch("/{moduleID}", PatchModule)
 	r.Delete("/{moduleID}", DeleteModule)
 
-	// Git operations
-	r.Route("/{moduleID}/git", func(r chi.Router) {
-		r.Post("/clone", git.GitClone)
-		r.Post("/pull", git.GitPull)
-		r.Post("/update-remote", git.GitUpdateRemote)
-		// r.Get("/status", git.GitStatus) // Optional
-	})
-
+	r.Post("/{moduleID}/git/clone", GitClone)
+	r.Post("/{moduleID}/git/pull", GitPull)
+	r.Post("/{moduleID}/git/update-remote", GitUpdateRemote)
 	// Docker operations
 	// r.Route("/{moduleID}/docker", func(r chi.Router) {
 	// 	r.Post("/start", DockerStart)

@@ -66,7 +66,7 @@ const ModuleDetails = () => {
       </div>
 
       {/* Version Info */}
-      {!isCloned && <ModuleWarningSection sshKey={module.ssh_public_key}> </ModuleWarningSection>}
+      {!isCloned && <ModuleWarningSection sshKey={module.ssh_public_key} moduleID={module.id}> </ModuleWarningSection>}
       <ModuleAboutSection module={module}></ModuleAboutSection>
 
       {/* Running Info */}
