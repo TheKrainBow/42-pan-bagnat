@@ -8,15 +8,6 @@
   height: 100%;
 }
 
-.import-button {
-  background-color: #3b82f6;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
 .modules-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -92,14 +83,6 @@
   white-space: nowrap;
 }
 
-.module-card.active .module-status {
-  background-color: #22c55e;
-}
-
-.module-card.disabled .module-status {
-  background-color: #ef4444;
-}
-
 .module-description, .module-updated {
   font-size: 14px;
   margin: 4px 0;
@@ -113,5 +96,5 @@
 
 .module-waiting {
   font-style: italic;
-  color: #d97706; /* Or a lighter amber/yellow suitable for dark theme */
+  color: var(--status-waiting); /* Or a lighter amber/yellow suitable for dark theme */
 }
