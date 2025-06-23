@@ -2,8 +2,7 @@
 
 .module-detail-container {
   padding: 24px;
-  color: #f0f0f0;
-  background-color: #1e1e1e;
+  background-color: var(--background);
   height: 100%;
   display: flex;
   flex-direction: column;
@@ -18,42 +17,9 @@
   gap: 16px;
 }
 
-.module-version-section {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  background-color: #2a2a2a;
-  padding: 16px;
-  border-radius: 8px;
-  gap: 24px;
-  flex-wrap: wrap;
-}
-
-.version-info {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  min-width: 250px;
-}
-
-.version-actions {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.paused-tag {
-  background-color: #facc15;
-  color: #1e1e1e;
-  font-size: 12px;
-  padding: 2px 6px;
-  margin-left: 10px;
-  border-radius: 4px;
-  font-weight: bold;
-}
-
 .module-running-section {
-  background-color: #2a2a2a;
+  background-color: var(--light-background);
+  border: 1px solid var(--border);
   padding: 16px;
   border-radius: 8px;
   display: flex;
@@ -67,7 +33,7 @@
 }
 
 .tab-content {
-  background-color: #1f1f1f;
+  background-color: var(--background);
   border-radius: 6px;
   padding: 12px;
 }

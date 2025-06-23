@@ -1,20 +1,20 @@
 
 .module-warning-section {
-  background-color: #2b1e1e;
-  border: 1px solid #864444;
-  color: #f8caca;
+  background-color: var(--red-background);
+  border: 1px solid var(--red-border);
+  color: var(--red-text);
   padding: 1rem;
   border-radius: 8px;
 }
 
 .public-key-display {
-  background-color: #1e1e1e;
-  border: 1px dashed #864444;
+  background-color: var(--background);
+  border: 1px dashed var(--red-border);
   padding: 0.75rem;
   font-family: monospace;
   white-space: pre-wrap;
   word-break: break-word;
-  color: #ffdede;
+  color: var(--red-text);
   border-radius: 6px;
 }
 
@@ -26,20 +26,6 @@
   margin-top: 0.5rem;
 }
 
-.copy-button {
-  background-color: #3a2e2e;
-  border: 1px solid #864444;
-  color: #f8caca;
-  padding: 0.4rem 0.75rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: background-color 0.2s;
-}
-
-.copy-button:hover {
-  background-color: #503838;
-}
 .public-key-wrapper {
   display: flex;
   align-items: flex-start;
@@ -53,9 +39,9 @@
 }
 
 .copy-button {
-  background-color: #3a2e2e;
-  border: 1px solid #864444;
-  color: #f8caca;
+  background-color: var(--light-red-background);
+  border: 1px solid var(--red-border);
+  color: var(--red-text);
   padding: 0.4rem 0.75rem;
   border-radius: 6px;
   cursor: pointer;
@@ -64,7 +50,7 @@
 }
 
 .copy-button:hover {
-  background-color: #503838;
+  background-color: var(--light-red-background-hover);
 }
 
 .copy-tooltip {
@@ -72,13 +58,14 @@
   top: -2.0rem;
   left: 50%;
   transform: translateX(-50%);
-  background-color: #444;
-  color: #eee;
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-text);
   padding: 2px 6px;
   border-radius: 4px;
   font-size: 0.75rem;
   white-space: nowrap;
   opacity: 0.95;
+  border: 1px solid var(--tooltip-border);
 }
 
 .warning-header {
@@ -93,7 +80,7 @@
 }
 
 .warning-text {
-  color: #f8d7da;
+  color: var(--red-text);
   font-size: 0.95rem;
   line-height: 1.3;
 }

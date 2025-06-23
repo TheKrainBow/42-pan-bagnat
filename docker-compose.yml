@@ -1,7 +1,7 @@
 services:
   frontend:
     container_name: pan-bagnat-frontend-1
-    profiles: ["backend", "dev"]
+    profiles: ["frontend", "dev"]
     build:
       context: ./frontend
     ports:
