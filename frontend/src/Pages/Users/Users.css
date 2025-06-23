@@ -91,7 +91,7 @@
 .staff-login {
   position: relative;
   font-weight: bold;
-  color: var(--primary-red);
+  color: var(--red);
 }
 
 .staff-login::after {
@@ -101,7 +101,8 @@
   left: 50%;
   transform: translateX(-50%);
   background-color: var(--background);
-  color: var(--text-primary);
+  color: var(--tooltip-text);
+  border: 1px solid var(--tooltip-border);
   padding: 4px 6px;
   border-radius: 4px;
   white-space: nowrap;
@@ -110,7 +111,6 @@
   pointer-events: none;
   transition: opacity 0.2s ease-in-out;
   z-index: 10;
-  border: 1px solid var(--tooltip-border);
 }
 
 .staff-login:hover::after {
