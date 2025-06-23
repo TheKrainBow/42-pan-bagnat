@@ -42,7 +42,7 @@ func GitClone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = core.CloneModuleRepo(module.GitURL, module.Name, module.SSHPrivateKey)
+	err = core.CloneModuleRepo(module.ID, module.GitURL, module.Slug, module.SSHPrivateKey)
 	if err != nil {
 		log.Printf("error while cloning module %s: %s\n", moduleID, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -134,7 +134,7 @@ func GitUpdateRemote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = core.UpdateModuleGitRemote(module.Name, input.NewURL)
+	err = core.UpdateModuleGitRemote(module.ID, module.Name, input.NewURL)
 	if err != nil {
 		log.Printf("error while cloning module %s: %s\n", moduleID, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
