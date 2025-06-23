@@ -82,7 +82,6 @@ func GetModule(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
 	id := chi.URLParam(r, "moduleID")
-	log.Printf("Received ID: '%s'", id) // This should print the ID
 
 	if id == "" {
 		http.Error(w, "ID not found", http.StatusBadRequest)
