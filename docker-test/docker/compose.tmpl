@@ -1,45 +1,63 @@
-version: "3.8"
-
 services:
-{{- range .Containers }}
+{{- range .Services }}
   {{ $.Module.Name }}-{{ .Name }}:
+    {{- $svc := . }}                                        # capture service
     {{- if .Image }}
-    image: {{ .Image }}
+    image: "{{ .Image }}"
     {{- else }}
     build:
-      context: {{ .Build.Context }}
-      dockerfile: {{ .Build.Dockerfile }}
+      context: "{{ .Build.Context }}"
+      dockerfile: "{{ .Build.Dockerfile }}"
     {{- end }}
-    container_name: {{ $.Module.Name }}-{{ .Name }}
+    container_name: "{{ $.Module.Name }}-{{ .Name }}"
 
-    {{- if eq .Name "db" }}
-    restart: always
-    environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - "./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro"
-      - "db-data:/var/lib/postgresql/data"
-    {{- else }}
+    {{- if $svc.DependsOn }}
     depends_on:
-      - {{ $.Module.Name }}-db
-    ports:
-      - "{{ .Expose }}:{{ .Expose }}"
-    {{- end }}
-
-    {{- if and (ne .Name "db") .Env }}
-    environment:
-      {{- range .Env }}
-      {{ . }}: "${{ . }}"
+      {{- range $dep := $svc.DependsOn }}
+      - "{{ $.Module.Name }}-{{ $dep }}"
       {{- end }}
     {{- end }}
 
+    {{- if $svc.Env }}
+    environment:
+      {{- range $e := $svc.Env }}
+      {{ $e.Key }}: "{{ $e.Value }}"
+      {{- end }}
+    {{- end }}
+
+    {{- /* Ports vs Expose */}}
+    {{- if $svc.Publish }}
+    ports:
+      {{- range $hostPort := $svc.Publish }}
+      - "{{ $hostPort }}:{{ if gt (len $svc.Expose) 0 }}{{ index $svc.Expose 0 }}{{ else }}{{ $hostPort }}{{ end }}"
+      {{- end }}
+    {{- else if $svc.Expose }}
+    expose:
+      {{- range $contPort := $svc.Expose }}
+      - "{{ $contPort }}"
+      {{- end }}
+    {{- end }}
+
+    {{- /* Volumes */}}
+    {{- if $svc.Volumes }}
+    volumes:
+      {{- range $vol := $svc.Volumes }}
+      {{- if $vol.Name }}
+      - "{{ $vol.Name }}:{{ $vol.ServicePath }}"
+      {{- else if $vol.HostPath }}
+      - "{{ $vol.HostPath }}:{{ $vol.ServicePath }}:ro"
+      {{- end }}
+      {{- end }}
+    {{- end }}
     networks:
       - hello-net
+
 {{- end }}
 
 volumes:
-  db-data:
+{{- range .Volumes }}
+  {{ . }}:
+{{- end }}
 
 networks:
   hello-net:
