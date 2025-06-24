@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+{{- range .Containers }}
+  {{ $.Module.Name }}-{{ .Name }}:
+    {{- if .Image }}
+    image: {{ .Image }}
+    {{- else }}
+    build:
+      context: {{ .Build.Context }}
+      dockerfile: {{ .Build.Dockerfile }}
+    {{- end }}
+    container_name: {{ $.Module.Name }}-{{ .Name }}
+
+    {{- if eq .Name "db" }}
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - "./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro"
+      - "db-data:/var/lib/postgresql/data"
+    {{- else }}
+    depends_on:
+      - {{ $.Module.Name }}-db
+    ports:
+      - "{{ .Expose }}:{{ .Expose }}"
+    {{- end }}
+
+    {{- if and (ne .Name "db") .Env }}
+    environment:
+      {{- range .Env }}
+      {{ . }}: "${{ . }}"
+      {{- end }}
+    {{- end }}
+
+    networks:
+      - hello-net
+{{- end }}
+
+volumes:
+  db-data:
+
+networks:
+  hello-net:
+    driver: bridge

@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  hello-world-db:
+    image: postgres:15
+    container_name: hello-world-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - "./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro"
+      - "db-data:/var/lib/postgresql/data"
+
+    networks:
+      - hello-net
+  hello-world-backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: hello-world-backend
+    depends_on:
+      - hello-world-db
+    ports:
+      - "8080:8080"
+    environment:
+      DB_CONN: "$DB_CONN"
+
+    networks:
+      - hello-net
+  hello-world-frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: hello-world-frontend
+    depends_on:
+      - hello-world-db
+    ports:
+      - "3000:3000"
+    environment:
+      BACKEND_URL: "$BACKEND_URL"
+
+    networks:
+      - hello-net
+
+volumes:
+  db-data:
+
+networks:
+  hello-net:
+    driver: bridge

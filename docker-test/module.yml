@@ -1,0 +1,32 @@
+module:
+  name: hello-world
+  version: "0.1.0"
+
+containers:
+  - name: db
+    image: postgres:15
+    expose: 5432
+    env: []
+    volumes:
+      - hostPath: db/init.sql
+        containerPath: /docker-entrypoint-initdb.d/init.sql
+      - name: hello-world-data
+        containerPath: /var/lib/postgresql/data
+
+  - name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    expose: 8080
+    env:
+      - DB_CONN
+    volumes: []
+
+  - name: frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    expose: 3000
+    env:
+      - BACKEND_URL
+    volumes: []
