@@ -3,8 +3,9 @@ package docker
 // ModuleManifest mirrors module.yml
 type ModuleManifest struct {
 	Module   ModuleInfo   `yaml:"module"`
+	Networks []string     `yaml:"networks,omitempty"`
 	Services []ServiceDef `yaml:"services"`
-	Volumes  []string     `yaml:"volumes,omitempty"` // top-level list of volume names
+	Volumes  []string     `yaml:"volumes,omitempty"`
 }
 
 type ModuleInfo struct {
@@ -22,6 +23,7 @@ type ServiceDef struct {
 	Env       []EnvEntry `yaml:"env,omitempty"`
 	DependsOn []string   `yaml:"depends_on,omitempty"`
 	Volumes   []Volume   `yaml:"volumes,omitempty"`
+	Networks  []string   `yaml:"networks,omitempty"`
 }
 
 type Build struct {

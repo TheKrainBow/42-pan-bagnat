@@ -1,15 +1,15 @@
 services:
 {{- range .Services }}
   {{ $.Module.Name }}-{{ .Name }}:
-    {{- $svc := . }}                                        # capture service
-    {{- if .Image }}
-    image: "{{ .Image }}"
+    {{- $svc := . }}
+    {{- if $svc.Image }}
+    image: "{{ $svc.Image }}"
     {{- else }}
     build:
-      context: "{{ .Build.Context }}"
-      dockerfile: "{{ .Build.Dockerfile }}"
+      context: "{{ $svc.Build.Context }}"
+      dockerfile: "{{ $svc.Build.Dockerfile }}"
     {{- end }}
-    container_name: "{{ $.Module.Name }}-{{ .Name }}"
+    container_name: "{{ $.Module.Name }}-{{ $svc.Name }}"
 
     {{- if $svc.DependsOn }}
     depends_on:
@@ -25,7 +25,6 @@ services:
       {{- end }}
     {{- end }}
 
-    {{- /* Ports vs Expose */}}
     {{- if $svc.Publish }}
     ports:
       {{- range $hostPort := $svc.Publish }}
@@ -38,7 +37,6 @@ services:
       {{- end }}
     {{- end }}
 
-    {{- /* Volumes */}}
     {{- if $svc.Volumes }}
     volumes:
       {{- range $vol := $svc.Volumes }}
@@ -49,8 +47,11 @@ services:
       {{- end }}
       {{- end }}
     {{- end }}
+
     networks:
-      - hello-net
+      {{- range $n := $svc.Networks }}
+      - "{{ $n }}"
+      {{- end }}
 
 {{- end }}
 
@@ -60,5 +61,7 @@ volumes:
 {{- end }}
 
 networks:
-  hello-net:
+{{- range .Networks }}
+  {{ . }}:
     driver: bridge
+{{- end }}
