@@ -1,5 +1,3 @@
-/* ModuleDetails.css */
-
 .module-detail-container {
   padding: 24px;
   background-color: var(--background);
@@ -9,6 +7,7 @@
   gap: 24px;
   font-size: 15px;
   line-height: 1.6;
+  overflow: hidden;
 }
 
 .module-header {
@@ -25,8 +24,22 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
+  height: 100%;
+  overflow: hidden;
 }
 
+.module-running-section .tabs {
+  flex: 0 0 auto;
+}
+.module-running-section .tab-content {
+  display: flex;
+  flex-direction: column;
+  
+  /* allow its children to shrink */
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;    /* only .log-box scrolls */
+}
 .tabs {
   display: flex;
   gap: 12px;
