@@ -1,22 +1,25 @@
-// components/ModuleLogs.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  forwardRef,
+  useImperativeHandle
+} from 'react';
 import './ModuleLogs.css';
 
-const ModuleLogs = ({ moduleId }) => {
-  const [logs, setLogs] = useState([]);
+const ModuleLogs = forwardRef(({ moduleId }, ref) => {
+  const [logs, setLogs]           = useState([]);
   const [nextToken, setNextToken] = useState(null);
-  const containerRef = useRef(null);
-  const isLoadingRef = useRef(false);
-  const prevScrollHeightRef = useRef(0);
+  const containerRef              = useRef(null);
+  const isLoadingRef              = useRef(false);
+  const prevScrollHeightRef       = useRef(0);
 
-  // Fetch logs: if token==null, initial newest; otherwise older page
   const fetchLogs = async (token = null) => {
     if (isLoadingRef.current) return;
     isLoadingRef.current = true;
 
     const container = containerRef.current;
     if (token && container) {
-      // remember the full height before fetching older logs
       prevScrollHeightRef.current = container.scrollHeight;
     }
 
@@ -35,38 +38,37 @@ const ModuleLogs = ({ moduleId }) => {
       const data = await res.json();
 
       setLogs(prev =>
-        token
-          ? [...prev, ...data.logs] // append older logs at end of our array
-          : data.logs               // initial load
+        token ? [...prev, ...data.logs] : data.logs
       );
       setNextToken(data.next_page_token);
     } catch (err) {
       console.error('Failed to fetch module logs:', err);
     } finally {
       isLoadingRef.current = false;
-      // after React has painted with new logs, adjust scroll
       requestAnimationFrame(() => {
         if (!container) return;
         if (token) {
-          // restore scroll so content doesn't jump
           const newHeight = container.scrollHeight;
           container.scrollTop = newHeight - prevScrollHeightRef.current;
         } else {
-          // initial load: scroll all the way to bottom
           container.scrollTop = container.scrollHeight;
         }
       });
     }
   };
 
-  // initial load & reset when moduleId changes
+  // expose `refresh()` to parent via ref
+  useImperativeHandle(ref, () => ({
+    refresh: () => fetchLogs()
+  }), [moduleId]);
+
+  // initial load & when moduleId changes
   useEffect(() => {
     setLogs([]);
     setNextToken(null);
     fetchLogs();
   }, [moduleId]);
 
-  // if user scrolls to the top, load older logs
   const onScroll = () => {
     const el = containerRef.current;
     if (!el) return;
@@ -75,31 +77,35 @@ const ModuleLogs = ({ moduleId }) => {
     }
   };
 
+  const displayLogs = logs.slice().reverse();
+
   return (
     <div
       className="log-box"
       ref={containerRef}
       onScroll={onScroll}
     >
-      {logs.length === 0 ? (
-        <div className="log-placeholder">No logs registred yet</div>
-      ) : (
-        // logs are stored newest→oldest, so reverse to show oldest at top
-        logs
-          .slice()
-          .reverse()
-          .map((log, i) => {
+      {displayLogs.length === 0
+        ? <div className="log-placeholder">No logs registered yet</div>
+        : displayLogs.map((log,i)=> {
             const cls = `log-entry level-${log.level.toLowerCase()}`;
-            const ts = new Date(log.created_at).toLocaleString();
+            const ts  = new Date(log.created_at).toLocaleString();
             return (
               <div key={i} className={cls}>
-                {`${ts} [${log.level}] ${log.message}`}
+                <div className="log-main">
+                  {`${ts} [${log.level}] ${log.message}`}
+                </div>
+                {log.meta?.error && (
+                  <div className="log-error-detail">
+                    {log.meta.error}
+                  </div>
+                )}
               </div>
             );
           })
-      )}
+      }
     </div>
   );
-};
+});
 
 export default ModuleLogs;
