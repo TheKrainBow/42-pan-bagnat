@@ -7,13 +7,27 @@ import (
 	"time"
 )
 
-type UserOrderField string
-type OrderDirection string
+type User struct {
+	ID        string    `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	FtLogin   string    `json:"login" example:"heinz"`
+	FtID      string    `json:"ft_id" example:"1492"`
+	FtIsStaff bool      `json:"ft_is_staff" example:"true"`
+	PhotoURL  string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id"`
+	LastSeen  time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
+	IsStaff   bool      `json:"is_staff" example:"true"`
+}
 
-const (
-	Desc OrderDirection = "DESC"
-	Asc  OrderDirection = "ASC"
-)
+type UserPatch struct {
+	ID        string     `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	FtLogin   *string    `json:"login" example:"heinz"`
+	FtID      *string    `json:"ft_id" example:"1492"`
+	FtIsStaff *bool      `json:"ft_is_staff" example:"true"`
+	PhotoURL  *string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id"`
+	LastSeen  *time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
+	IsStaff   *bool      `json:"is_staff" example:"true"`
+}
+
+type UserOrderField string
 
 const (
 	UserID        UserOrderField = "id"

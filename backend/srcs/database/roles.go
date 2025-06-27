@@ -6,6 +6,18 @@ import (
 	"strings"
 )
 
+type Role struct {
+	ID    string `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	Name  string `json:"name" example:"captain-hook"`
+	Color string `json:"color" example:"0xFF00FF"`
+}
+
+type RolePatch struct {
+	ID    string  `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	Name  *string `json:"name" example:"captain-hook"`
+	Color *string `json:"color" example:"0xFF00FF"`
+}
+
 type RoleOrderField string
 
 const (
