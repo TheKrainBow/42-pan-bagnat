@@ -82,7 +82,7 @@ const ModuleLogs = ({ moduleId }) => {
       onScroll={onScroll}
     >
       {logs.length === 0 ? (
-        <div className="log-placeholder">No logs yet</div>
+        <div className="log-placeholder">No logs registred yet</div>
       ) : (
         // logs are stored newest→oldest, so reverse to show oldest at top
         logs
