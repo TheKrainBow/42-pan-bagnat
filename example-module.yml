@@ -1,0 +1,50 @@
+module:
+  name: hello-world
+  version: "0.1.0"
+
+services:
+  - name: db
+    image: postgres:15
+    expose:
+      - 5137
+    env:
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        value: postgres
+    depends_on: []           # nothing to wait for
+    volumes:
+      - hostPath: ./db/init.sql
+        servicePath: /docker-entrypoint-initdb.d/init.sql
+      - name: db-data
+        servicePath: /var/lib/postgresql/data
+
+  - name: backend
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    expose:
+      - 8080
+    publish:
+      - 8080
+    env:
+      - key: DB_CONN
+        value: postgres://postgres:postgres@hello-world-db:5432/postgres?sslmode=disable
+    depends_on:
+      - db
+  - name: frontend
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    expose:
+      - 3000
+    publish:
+      - 3000
+    env:
+      - key: BACKEND_URL
+        value: http://hello-world-backend:8080
+    depends_on:
+      - backend
+
+volumes:
+  - db-data
