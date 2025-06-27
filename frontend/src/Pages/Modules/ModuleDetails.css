@@ -24,7 +24,6 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  height: 100%;
   overflow: hidden;
 }
 
@@ -40,6 +39,7 @@
   min-height: 0;
   overflow: hidden;    /* only .log-box scrolls */
 }
+
 .tabs {
   display: flex;
   gap: 12px;
