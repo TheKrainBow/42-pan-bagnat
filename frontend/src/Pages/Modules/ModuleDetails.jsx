@@ -103,7 +103,7 @@ const ModuleDetails = () => {
 
         <div className="tab-content">
           {activeTab === 'logs' ? (
-            <ModuleLogs />
+            <ModuleLogs moduleId={module.id}/>
           ) : (
             <ModuleSettings
               roles={module.roles}

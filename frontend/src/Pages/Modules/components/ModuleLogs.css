@@ -1,10 +1,67 @@
 .log-box {
-  background-color: var(--dark-background);
-  border: 1px solid var(--border);
-  padding: 12px;
-  border-radius: 6px;
-  font-family: monospace;
-  color: var(--text-primary);
-  max-height: 300px;
+  background: #1e1e1e;
+  color: #ddd;
+
+  /* fill the available space but never grow beyond it */
+  flex: 1 1 auto;         
+  width: 100%;            
+  max-width: 100%;        
+  min-width: 0;           
+  
+  /* allow vertical *and* horizontal scrollbars */
   overflow-y: auto;
+  overflow-x: auto;        
+
+  font-family: monospace;
+  font-size: 14px;
+  padding: 8px;
+  border-radius: 4px;
+  box-sizing: border-box;   /* include padding in width calculations */
+  scrollbar-width: thin;
+  /* thumb color | track color */
+  scrollbar-color: #e06c75 #2e2e2e;
 }
+
+.log-box::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;             /* if you ever need horizontal too */
+}
+.log-box::-webkit-scrollbar-track {
+  background: #2e2e2e;
+  border-radius: 4px;
+}
+.log-box::-webkit-scrollbar-thumb {
+  background-color: #e06c75;
+  border-radius: 4px;
+  border: 2px solid #2e2e2e;  /* creates padding around the thumb */
+}
+
+.log-box::-webkit-scrollbar-thumb:hover {
+  background-color: #c74a4a;
+}
+.log-placeholder {
+  color: #888;
+  font-style: italic;
+}
+
+.log-entry {
+  white-space: nowrap;       /* preserve all spaces, no wrapping */
+  overflow-wrap: normal;   /* don’t break words */
+  word-break: keep-all;    /* don’t break CJK text */
+  margin-bottom: 2px;
+}
+
+/* level colors */
+.level-info {
+  color: #abb2bf;
+}
+
+.level-warn {
+  color: #e5c07b;
+}
+
+.level-error {
+  color: #e06c75;
+}
+
+/* you can add more levels later */

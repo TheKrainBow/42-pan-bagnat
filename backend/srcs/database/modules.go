@@ -62,7 +62,7 @@ type ModulePatch struct {
 
 type ModuleLog struct {
 	ID        int64                  `json:"id"`
-	ModuleID  int                    `json:"module_id"`
+	ModuleID  string                 `json:"module_id"`
 	Level     string                 `json:"level"`
 	Message   string                 `json:"message"`
 	Meta      map[string]interface{} `json:"meta"`
