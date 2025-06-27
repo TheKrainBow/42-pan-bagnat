@@ -11,6 +11,8 @@ func RegisterRoutes(r chi.Router) {
 	r.Patch("/{moduleID}", PatchModule)
 	r.Delete("/{moduleID}", DeleteModule)
 
+	r.Get("/{moduleID}/logs", GetModuleLogs)
+
 	r.Post("/{moduleID}/git/clone", GitClone)
 	r.Post("/{moduleID}/git/pull", GitPull)
 	r.Post("/{moduleID}/git/update-remote", GitUpdateRemote)

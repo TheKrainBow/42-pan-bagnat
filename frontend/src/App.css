@@ -20,7 +20,7 @@
   flex-direction: column;
   height: 100%;
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;          /* no scrolling here */
   background-color: var(--background);
 }
 
