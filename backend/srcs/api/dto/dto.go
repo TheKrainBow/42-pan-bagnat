@@ -75,3 +75,24 @@ func ModulesToAPIModules(modules []core.Module) (dest []Module) {
 	}
 	return dest
 }
+
+func ModuleLogToAPIModuleLog(moduleLog core.ModuleLog) ModuleLog {
+	return ModuleLog{
+		ID:        moduleLog.ID,
+		ModuleID:  moduleLog.ModuleID,
+		Level:     moduleLog.Level,
+		Message:   moduleLog.Message,
+		Meta:      moduleLog.Meta,
+		CreatedAt: moduleLog.CreatedAt,
+	}
+}
+
+func ModuleLogsToAPIModuleLogs(logs []core.ModuleLog) (dest []ModuleLog) {
+	for _, module := range logs {
+		dest = append(dest, ModuleLogToAPIModuleLog(module))
+	}
+	if len(dest) == 0 {
+		return (make([]ModuleLog, 0))
+	}
+	return dest
+}

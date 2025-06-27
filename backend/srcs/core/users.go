@@ -6,7 +6,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
+
+type User struct {
+	ID        string    `json:"id"`
+	FtLogin   string    `json:"ftLogin"`
+	FtID      string    `json:"ft_id"`
+	FtIsStaff bool      `json:"ft_is_staff"`
+	PhotoURL  string    `json:"photo_url"`
+	LastSeen  time.Time `json:"last_update"`
+	IsStaff   bool      `json:"is_staff"`
+	Roles     []Role    `json:"roles"`
+}
 
 type UserPagination struct {
 	OrderBy  []database.UserOrder

@@ -1,9 +1,11 @@
 package database
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 )
 
 type ModuleOrderField string
@@ -21,9 +23,68 @@ const (
 	ModuleLastUpdate    ModuleOrderField = "last_update"
 )
 
+type ModuleLogsOrderField string
+
+const (
+	ModuleLogsCreatedAt ModuleLogsOrderField = "created_at"
+	ModuleLogsID        ModuleLogsOrderField = "id"
+)
+
+type Module struct {
+	ID            string    `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	SSHPublicKey  string    `json:"ssh_public_key" example:"ssh-rsa AAAA..."`
+	SSHPrivateKey string    `json:"ssh_private_key" example:"-----BEGIN OPENSSH PRIVATE KEY-----..."`
+	Name          string    `json:"name" example:"Captain Hook"`
+	Slug          string    `json:"slug" example:"captain-hook-main"`
+	Version       string    `json:"version" example:"1.2"`
+	Status        string    `json:"status" example:"enabled"`
+	GitURL        string    `json:"git_url" example:"https://github.com/some-user/some-repo"`
+	GitBranch     string    `json:"git_branch" example:"main"`
+	IconURL       string    `json:"icon_url" example:"https://someURL/image.png"`
+	LatestVersion string    `json:"latest_version" example:"1.7"`
+	LateCommits   int       `json:"late_commits" example:"2"`
+	LastUpdate    time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
+}
+
+type ModulePatch struct {
+	ID            string     `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	SSHPublicKey  *string    `json:"ssh_public_key" example:"ssh-rsa AAAA..."`
+	SSHPrivateKey *string    `json:"ssh_private_key" example:"-----BEGIN OPENSSH PRIVATE KEY-----..."`
+	Name          *string    `json:"name" example:"captain-hook"`
+	Version       *string    `json:"version" example:"1.2"`
+	Status        *string    `json:"status" example:"enabled"`
+	GitURL        *string    `json:"git_url" example:"https://github.com/some-user/some-repo"`
+	IconURL       *string    `json:"icon_url" example:"https://someURL/image.png"`
+	LatestVersion *string    `json:"latest_version" example:"1.7"`
+	LateCommits   *int       `json:"late_commits" example:"2"`
+	LastUpdate    *time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
+}
+
+type ModuleLog struct {
+	ID        int64                  `json:"id"`
+	ModuleID  int                    `json:"module_id"`
+	Level     string                 `json:"level"`
+	Message   string                 `json:"message"`
+	Meta      map[string]interface{} `json:"meta"`
+	CreatedAt time.Time              `json:"created_at"`
+}
+
 type ModuleOrder struct {
 	Field ModuleOrderField
 	Order OrderDirection
+}
+
+type ModuleLogsOrder struct {
+	Field ModuleLogsOrderField
+	Order OrderDirection
+}
+
+type ModuleLogPagination struct {
+	OrderBy  *[]ModuleLogsOrder
+	ModuleID string
+	LastLog  *ModuleLog
+	Limit    int
+	Filter   string
 }
 
 func GetModule(moduleID string) (*Module, error) {
@@ -256,6 +317,26 @@ func InsertModule(m Module) error {
 	return err
 }
 
+// InsertModuleLog inserts a new entry into module_log.
+// It marshals the Meta map into JSONB and relies on the DB default
+// to set created_at = now().
+func InsertModuleLog(l ModuleLog) error {
+	metaJSON, err := json.Marshal(l.Meta)
+	if err != nil {
+		return fmt.Errorf("failed to marshal meta: %w", err)
+	}
+
+	_, err = mainDB.Exec(`
+		INSERT INTO module_log (module_id, level, message, meta)
+		VALUES ($1, $2, $3, $4)
+	`, l.ModuleID, l.Level, l.Message, metaJSON)
+	if err != nil {
+		return fmt.Errorf("failed to insert module_log: %w", err)
+	}
+
+	return nil
+}
+
 func PatchModule(patch ModulePatch) error {
 	if patch.ID == "" {
 		return fmt.Errorf("missing module ID")
@@ -307,4 +388,131 @@ func PatchModule(patch ModulePatch) error {
 
 	_, err := mainDB.Exec(query, args...)
 	return err
+}
+
+// GetModuleLogs pages through module_log for one module,
+// using the same pattern as GetAllModules.
+func GetModuleLogs(p ModuleLogPagination) ([]ModuleLog, error) {
+	// 1) Default ordering if none specified
+	if p.OrderBy == nil || len(*p.OrderBy) == 0 {
+		tmp := []ModuleLogsOrder{{Field: ModuleLogsCreatedAt, Order: Desc}}
+		p.OrderBy = &tmp
+	}
+
+	// 2) Build ORDER BY clauses, track if we saw ID
+	hasID := false
+	var orderClauses []string
+	for _, ord := range *p.OrderBy {
+		orderClauses = append(orderClauses,
+			fmt.Sprintf("%s %s", ord.Field, ord.Order),
+		)
+		if ord.Field == ModuleLogsID {
+			hasID = true
+		}
+	}
+	firstOrder := (*p.OrderBy)[0].Order
+	if !hasID {
+		orderClauses = append(orderClauses,
+			fmt.Sprintf("%s %s", ModuleLogsID, firstOrder),
+		)
+	}
+
+	// 3) Build WHERE conditions & collect args
+	var whereConds []string
+	var args []any
+	argPos := 1
+
+	// always filter by module_id
+	whereConds = append(whereConds, fmt.Sprintf("module_id = $%d", argPos))
+	args = append(args, p.ModuleID)
+	argPos++
+
+	// apply text‐filter on message
+	if p.Filter != "" {
+		whereConds = append(whereConds,
+			fmt.Sprintf("message ILIKE '%%' || $%d || '%%'", argPos),
+		)
+		args = append(args, p.Filter)
+		argPos++
+	}
+
+	// cursor pagination: tuple comparison on (created_at, id)
+	if p.LastLog != nil {
+		cmp := "<"
+		if firstOrder == Asc {
+			cmp = ">"
+		}
+		// build tuples
+		var cols, holders []string
+		for _, ord := range *p.OrderBy {
+			cols = append(cols, string(ord.Field))
+			holders = append(holders, fmt.Sprintf("$%d", argPos))
+			switch ord.Field {
+			case ModuleLogsCreatedAt:
+				args = append(args, p.LastLog.CreatedAt)
+			case ModuleLogsID:
+				args = append(args, p.LastLog.ID)
+			}
+			argPos++
+		}
+		if !hasID {
+			cols = append(cols, string(ModuleLogsID))
+			holders = append(holders, fmt.Sprintf("$%d", argPos))
+			args = append(args, p.LastLog.ID)
+			argPos++
+		}
+		whereConds = append(whereConds,
+			fmt.Sprintf("(%s) %s (%s)",
+				strings.Join(cols, ", "),
+				cmp,
+				strings.Join(holders, ", "),
+			),
+		)
+	}
+
+	// 4) Assemble SQL
+	var sb strings.Builder
+	sb.WriteString(`
+SELECT id, module_id, created_at, level, message, meta
+  FROM module_log`)
+	if len(whereConds) > 0 {
+		sb.WriteString("\nWHERE ")
+		sb.WriteString(strings.Join(whereConds, " AND "))
+	}
+	sb.WriteString("\nORDER BY ")
+	sb.WriteString(strings.Join(orderClauses, ", "))
+	if p.Limit > 0 {
+		sb.WriteString(fmt.Sprintf("\nLIMIT %d", p.Limit))
+	}
+	sb.WriteString(";")
+	query := sb.String()
+
+	// 5) Execute and scan
+	rows, err := mainDB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []ModuleLog
+	for rows.Next() {
+		var l ModuleLog
+		var metaBytes []byte
+		if err := rows.Scan(
+			&l.ID,
+			&l.ModuleID,
+			&l.CreatedAt,
+			&l.Level,
+			&l.Message,
+			&metaBytes,
+		); err != nil {
+			return nil, err
+		}
+		if err := json.Unmarshal(metaBytes, &l.Meta); err != nil {
+			return nil, err
+		}
+		out = append(out, l)
+	}
+
+	return out, nil
 }
