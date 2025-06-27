@@ -46,6 +46,15 @@ type Module struct {
 	Roles         []Role       `json:"roles,omitempty"`
 }
 
+type ModuleLog struct {
+	ID        int64                  `json:"id"`
+	ModuleID  int                    `json:"module_id"`
+	Level     string                 `json:"level"`
+	Message   string                 `json:"message"`
+	Meta      map[string]interface{} `json:"meta"`
+	CreatedAt time.Time              `json:"created_at"`
+}
+
 const (
 	Enabled          ModuleStatus = "enabled"
 	Disabled         ModuleStatus = "disabled"

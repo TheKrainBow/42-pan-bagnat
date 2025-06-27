@@ -3,11 +3,28 @@ package database
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 	"testing"
 
 	_ "github.com/lib/pq"
 )
+
+var mainDB *sql.DB
+var testDB *sql.DB
+
+func init() {
+	var err error
+	connStr := os.Getenv("DATABASE_URL")
+	if connStr == "" {
+		log.Fatal("DATABASE_URL is not set")
+	}
+	mainDB, err = sql.Open("postgres", connStr)
+	if err != nil {
+		log.Fatal("Couldn't connect to database: ", err)
+	}
+}
 
 func formatModules(ms []Module) string {
 	var b strings.Builder

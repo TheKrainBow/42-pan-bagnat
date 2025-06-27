@@ -1,3 +1,5 @@
+-- PRIMARY TABLES --
+
 CREATE TABLE roles (
   id TEXT PRIMARY KEY, -- role_ULID
   name TEXT NOT NULL,
@@ -30,7 +32,20 @@ CREATE TABLE users (
   is_staff BOOLEAN NOT NULL
 );
 
--- join tables
+-- LOGS --
+
+CREATE TABLE module_log (
+  id          BIGSERIAL     PRIMARY KEY,
+  module_id   TEXT          NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+  created_at  TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  level       TEXT          NOT NULL,
+  message     TEXT          NOT NULL,
+  meta        JSONB,
+);
+CREATE INDEX idx_module_log_module_time ON module_log (module_id, created_at DESC);
+
+-- JOIN TABLES --
+
 CREATE TABLE user_roles (
   user_id TEXT REFERENCES users(id),
   role_id TEXT REFERENCES roles(id),

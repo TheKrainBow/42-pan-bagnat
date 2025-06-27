@@ -8,6 +8,15 @@ import (
 	"strings"
 )
 
+type Role struct {
+	ID         string   `json:"id"`
+	Name       string   `json:"name"`
+	Color      string   `json:"color"`
+	Users      []User   `json:"users"`
+	UsersCount int      `json:"usersCount"`
+	Modules    []Module `json:"modules"`
+}
+
 type RolePagination struct {
 	OrderBy  []database.RoleOrder
 	Filter   string
