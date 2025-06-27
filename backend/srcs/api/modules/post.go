@@ -96,7 +96,6 @@ func GitClone(w http.ResponseWriter, r *http.Request) {
 
 	err = core.CloneModuleRepo(module)
 	if err != nil {
-		log.Printf("error while cloning module %s: %s\n", moduleID, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("error while cloning module " + moduleID))
 		return
