@@ -36,11 +36,11 @@ CREATE TABLE users (
 
 CREATE TABLE module_log (
   id          BIGSERIAL     PRIMARY KEY,
-  module_id   TEXT          NOT NULL REFERENCES module(id) ON DELETE CASCADE,
+  module_id   TEXT          NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
   created_at  TIMESTAMPTZ   NOT NULL DEFAULT now(),
   level       TEXT          NOT NULL,
   message     TEXT          NOT NULL,
-  meta        JSONB,
+  meta        JSONB
 );
 CREATE INDEX idx_module_log_module_time ON module_log (module_id, created_at DESC);
 
