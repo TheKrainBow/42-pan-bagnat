@@ -9,8 +9,6 @@
   flex-shrink: 0;
   padding: 16px;
   background-color: var(--background);
-  border-right: 2px solid var(--border);
-  height: 100%; /* Make sidebar stretch to the full height */
   box-sizing: border-box;
   overflow-y: auto; /* Allow the sidebar to scroll if needed */
 }
@@ -18,10 +16,11 @@
 .main-content {
   display: flex;
   flex-direction: column;
-  height: 100%;
   flex: 1;
-  overflow: hidden;          /* no scrolling here */
+  height: 100vh; 
+  border-left: 2px solid var(--border);
   background-color: var(--background);
+  overflow: hidden;
 }
 
 .sidebar ul {
@@ -46,8 +45,9 @@ html, body {
   margin: 0;
   padding: 0;
   height: 100%;
-  overflow: hidden;
   font-family: sans-serif;
+  scrollbar-width: thin;
+  scrollbar-color: #e06c75 #2e2e2e;
 }
 
 .sidebar-header {
