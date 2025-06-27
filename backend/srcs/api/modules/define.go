@@ -25,3 +25,10 @@ type ModuleGetResponse struct {
 	Modules  []api.Module `json:"modules"`
 	NextPage string       `json:"next_page_token" example:"BAD87as"`
 }
+
+// Define the model for the API GET User response
+// @Description API User model
+type ModuleLogGetResponse struct {
+	ModuleLogs []api.ModuleLog `json:"logs"`
+	NextPage   string          `json:"next_page_token" example:"BAD87as"`
+}

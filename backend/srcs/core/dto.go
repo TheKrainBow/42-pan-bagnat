@@ -61,3 +61,21 @@ func DatabaseModulesToModules(dbModules []database.Module) (dest []Module) {
 	}
 	return dest
 }
+
+func DatabaseModuleLogToModuleLog(dbLog database.ModuleLog) ModuleLog {
+	return ModuleLog{
+		ID:        dbLog.ID,
+		ModuleID:  dbLog.ModuleID,
+		Level:     dbLog.Level,
+		Message:   dbLog.Message,
+		Meta:      dbLog.Meta,
+		CreatedAt: dbLog.CreatedAt,
+	}
+}
+
+func DatabaseModuleLogsToModuleLogs(dbLogs []database.ModuleLog) (dest []ModuleLog) {
+	for _, log := range dbLogs {
+		dest = append(dest, DatabaseModuleLogToModuleLog(log))
+	}
+	return dest
+}
