@@ -9,6 +9,7 @@ import ModuleSettings from 'Modules/components/ModuleSettings';
 import ModuleWarningSection from 'Modules/components/ModuleWarningSection';
 import ModuleStatusBadge from 'Modules/components/ModuleStatusBadge';
 import ModuleAboutSection from './components/ModuleAboutSection';
+import ModuleConfigViewer from './components/ModuleConfigPanel';
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();
@@ -102,6 +103,11 @@ const ModuleDetails = () => {
             onClick={() => setActiveTab('logs')}
           />
           <Button
+            label="Config"
+            className={`custom-btn ${activeTab === 'config' ? 'blue' : 'gray'}`}
+            onClick={() => setActiveTab('config')}
+          />
+          <Button
             label="Settings"
             className={`custom-btn ${activeTab === 'settings' ? 'blue' : 'gray'}`}
             onClick={() => setActiveTab('settings')}
@@ -109,16 +115,14 @@ const ModuleDetails = () => {
         </div>
 
         <div className="tab-content">
-          {activeTab === 'logs' ? (
-            <ModuleLogs ref={logsRef} moduleId={module.id}/>
-          ) : (
-            <ModuleSettings
+          {activeTab === 'logs' && <ModuleLogs ref={logsRef} moduleId={module.id}/>}
+          {activeTab === 'settings' && <ModuleSettings
               roles={module.roles}
               status={module.status}
               onToggleStatus={toggleModuleStatus}
               statusUpdating={statusUpdating}
-            />
-          )}
+            />}
+          {activeTab === 'config' && <ModuleConfigViewer moduleId={module.id}/>}
         </div>
       </div>
     </div>

@@ -172,5 +172,43 @@ func GetModuleLogs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(destJSON))
+}
 
+// @Summary      Get Module List
+// @Description  Return the module.yml of a given module
+// @Tags         modules
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} Module
+// @Router       /modules/{moduleID}/config [get]
+func GetModuleConfig(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	id := chi.URLParam(r, "moduleID")
+
+	if id == "" {
+		http.Error(w, "ID not found", http.StatusBadRequest)
+		return
+	}
+	// for _, param := range chi.RouteContext(r.Context()).URLParams.Values {
+	// 	log.Printf("Param key: %s, value: %s", param, param)
+	// }
+	// log.Printf("Backend id: %+v", chi.RouteContext(r.Context()).URLParams)
+
+	module, err := core.GetModule(id)
+	if err != nil {
+		http.Error(w, "Failed fetching module info", http.StatusInternalServerError)
+		return
+	}
+
+	cfg, err := core.GetModuleConfig(module)
+	if err != nil {
+		http.Error(w, "cannot read config", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]string{
+		"config": cfg, // this is the entire YAML, newlines preserved
+	})
 }

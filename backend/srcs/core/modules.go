@@ -339,3 +339,18 @@ func GetModuleLogs(pagination ModuleLogsPagination) ([]ModuleLog, string, error)
 	}
 	return dest, token, nil
 }
+
+func SetModuleStatus(moduleID string, status ModuleStatus) error {
+	LogModule(moduleID, "INFO", fmt.Sprintf("Changing module status to %s", string(status)), nil)
+	newStatus := "enabled"
+	err := database.PatchModule(
+		database.ModulePatch{
+			ID:     moduleID,
+			Status: &newStatus,
+		},
+	)
+	if err != nil {
+		return LogModule(moduleID, "ERROR", "Failed to change status", err)
+	}
+	return nil
+}
