@@ -1,10 +1,11 @@
 import { useState } from "react";
 import './ModuleWarningSection.css';
 
-const ModuleWarningSection = ({ sshKey, moduleID, onRetrySuccess }) => {
+const ModuleWarningSection = ({ sshKey, moduleID, onRetrySuccess, onRetry }) => {
   const [copied, setCopied] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const [retrySuccess, setRetrySuccess] = useState(null);
+  const [retry, setRetry] = useState(null);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(sshKey);
@@ -20,12 +21,15 @@ const ModuleWarningSection = ({ sshKey, moduleID, onRetrySuccess }) => {
         method: 'POST'
       });
       setRetrySuccess(res.ok);
+      setRetry(true);
       if (res.ok && onRetrySuccess) {
         onRetrySuccess();
       }
     } catch (err) {
       setRetrySuccess(false);
+      setRetry(true);
     } finally {
+      onRetry();
       setRetrying(false);
     }
   };
