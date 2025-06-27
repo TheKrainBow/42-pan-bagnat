@@ -16,6 +16,11 @@ func RegisterRoutes(r chi.Router) {
 	r.Post("/{moduleID}/git/clone", GitClone)
 	r.Post("/{moduleID}/git/pull", GitPull)
 	r.Post("/{moduleID}/git/update-remote", GitUpdateRemote)
+
+	r.Get("/{moduleID}/config", GetModuleConfig)
+	r.Post("/{moduleID}/compose", ComposeModule)
+
+	r.Post("/{moduleID}/deploy", DeployConfig)
 	// Docker operations
 	// r.Route("/{moduleID}/docker", func(r chi.Router) {
 	// 	r.Post("/start", DockerStart)
