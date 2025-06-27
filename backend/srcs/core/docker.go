@@ -1,8 +1,11 @@
 package core
 
 import (
+	"backend/docker"
+	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -36,5 +39,88 @@ func InitModuleForDocker(module Module) error {
 	} else {
 		LogModule(module.ID, "INFO", "no module-template.yml, generating an empty module.yml", err)
 	}
+	return nil
+}
+
+func GetModuleConfig(module Module) (string, error) {
+	baseRepoPath := os.Getenv("REPO_BASE_PATH")
+	if baseRepoPath == "" {
+		baseRepoPath = "../../repos" // fallback for local dev
+	}
+	modPath := filepath.Join(baseRepoPath, module.Slug, "module.yml")
+
+	data, err := os.ReadFile(modPath)
+	if err != nil {
+		return "", LogModule(module.ID, "ERROR", fmt.Sprintf("failed to read module.yml from %s", modPath), err)
+	}
+
+	return string(data), nil
+}
+
+func SaveModuleConfig(module Module, content string) error {
+	LogModule(module.ID, "INFO", "Saving config to module.yml", nil)
+	baseRepoPath := os.Getenv("REPO_BASE_PATH")
+	if baseRepoPath == "" {
+		baseRepoPath = "../../repos" // fallback for local dev
+	}
+	modPath := filepath.Join(baseRepoPath, module.Slug, "module.yml")
+	composePath := filepath.Join(baseRepoPath, module.Slug, "docker-compose.yml")
+
+	if err := os.WriteFile(modPath, []byte(content), 0o644); err != nil {
+		return LogModule(
+			module.ID,
+			"ERROR",
+			fmt.Sprintf("failed to write module.yml to %s", modPath),
+			err,
+		)
+	}
+
+	composeYAML, err := docker.GenerateDockerComposeFromConfig(content)
+	if err != nil {
+		return LogModule(
+			module.ID,
+			"ERROR",
+			fmt.Sprintf("failed to generate docker compose file to %s", composePath),
+			err,
+		)
+	}
+
+	if err := os.WriteFile(composePath, []byte(composeYAML), 0o644); err != nil {
+		return LogModule(
+			module.ID,
+			"ERROR",
+			fmt.Sprintf("failed to write docker-compose.yml to %s", modPath),
+			err,
+		)
+	}
+	return nil
+}
+
+func DeployModule(module Module) error {
+	// 1) Locate the repo dir
+	baseRepoPath := os.Getenv("REPO_BASE_PATH")
+	if baseRepoPath == "" {
+		baseRepoPath = "../../repos" // fallback for local dev
+	}
+	dir := filepath.Join(baseRepoPath, module.Slug)
+
+	// 2) Run `docker compose up -d`
+	cmd := exec.Command("docker", "compose", "up", "-d")
+	cmd.Dir = dir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		// include both the go error and the raw output in meta.error
+		wrapped := fmt.Errorf("%w: %s", err, string(output))
+		return LogModule(
+			module.ID,
+			"ERROR",
+			"docker compose up failed",
+			wrapped,
+		)
+	}
+
+	SetModuleStatus(module.ID, Enabled)
+	// 3) Log success
+	LogModule(module.ID, "INFO", "docker compose up succeeded", nil)
 	return nil
 }
