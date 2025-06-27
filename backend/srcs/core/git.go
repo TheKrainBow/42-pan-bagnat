@@ -9,59 +9,60 @@ import (
 	"path/filepath"
 )
 
-func CloneModuleRepo(moduleID, gitURL, moduleSlug, privateKey string) error {
+func CloneModuleRepo(module Module) error {
 	baseRepoPath := os.Getenv("REPO_BASE_PATH")
 	if baseRepoPath == "" {
 		baseRepoPath = "../../repos" // fallback for local dev
 	}
-	targetDir := filepath.Join(baseRepoPath, moduleSlug)
+	targetDir := filepath.Join(baseRepoPath, module.Slug)
 
 	tmpKey, err := os.CreateTemp("", "id_rsa_")
+
 	if err != nil {
-		return fmt.Errorf("failed to create temp key file: %w", err)
+		return LogModule(module.ID, "error", "failed to create temp key file", err)
 	}
+
 	defer os.Remove(tmpKey.Name())
 
-	if err := os.WriteFile(tmpKey.Name(), []byte(privateKey), 0600); err != nil {
-		return fmt.Errorf("failed to write private key: %w", err)
+	if err := os.WriteFile(tmpKey.Name(), []byte(module.SSHPrivateKey), 0600); err != nil {
+		return LogModule(module.ID, "error", "failed to write private key", err)
 	}
 
 	sshCommand := "ssh -i " + tmpKey.Name() + " -o StrictHostKeyChecking=no"
-	cmd := exec.Command("git", "clone", gitURL, targetDir)
+	cmd := exec.Command("git", "clone", module.GitURL, targetDir)
 	cmd.Env = append(os.Environ(), "GIT_SSH_COMMAND="+sshCommand)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("git clone failed: %w\nOutput: %s", err, output)
+		return LogModule(module.ID, "ERROR", "git clone failed", fmt.Errorf("%s", string(output)))
 	}
 
 	newStatus := "disabled"
 	err = database.PatchModule(database.ModulePatch{
-		ID:     moduleID,
+		ID:     module.ID,
 		Status: &newStatus,
 	})
 	if err != nil {
-		log.Printf("error while updating status to database: %s\n", err.Error())
-		return fmt.Errorf("error while updating status to database: %w", err)
+		return LogModule(module.ID, "ERROR", "error while updating status to database", err)
 	}
-	return nil
+	return LogModule(module.ID, "INFO", fmt.Sprintf("Cloned module from URL %s", module.GitURL), nil)
 }
 
-func PullModuleRepo(moduleSlug, privateKey string) error {
+func PullModuleRepo(module Module) error {
 	baseRepoPath := os.Getenv("REPO_BASE_PATH")
 	if baseRepoPath == "" {
 		baseRepoPath = "../../repos" // fallback for local dev
 	}
-	targetDir := filepath.Join(baseRepoPath, moduleSlug)
+	targetDir := filepath.Join(baseRepoPath, module.Slug)
 
 	tmpKey, err := os.CreateTemp("", "id_rsa_")
 	if err != nil {
-		return fmt.Errorf("failed to create temp key file: %w", err)
+		return LogModule(module.ID, "error", "failed to create temp key file", err)
 	}
 	defer os.Remove(tmpKey.Name())
 
-	if err := os.WriteFile(tmpKey.Name(), []byte(privateKey), 0600); err != nil {
-		return fmt.Errorf("failed to write private key: %w", err)
+	if err := os.WriteFile(tmpKey.Name(), []byte(module.SSHPrivateKey), 0600); err != nil {
+		return LogModule(module.ID, "error", "failed to write private key", err)
 	}
 
 	sshCommand := "ssh -i " + tmpKey.Name() + " -o StrictHostKeyChecking=no"
@@ -71,9 +72,10 @@ func PullModuleRepo(moduleSlug, privateKey string) error {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return fmt.Errorf("git pull failed: %w\nOutput: %s", err, output)
+		wrappedErr := fmt.Errorf("%w | output: %s", err, output)
+		return LogModule(module.ID, "ERROR", "git pull failed", wrappedErr)
 	}
-	return nil
+	return LogModule(module.ID, "INFO", fmt.Sprintf("Pulled module from URL %s", module.GitURL), nil)
 }
 
 func UpdateModuleGitRemote(moduleID, moduleSlug, newGitURL string) error {

@@ -44,6 +44,13 @@
   font-style: italic;
 }
 
+.log-error-detail {
+  margin-left: 1.5em;
+  color: #e06c75;         /* same as .level-error */
+  font-style: italic;
+  white-space: pre-wrap;   /* allow multiline stack traces */
+}
+
 .log-entry {
   white-space: nowrap;       /* preserve all spaces, no wrapping */
   overflow-wrap: normal;   /* don’t break words */
