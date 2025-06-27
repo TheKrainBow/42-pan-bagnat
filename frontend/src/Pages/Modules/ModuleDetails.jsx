@@ -1,5 +1,5 @@
 // ModuleDetails.jsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './ModuleDetails.css';
 import AppIcon from 'Global/AppIcon';
@@ -17,6 +17,7 @@ const ModuleDetails = () => {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [activeTab, setActiveTab] = useState('logs');
   const [showWarning, setShowWarning] = useState(false);
+  const logsRef = useRef();
 
   const fetchModule = async () => {
     try {
@@ -29,6 +30,11 @@ const ModuleDetails = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleAfterRetry = () => {
+    fetchModule();            // re‐fetch module info
+    logsRef.current?.refresh(); // reload logs
   };
 
   useEffect(() => {
@@ -82,6 +88,7 @@ const ModuleDetails = () => {
             setShowWarning(false);
             fetchModule();
           }}
+          onRetry={handleAfterRetry}
         />
       )}
       <ModuleAboutSection module={module}></ModuleAboutSection>
@@ -103,7 +110,7 @@ const ModuleDetails = () => {
 
         <div className="tab-content">
           {activeTab === 'logs' ? (
-            <ModuleLogs moduleId={module.id}/>
+            <ModuleLogs ref={logsRef} moduleId={module.id}/>
           ) : (
             <ModuleSettings
               roles={module.roles}
