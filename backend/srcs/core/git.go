@@ -35,7 +35,7 @@ func CloneModuleRepo(module Module) error {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		return LogModule(module.ID, "ERROR", "git clone failed", fmt.Errorf("%s", string(output)))
+		return LogModule(module.ID, "ERROR", "git clone failed", fmt.Errorf("%w - %s", err, string(output)))
 	}
 
 	newStatus := "disabled"
