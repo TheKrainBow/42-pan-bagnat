@@ -1,0 +1,135 @@
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  padding: 16px;
+  background-color: var(--background);
+  box-sizing: border-box;
+  overflow-y: auto; /* Allow the sidebar to scroll if needed */
+  display: flex;
+  flex-direction: column;
+  height: 100vh; /* fill viewport */
+}
+
+.sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar li {
+  margin-bottom: 12px;
+  cursor: pointer;
+}
+
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 15px;
+  padding: 15px;
+  padding-top: 0px;
+  border-bottom: 2px solid var(--border); /* Add a border separating the header */
+}
+
+.sidebar-logo {
+  width: 30px; /* Adjust logo size */
+  height: 30px;
+  border-radius: 50%; /* Optional: to make the icon round */
+}
+
+.sidebar-title {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease, padding-left 0.3s ease;
+  position: relative;
+  border-left: 2px solid transparent;
+}
+
+.sidebar-item.inactive:hover {
+  background-color: rgba(255, 255, 255, 0.1); /* Light background on hover */
+  padding-left: 16px; /* Shift the item slightly */
+}
+
+.sidebar-item.active {
+  background-color: rgba(255, 255, 255, 0.1);
+  font-weight: bold;
+  border-left: 2px var(--active); /* Solid blue border when active */
+}
+
+.sidebar-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background-color: var(--active);
+  transform: scaleY(0);
+  transition: transform 0.3s ease;
+}
+
+.sidebar-item.active::before {
+  transform: scaleY(1); /* Animate the line from top to bottom */
+}
+
+.sidebar-icon {
+  width: 20px;
+  height: 20px;
+}
+
+.sidebar-item img {
+  transition: transform 0.3s ease;
+}
+
+.sidebar-item.active img {
+  transform: scale(1.1);
+}
+
+.sidebar-header:hover .sidebar-logo {
+  transform: scale(1.2);
+  transition: transform 0.1s ease;
+}
+
+.sidebar-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  transition: transform 0.1s ease;
+}
+
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 2px solid var(--border);
+}
+
+/* inject a little wrench icon via unicode; remove if you’re rendering an <img> inside */
+/* .sidebar-item.switch-to-admin::before {
+  content: '🔧';
+  margin-right: 8px;
+  font-size: 1.1em;
+} */
+
+/* hover and focus states match your other items */
+/* .sidebar-item.switch-to-admin:hover,
+.sidebar-item.switch-to-admin:focus {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding-left: 16px;
+  outline: none;
+} */
+
+/* active “pressed” state */
+/* .sidebar-item.switch-to-admin:active {
+  background-color: rgba(255, 255, 255, 0.2);
+} */
