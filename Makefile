@@ -60,7 +60,7 @@ db-test: db-clear-data																	## Database | Set database datas with tes
 #########################################################################################
 .PHONY: up up-dev down build build-back build-front prune fprune
 up:																						## Docker | Up latest built images for all containers. (Doesn't rebuild using your local files)
-	$(DOCKER_COMPOSE) --profile dev up -d
+	$(DOCKER_COMPOSE) up -d
 
 up-dev:																					## Docker | Up latest built images for all containers except front/back. (Doesn't rebuild using your local files)
 	$(DOCKER_COMPOSE) up -d
@@ -69,23 +69,23 @@ down:																					## Docker | Down docker images. (Doesn't delete images
 	$(DOCKER_COMPOSE) down
 
 prune:																					## Docker | Delete created images
-	$(DOCKER_COMPOSE) --profile dev down
+	$(DOCKER_COMPOSE) down
 	docker image prune -f
 
 build: 																					## Docker | Build all images and replace currently running images
-	$(DOCKER_COMPOSE) --profile dev build
-	$(DOCKER_COMPOSE) --profile dev up -d
+	$(DOCKER_COMPOSE) build
+	$(DOCKER_COMPOSE) up -d
 
 build-back: 																			## Docker | Build backend image and replace currently running backend image
 	$(DOCKER_COMPOSE) build backend
-	$(DOCKER_COMPOSE) --profile backend up -d
+	$(DOCKER_COMPOSE) up -d
 
 build-front: 																			## Docker | Build frontend image and replace currently running frontend image
 	$(DOCKER_COMPOSE) build frontend
-	$(DOCKER_COMPOSE) --profile frontend up -d
+	$(DOCKER_COMPOSE) up -d
 
 fprune: prune																			## Docker | Stop all containers, volumes, and networks
-	$(DOCKER_COMPOSE) --profile dev down --volumes --remove-orphans || true
+	$(DOCKER_COMPOSE) down --volumes --remove-orphans || true
 	docker network rm pan-bagnat_default 2>/dev/null || true
 	docker system prune -af --volumes || true
 
