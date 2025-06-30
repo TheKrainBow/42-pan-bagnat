@@ -40,7 +40,7 @@ const ModuleImport = ({ onClose }) => {
 
       if (!res.ok) throw new Error('Failed to import module');
       const data = await res.json();
-      navigate(`admin/modules/${data.id}`);
+      navigate(`${data.id}`);
     } catch (err) {
       alert(err.message || 'An error occurred.');
     } finally {
