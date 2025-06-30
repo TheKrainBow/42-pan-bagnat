@@ -221,7 +221,22 @@ func ComposeModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	composeYAML, err := docker.GenerateDockerComposeFromConfig(req.Config)
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		log.Printf("error while getting module %s: %s\n", moduleID, err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error while getting module " + moduleID))
+		return
+	}
+
+	if module.ID == "" {
+		log.Printf("error while cloning module %s: module doesn't exist\n", moduleID)
+		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("module " + moduleID + " doesn't exist"))
+		return
+	}
+
+	composeYAML, err := docker.GenerateDockerComposeFromConfig(module.Slug, req.Config)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to generate docker-compose: %v", err), http.StatusInternalServerError)
 		return

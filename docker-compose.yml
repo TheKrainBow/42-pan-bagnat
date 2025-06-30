@@ -4,12 +4,34 @@ services:
     profiles: ["frontend", "dev"]
     build:
       context: ./frontend
-    ports:
-      - "3000:3000"
-    depends_on:
-      - nginx
+    expose:
+      - '3000'
     env_file:
       - ./frontend/.env
+    networks:
+      - pan-bagnat-net
+
+  nginx:
+    image: nginx:alpine
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    ports:
+      - '80:80'
+    depends_on:
+      - frontend
+      - express
+      - backend
+    networks:
+      - pan-bagnat-net
+
+  express:
+    build:
+      context: ./express
+      dockerfile: Dockerfile
+    ports:
+      - '3000'
+    networks:
+      - pan-bagnat-net
 
   backend:
     container_name: pan-bagnat-backend-1
@@ -25,18 +47,18 @@ services:
       - init-repos-perms
     volumes:
       - ./repos:/data/repos:Z
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - pan-bagnat-net
+
   init-repos-perms:
     image: busybox
     command: ["sh", "-c", "mkdir -p /mnt/repos && chmod -R 777 /mnt/repos"]
     volumes:
       - ./repos:/mnt/repos
-
-  nginx:
-    build:
-      context: ./nginx
-    ports:
-      - "80:80"
-
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - pan-bagnat-net
   db:
     container_name: pan-bagnat-db-1
     image: postgres:16
@@ -48,12 +70,22 @@ services:
       - postgres_data:/var/lib/postgresql/data
     env_file:
       - ./db/.env
+    networks:
+      - pan-bagnat-net
 
   adminer:
     container_name: pan-bagnat-adminer-1
     image: adminer
     ports: ["8081:8080"]
+    networks:
+      - pan-bagnat-net
 
 volumes:
   postgres_data:
+  dind_data:
   git_repos:
+
+networks:
+  pan-bagnat-net:
+    name: pan-bagnat-net
+    driver: bridge

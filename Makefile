@@ -69,12 +69,12 @@ down:																					## Docker | Down docker images. (Doesn't delete images
 	$(DOCKER_COMPOSE) down
 
 prune:																					## Docker | Delete created images
-	$(DOCKER_COMPOSE) down
+	$(DOCKER_COMPOSE) --profile dev down
 	docker image prune -f
 
 build: 																					## Docker | Build all images and replace currently running images
-	$(DOCKER_COMPOSE) build
-	$(DOCKER_COMPOSE) up -d
+	$(DOCKER_COMPOSE) --profile dev build
+	$(DOCKER_COMPOSE) --profile dev up -d
 
 build-back: 																			## Docker | Build backend image and replace currently running backend image
 	$(DOCKER_COMPOSE) build backend
@@ -85,9 +85,24 @@ build-front: 																			## Docker | Build frontend image and replace cur
 	$(DOCKER_COMPOSE) --profile frontend up -d
 
 fprune: prune																			## Docker | Stop all containers, volumes, and networks
-	$(DOCKER_COMPOSE) down --volumes --remove-orphans || true
+	$(DOCKER_COMPOSE) --profile dev down --volumes --remove-orphans || true
 	docker network rm pan-bagnat_default 2>/dev/null || true
 	docker system prune -af --volumes || true
+
+REPO_DIRS := $(wildcard repos/*)
+
+.PHONY: fprune-all
+fprune-all:
+	@for dir in $(REPO_DIRS); do \
+	  if [ -d $$dir ]; then \
+	    echo "==> fprune in $$dir"; \
+	    cd $$dir; \
+		$(DOCKER_COMPOSE) down --volumes --remove-orphans || true; \
+		docker network rm pan-bagnat_default 2>/dev/null || true; \
+		docker system prune -af --volumes || true; \
+	  fi \
+	done
+	@rm -r repos/* 2> /dev/null || true;
 
 #########################################################################################
 #                                       TESTS                                           #

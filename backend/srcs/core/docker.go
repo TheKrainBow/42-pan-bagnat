@@ -75,7 +75,7 @@ func SaveModuleConfig(module Module, content string) error {
 		)
 	}
 
-	composeYAML, err := docker.GenerateDockerComposeFromConfig(content)
+	composeYAML, err := docker.GenerateDockerComposeFromConfig(module.Slug, content)
 	if err != nil {
 		return LogModule(
 			module.ID,
@@ -119,6 +119,7 @@ func DeployModule(module Module) error {
 		)
 	}
 
+	LogModule(module.ID, "INFO", fmt.Sprintf("docker compose up -d:\n%s", output), nil)
 	SetModuleStatus(module.ID, Enabled)
 	// 3) Log success
 	LogModule(module.ID, "INFO", "docker compose up succeeded", nil)

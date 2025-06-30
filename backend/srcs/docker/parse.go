@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -21,8 +22,14 @@ func LoadManifest(path string) (*ModuleManifest, error) {
 	return &m, nil
 }
 
-func GenerateDockerComposeFromConfig(configYAML string) (string, error) {
-	tmpl, err := template.ParseFiles("./docker/compose.tmpl")
+func GenerateDockerComposeFromConfig(moduleSlug string, configYAML string) (string, error) {
+	baseRepoPath := os.Getenv("TEMLATES_BASE_PATH")
+	if baseRepoPath == "" {
+		baseRepoPath = "../templates" // fallback for local dev
+	}
+	templatePath := filepath.Join(baseRepoPath, "compose.tmpl")
+	fmt.Printf("Full path: `%s`\n", templatePath)
+	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse compose template: %w", err)
 	}
@@ -31,6 +38,8 @@ func GenerateDockerComposeFromConfig(configYAML string) (string, error) {
 	if err := yaml.Unmarshal([]byte(configYAML), &manifest); err != nil {
 		return "", fmt.Errorf("failed to unmarshal module config: %w", err)
 	}
+
+	manifest.Module.Name = moduleSlug
 
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, manifest); err != nil {
