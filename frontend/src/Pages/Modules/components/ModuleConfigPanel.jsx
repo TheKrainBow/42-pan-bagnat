@@ -39,7 +39,7 @@ export default function ModuleConfigPanel({ moduleId }) {
       } finally {
         setIsGenerating(false)
       }
-    }, 1000)
+    }, 10)
 
     return () => clearTimeout(saveTimer.current)
   }, [moduleYaml, moduleId])
@@ -71,7 +71,7 @@ export default function ModuleConfigPanel({ moduleId }) {
           </div>
           <CodeMirror
             value={moduleYaml}
-            height="400px"
+            height="800px"
             extensions={[yaml()]}
             theme="dark"
             onChange={setModuleYaml}
@@ -85,7 +85,7 @@ export default function ModuleConfigPanel({ moduleId }) {
           </div>
           <CodeMirror
             value={composeYaml}
-            height="400px"
+            height="800px"
             extensions={[yaml()]}
             theme="dark"
             editable={false}
