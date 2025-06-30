@@ -1,13 +1,15 @@
 // express/server.js
 const express = require('express');
+const cors = require('cors');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
 const modules = {};
 
+app.use(cors({ origin: 'http://localhost*' }));
 app.use(express.json());
 
-app.use('/modules', (req, res, next) => {
+app.use('/module-page', (req, res, next) => {
   // CSP: only allow framing by your frontend (adjust origin as needed)
   res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost");
 
@@ -33,7 +35,7 @@ app.post('/__register', (req, res) => {
 });
 
 // 2) Proxy any /modules/:mod/* to the registered URL
-app.use('/modules/:mod/*', (req, res, next) => {
+app.use('/module-page/:mod/*', (req, res, next) => {
   const mod = req.params.mod;
   const target = modules[mod];
   if (!target) return res.status(404).send(`Module "${mod}" not found`);
@@ -43,7 +45,7 @@ app.use('/modules/:mod/*', (req, res, next) => {
     changeOrigin: true,
     pathRewrite: {
       // strip off /modules/{mod}
-      [`^/modules/${mod}`]: ''
+      [`^/module-page/${mod}`]: ''
     },
   })(req, res, next);
 });
@@ -60,7 +62,7 @@ app.delete('/__register/:mod', (req, res) => {
 });
 
 // 3) Also catch the root of a module: /modules/:mod → / on the target
-app.use('/modules/:mod', (req, res, next) => {
+app.use('/module-page/:mod', (req, res, next) => {
   const mod = req.params.mod;
   const target = modules[mod];
   if (!target) return res.status(404).send(`Module "${mod}" not found`);
@@ -72,6 +74,11 @@ app.use('/modules/:mod', (req, res, next) => {
       [`^/modules/${mod}`]: ''
     },
   })(req, res, next);
+});
+
+app.get('/__register', (req, res) => {
+  // return an array of module names
+  res.json(Object.keys(modules));
 });
 
 const PORT = process.env.PORT || 3000;

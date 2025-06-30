@@ -1,0 +1,30 @@
+.module-page-container {
+  flex: 1;              /* take remaining space */
+  position: relative;   /* for absolute iframe */
+  overflow: hidden;
+}
+
+.module-page-container iframe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.module-iframe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.module-page-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+}
