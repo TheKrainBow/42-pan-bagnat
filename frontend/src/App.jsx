@@ -18,19 +18,19 @@ function Sidebar({ currentPage }) {
 
   return (
     <aside className="sidebar"> 
-      <div className="sidebar-header" onClick={() => navigate('/modules')} style={{ cursor: 'pointer' }}>
+      <div className="sidebar-header" onClick={() => navigate('/admin/modules')} style={{ cursor: 'pointer' }}>
         <img src="/icons/panbagnat.png" alt="Logo" className="sidebar-logo" />
         <span className="sidebar-title">Pan Bagnat</span>
       </div>
-      <div className={`sidebar-item ${currentPage.startsWith('modules') ? 'active' : 'inactive'}`} onClick={() => navigate('/modules')}>
+      <div className={`sidebar-item ${currentPage.startsWith('admin/modules') ? 'active' : 'inactive'}`} onClick={() => navigate('/admin/modules')}>
         <img src="/icons/modules.png" alt="Roles" className="sidebar-icon" />
         Modules
       </div>
-      <div className={`sidebar-item ${currentPage.startsWith('roles') ? 'active' : 'inactive'}`} onClick={() => navigate('/roles')}>
+      <div className={`sidebar-item ${currentPage.startsWith('admin/roles') ? 'active' : 'inactive'}`} onClick={() => navigate('/admin/roles')}>
         <img src="/icons/roles.png" alt="Roles" className="sidebar-icon" />
         Roles
       </div>
-      <div className={`sidebar-item ${currentPage.startsWith('users') ? 'active' : 'inactive'}`} onClick={() => navigate('/users')}>
+      <div className={`sidebar-item ${currentPage.startsWith('admin/users') ? 'active' : 'inactive'}`} onClick={() => navigate('/admin/users')}>
         <img src="/icons/users.png" alt="Users" className="sidebar-icon" />
         Users
       </div>
@@ -42,16 +42,16 @@ function Main() {
   const location = useLocation();
   var path = location.pathname.slice(1) || 'modules';
 
-  path = path.startsWith('modules') ? 'modules' : path;
+  path = path.startsWith('/admin/modules') ? 'modules' : path;
   return (
     <div className="app-container">
       <Sidebar currentPage={path} />
       <main className="main-content">
         <Routes>
-          <Route path="/modules" element={<Modules onSort="name" />} />
-          <Route path="/modules/:moduleId" element={<ModuleDetails />} />
-          <Route path="/roles" element={<Roles onSort="name" />} />
-          <Route path="/users" element={<Users onSort="-last_seen" />} />
+          <Route path="/admin/modules" element={<Modules onSort="name" />} />
+          <Route path="/admin/modules/:moduleId" element={<ModuleDetails />} />
+          <Route path="/admin/roles" element={<Roles onSort="name" />} />
+          <Route path="/admin/users" element={<Users onSort="-last_seen" />} />
           <Route path="/" element={<Navigate to="/modules" replace />} />
         </Routes>
       </main>

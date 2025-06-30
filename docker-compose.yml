@@ -1,7 +1,6 @@
 services:
   frontend:
     container_name: pan-bagnat-frontend-1
-    profiles: ["frontend", "dev"]
     build:
       context: ./frontend
     expose:
@@ -35,7 +34,6 @@ services:
 
   backend:
     container_name: pan-bagnat-backend-1
-    profiles: ["backend", "dev"]
     build:
       context: ./backend
     ports:

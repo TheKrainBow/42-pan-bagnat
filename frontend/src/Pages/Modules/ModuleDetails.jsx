@@ -69,7 +69,7 @@ const ModuleDetails = () => {
 
   return (
     <div className="module-detail-container">
-      <Link to="/modules" className="custom-btn link">
+      <Link to="/admin/modules" className="custom-btn link">
         <img src="/icons/arrow.png" alt="Back" style={{ width: "16px", marginRight: "8px", marginLeft: "-5px", verticalAlign: "middle" }} />
         Back to Modules
       </Link>
