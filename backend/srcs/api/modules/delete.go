@@ -2,12 +2,14 @@ package modules
 
 import (
 	api "backend/api/dto"
+	"backend/core"
 	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -43,4 +45,30 @@ func DeleteModule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(destJSON))
+}
+
+// @Summary      Delete Module
+// @Description  Delete a module for your campus (All module datas will be lost!)
+// @Tags         modules
+// @Accept       json
+// @Produce      json
+// @Param        input body ModulePatchInput true "Module input"
+// @Success      200
+// @Router       /modules/{moduleID}/pages/{pageName} [delete]
+func DeleteModulePage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	pageName := chi.URLParam(r, "pageName")
+
+	if pageName == "" {
+		http.Error(w, "Missing field page_name", http.StatusBadRequest)
+		return
+	}
+
+	err := core.DeleteModulePage(pageName)
+	if err != nil {
+		http.Error(w, "error while deleting module page", http.StatusInternalServerError)
+	}
+
+	fmt.Fprint(w, "OK")
 }

@@ -74,6 +74,22 @@ type ModuleLogsPagination struct {
 	Limit         int
 }
 
+type ModulePage struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	URL         string `json:"url"`
+	IsPublic    bool   `json:"is_public"`
+	ModuleID    string `json:"module_id"`
+}
+
+type ModulePagesPagination struct {
+	ModuleID       string
+	OrderBy        []database.ModulePagesOrder
+	Filter         string
+	LastModulePage *database.ModulePage
+	Limit          int
+}
+
 func GenerateModuleOrderBy(order string) (dest []database.ModuleOrder) {
 	if order == "" {
 		return nil
@@ -148,7 +164,43 @@ func GenerateModuleLogsOrderBy(order string) (dest []database.ModuleLogsOrder) {
 	return dest
 }
 
-func EncodeModuleLogsPaginationToken(token ModuleLogsPagination) (string, error) {
+func GenerateModulePagesOrderBy(order string) (dest []database.ModulePagesOrder) {
+	if order == "" {
+		return nil
+	}
+	args := strings.Split(order, ",")
+	for _, arg := range args {
+		var direction database.OrderDirection
+		if arg[0] == '-' {
+			direction = database.Desc
+			arg = arg[1:]
+		} else {
+			direction = database.Asc
+		}
+
+		var field database.ModulePagesOrderField
+		switch arg {
+		case string(database.ModulePagesName):
+			field = database.ModulePagesName
+		case string(database.ModulePagesDisplayName):
+			field = database.ModulePagesDisplayName
+		case string(database.ModulePagesIsPublic):
+			field = database.ModulePagesIsPublic
+		case string(database.ModulePagesURL):
+			field = database.ModulePagesURL
+		default:
+			continue
+		}
+
+		dest = append(dest, database.ModulePagesOrder{
+			Field: field,
+			Order: direction,
+		})
+	}
+	return dest
+}
+
+func EncodePaginationToken(token any) (string, error) {
 	data, err := json.Marshal(token)
 	if err != nil {
 		return "", err
@@ -166,16 +218,17 @@ func DecodeModuleLogsPaginationToken(encoded string) (ModuleLogsPagination, erro
 	return token, err
 }
 
-func EncodeModulePaginationToken(token ModulePagination) (string, error) {
-	data, err := json.Marshal(token)
-	if err != nil {
-		return "", err
-	}
-	return base64.StdEncoding.EncodeToString(data), nil
-}
-
 func DecodeModulePaginationToken(encoded string) (ModulePagination, error) {
 	var token ModulePagination
+	data, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return token, err
+	}
+	err = json.Unmarshal(data, &token)
+	return token, err
+}
+func DecodeModulePagesPaginationToken(encoded string) (ModulePagesPagination, error) {
+	var token ModulePagesPagination
 	data, err := base64.StdEncoding.DecodeString(encoded)
 	if err != nil {
 		return token, err
@@ -214,7 +267,7 @@ func GetModules(pagination ModulePagination) ([]Module, string, error) {
 	}
 
 	pagination.LastModule = &modules[len(modules)-1]
-	token, err := EncodeModulePaginationToken(pagination)
+	token, err := EncodePaginationToken(pagination)
 	if err != nil {
 		return dest, "", fmt.Errorf("couldn't generate next token: %w", err)
 	}
@@ -333,7 +386,7 @@ func GetModuleLogs(pagination ModuleLogsPagination) ([]ModuleLog, string, error)
 	}
 
 	pagination.LastModuleLog = &moduleLogs[len(moduleLogs)-1]
-	token, err := EncodeModuleLogsPaginationToken(pagination)
+	token, err := EncodePaginationToken(pagination)
 	if err != nil {
 		return dest, "", fmt.Errorf("couldn't generate next token: %w", err)
 	}
@@ -351,6 +404,73 @@ func SetModuleStatus(moduleID string, status ModuleStatus) error {
 	)
 	if err != nil {
 		return LogModule(moduleID, "ERROR", "Failed to change status", err)
+	}
+	return nil
+}
+
+func GetModulePages(pagination ModulePagesPagination) ([]ModulePage, string, error) {
+	var dest []ModulePage
+	realLimit := pagination.Limit + 1
+
+	moduleLogs, err := database.GetModulePages(database.ModulePagesPagination{
+		OrderBy:  &pagination.OrderBy,
+		ModuleID: pagination.ModuleID,
+		Limit:    realLimit,
+		Filter:   pagination.Filter,
+		LastPage: pagination.LastModulePage,
+	})
+	if err != nil {
+		return nil, "", fmt.Errorf("couldn't get modules in db: %w", err)
+	}
+
+	hasMore := len(moduleLogs) > pagination.Limit
+	if hasMore {
+		moduleLogs = moduleLogs[:pagination.Limit]
+	}
+
+	dest = DatabaseModulePagesToModulePages(moduleLogs)
+
+	if !hasMore {
+		return dest, "", nil
+	}
+
+	pagination.LastModulePage = &moduleLogs[len(moduleLogs)-1]
+	token, err := EncodePaginationToken(pagination)
+	if err != nil {
+		return dest, "", fmt.Errorf("couldn't generate next token: %w", err)
+	}
+	return dest, token, nil
+}
+
+func ImportModulePage(moduleID, name, displayName, url string, isPublic bool) (ModulePage, error) {
+	// Prepare module struct
+	dest := ModulePage{
+		ModuleID:    moduleID,
+		Name:        name,
+		DisplayName: displayName,
+		URL:         url,
+		IsPublic:    isPublic,
+	}
+
+	// Insert into DB
+	if err := database.InsertModulePage(database.ModulePage{
+		ModuleID:    dest.ModuleID,
+		Name:        dest.Name,
+		DisplayName: dest.DisplayName,
+		URL:         dest.URL,
+		IsPublic:    dest.IsPublic,
+	}); err != nil {
+		return ModulePage{}, fmt.Errorf("failed to insert module in DB: %w", err)
+	}
+
+	return dest, nil
+}
+
+func DeleteModulePage(pageName string) error {
+	err := database.DeleteModulePageByName(pageName)
+	if err != nil {
+		fmt.Printf("couldn't delete module page: %s\n", err.Error())
+		return err
 	}
 	return nil
 }

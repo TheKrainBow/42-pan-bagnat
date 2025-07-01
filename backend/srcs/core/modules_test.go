@@ -70,7 +70,7 @@ func TestModulePaginationToken_RoundTrip(t *testing.T) {
 	}
 
 	for _, orig := range cases {
-		b64, err := EncodeModulePaginationToken(orig)
+		b64, err := EncodePaginationToken(orig)
 		if err != nil {
 			t.Fatalf("encode error: %v", err)
 		}
@@ -84,11 +84,11 @@ func TestModulePaginationToken_RoundTrip(t *testing.T) {
 	}
 }
 
-func TestEncodeModulePaginationToken(t *testing.T) {
+func TestEncodePaginationToken(t *testing.T) {
 	empty := ModulePagination{}
 	wantEmpty := "eyJPcmRlckJ5IjpudWxsLCJGaWx0ZXIiOiIiLCJMYXN0TW9kdWxlIjpudWxsLCJMaW1pdCI6MH0="
 	// pre-computed base64 of {"OrderBy":[],"Filter":"","LastModule":null,"Limit":0}
-	got, err := EncodeModulePaginationToken(empty)
+	got, err := EncodePaginationToken(empty)
 	if err != nil {
 		t.Fatalf("unexpected encode error: %v", err)
 	}

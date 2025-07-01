@@ -55,6 +55,14 @@ type ModuleLog struct {
 	CreatedAt time.Time              `json:"created_at"`
 }
 
+type ModulePage struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	URL         string `json:"url"`
+	IsPublic    bool   `json:"is_public"`
+	ModuleID    string `json:"module_id"`
+}
+
 const (
 	Enabled          ModuleStatus = "enabled"
 	Disabled         ModuleStatus = "disabled"

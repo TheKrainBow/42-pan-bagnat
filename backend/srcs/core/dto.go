@@ -79,3 +79,20 @@ func DatabaseModuleLogsToModuleLogs(dbLogs []database.ModuleLog) (dest []ModuleL
 	}
 	return dest
 }
+
+func DatabaseModulePageToModulePage(dbPage database.ModulePage) ModulePage {
+	return ModulePage{
+		ModuleID:    dbPage.ModuleID,
+		Name:        dbPage.Name,
+		DisplayName: dbPage.DisplayName,
+		URL:         dbPage.URL,
+		IsPublic:    dbPage.IsPublic,
+	}
+}
+
+func DatabaseModulePagesToModulePages(dbPages []database.ModulePage) (dest []ModulePage) {
+	for _, log := range dbPages {
+		dest = append(dest, DatabaseModulePageToModulePage(log))
+	}
+	return dest
+}

@@ -283,3 +283,63 @@ func DeployConfig(w http.ResponseWriter, r *http.Request) {
 
 	core.DeployModule(module)
 }
+
+// @Summary      Post Module List
+// @Description  Download a new module for your campus
+// @Tags         modules
+// @Accept       json
+// @Produce      json
+// @Param        input body ModuleGitInput true "Git URL and SSH key"
+// @Success      200 {object} Module
+// @Router       /modules [post]
+func PostModulePage(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	// Parse input
+	var input struct {
+		ModuleID    string `json:"module_id"`
+		Name        string `json:"name"`
+		DisplayName string `json:"display_name"`
+		URL         string `json:"url"`
+		IsPublic    bool   `json:"is_public"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Invalid JSON input", http.StatusBadRequest)
+		return
+	}
+
+	if input.URL = strings.TrimSpace(input.URL); input.URL == "" {
+		http.Error(w, "Missing field url", http.StatusBadRequest)
+		return
+	}
+
+	if input.Name = strings.TrimSpace(input.Name); input.Name == "" {
+		http.Error(w, "Missing field name", http.StatusBadRequest)
+		return
+	}
+
+	if input.ModuleID = strings.TrimSpace(input.ModuleID); input.ModuleID == "" {
+		http.Error(w, "Missing field module_id", http.StatusBadRequest)
+		return
+	}
+
+	if strings.TrimSpace(input.DisplayName) == "" {
+		input.DisplayName = input.Name
+	}
+
+	modulePage, err := core.ImportModulePage(input.ModuleID, input.Name, input.DisplayName, input.URL, input.IsPublic)
+	if err != nil {
+		log.Printf("failed to import module page: %v", err)
+		http.Error(w, "Failed to import module page", http.StatusInternalServerError)
+		return
+	}
+
+	dest := api.ModulePageToAPIModulePage(modulePage)
+	destJSON, err := json.Marshal(dest)
+	if err != nil {
+		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
+		return
+	}
+	fmt.Fprint(w, string(destJSON))
+}

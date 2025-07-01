@@ -258,3 +258,7 @@ VALUES
   ('module_01HZXYZDE0420', '2025-06-01T09:46:00Z', 'INFO', 'I am out of idea for logs but I need a lot', '{"tag":"v1.2.0"}'::jsonb),
   ('module_01HZXYZDE0420', '2025-06-01T09:46:00Z', 'INFO', 'I am some veeeeeeeeeeeeeeeeryyyyyyyyyyyy long liiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiiineeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', '{"tag":"v1.2.0"}'::jsonb),
   ('module_01HZXYZDE0420', '2025-06-01T09:47:00Z', 'INFO', 'I am out of idea for logs but I need a lot', '{"tag":"v1.2.0"}'::jsonb);
+
+INSERT INTO module_page (name, display_name, url, is_public, module_id)
+VALUES
+  ('captain-hook', 'Captain Hook', 'http://localhost/admin/users', true, 'module_01HZXYZDE0420');
