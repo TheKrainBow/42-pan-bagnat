@@ -66,7 +66,40 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
       </div>
 
       {mode === 'admin' ? (
-        // … your existing admin links …
+        <>
+        <div
+          className={`sidebar-item ${isActive('/admin/modules')}`}
+          onClick={() => navigate('/admin/modules')}
+        >
+          <img
+            src="/icons/modules.png"
+            alt="Modules"
+            className="sidebar-icon"
+          />
+          Modules
+        </div>
+        <div
+          className={`sidebar-item ${isActive('/admin/roles')}`}
+          onClick={() => navigate('/admin/roles')}
+        >
+          <img
+            src="/icons/roles.png"
+            alt="Roles"
+            className="sidebar-icon"
+          />
+          Roles
+        </div>
+        <div
+          className={`sidebar-item ${isActive('/admin/users')}`}
+          onClick={() => navigate('/admin/users')}
+        >
+          <img
+            src="/icons/users.png"
+            alt="Users"
+            className="sidebar-icon"
+          />
+          Users
+        </div>
         <div className="sidebar-footer">
           <div
             className="sidebar-item"
@@ -75,6 +108,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
             🔧 Switch to User
           </div>
         </div>
+      </>
       ) : (
         <>
           {/* user pages list */}
