@@ -34,7 +34,7 @@ function Main() {
       <main className="main-content">
         <Routes>
           {/* user‐mode home shows the ModulePage */}
-          <Route path="/" element={<ModulePage moduleName={activeModule} />} />
+          <Route path="/modules" element={<ModulePage moduleName={activeModule} />} />
 
           {/* admin screens */}
           <Route path="/admin/modules" element={<Modules onSort="name" />} />
@@ -46,7 +46,7 @@ function Main() {
           <Route path="*" element={
               path.startsWith('/admin/')
                 ? <Navigate to="/admin/modules" replace />
-                : <Navigate to="/" replace />
+                : <Navigate to="/modules" replace />
             }
           />
         </Routes>

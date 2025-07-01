@@ -113,23 +113,3 @@
   padding-top: 12px;
   border-top: 2px solid var(--border);
 }
-
-/* inject a little wrench icon via unicode; remove if you’re rendering an <img> inside */
-/* .sidebar-item.switch-to-admin::before {
-  content: '🔧';
-  margin-right: 8px;
-  font-size: 1.1em;
-} */
-
-/* hover and focus states match your other items */
-/* .sidebar-item.switch-to-admin:hover,
-.sidebar-item.switch-to-admin:focus {
-  background-color: rgba(255, 255, 255, 0.1);
-  padding-left: 16px;
-  outline: none;
-} */
-
-/* active “pressed” state */
-/* .sidebar-item.switch-to-admin:active {
-  background-color: rgba(255, 255, 255, 0.2);
-} */

@@ -6,12 +6,12 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 const modules = {};
 
-app.use(cors({ origin: 'http://localhost*' }));
+app.use(cors()); // defaults to origin: '*'
 app.use(express.json());
 
 app.use('/module-page', (req, res, next) => {
   // CSP: only allow framing by your frontend (adjust origin as needed)
-  res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost");
+  // res.setHeader('Content-Security-Policy', "frame-ancestors 'self' http://localhost");
 
   const dest = req.get('sec-fetch-dest');
   const ref  = req.get('referer') || '';
