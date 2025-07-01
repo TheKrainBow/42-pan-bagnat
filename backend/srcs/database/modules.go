@@ -111,7 +111,7 @@ type ModulePagesOrder struct {
 }
 
 type ModulePagesPagination struct {
-	ModuleID string              // required: which module’s pages
+	ModuleID *string             // optional
 	Filter   string              // optional: substring to search in display_name
 	OrderBy  *[]ModulePagesOrder // optional: how to sort; defaults to name DESC
 	LastPage *ModulePage         // optional: cursor—last page from previous “page”
@@ -144,6 +144,26 @@ func GetModule(moduleID string) (*Module, error) {
 		return nil, err
 	}
 	return &module, nil
+}
+
+func GetPage(pageName string) (*ModulePage, error) {
+	row := mainDB.QueryRow(`
+		SELECT name, display_name, module_id, is_public, url
+		FROM module_page
+		WHERE name = $1
+	`, pageName)
+
+	var page ModulePage
+	if err := row.Scan(
+		&page.Name,
+		&page.DisplayName,
+		&page.ModuleID,
+		&page.IsPublic,
+		&page.URL,
+	); err != nil {
+		return nil, err
+	}
+	return &page, nil
 }
 
 func IsSlugTaken(slug string) (bool, error) {
@@ -600,9 +620,13 @@ func GetModulePages(p ModulePagesPagination) ([]ModulePage, error) {
 	argPos := 1
 
 	// always filter by module_id
-	whereConds = append(whereConds, fmt.Sprintf("module_id = $%d", argPos))
-	args = append(args, p.ModuleID)
-	argPos++
+	if p.ModuleID != nil {
+		whereConds = append(whereConds,
+			fmt.Sprintf("module_id = $%d", argPos),
+		)
+		args = append(args, *p.ModuleID)
+		argPos++
+	}
 
 	// text‐filter on display_name
 	if p.Filter != "" {

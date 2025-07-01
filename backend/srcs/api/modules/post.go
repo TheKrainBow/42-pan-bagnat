@@ -295,6 +295,12 @@ func DeployConfig(w http.ResponseWriter, r *http.Request) {
 func PostModulePage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
+	moduleID := chi.URLParam(r, "moduleID")
+	if moduleID == "" {
+		http.Error(w, "ID not found", http.StatusBadRequest)
+		return
+	}
+
 	// Parse input
 	var input struct {
 		ModuleID    string `json:"module_id"`
@@ -308,6 +314,8 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid JSON input", http.StatusBadRequest)
 		return
 	}
+
+	input.ModuleID = moduleID
 
 	if input.URL = strings.TrimSpace(input.URL); input.URL == "" {
 		http.Error(w, "Missing field url", http.StatusBadRequest)

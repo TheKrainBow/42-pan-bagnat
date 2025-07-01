@@ -37,10 +37,12 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-
-	// Use the CORS middleware
 	r.Use(corsMiddleware.Handler)
+
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
+
+	r.Get("/module-page/{pageName}", modules.PageRedirection)
+	r.Get("/module-page/{pageName}/*", modules.PageRedirection)
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Route("/modules", func(r chi.Router) {
