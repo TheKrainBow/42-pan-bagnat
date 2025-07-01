@@ -1,11 +1,12 @@
 // src/components/Sidebar.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Sidebar.css'
 
 export default function Sidebar({ currentPage, onModuleSelect }) {
   const navigate = useNavigate();
   const mode = currentPage.startsWith('/admin/') ? 'admin' : 'user';
+  const [selectedModule, setSelectedModule] = useState(null);
 
   const [modules, setModules] = useState([]);
 
@@ -14,7 +15,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
     document.body.classList.remove('theme-light');
 
     if (mode === 'user') {
-      fetch('/__register')
+      fetch('http://localhost/__register')
         .then((res) => {
           if (!res.ok) throw new Error(res.statusText);
           return res.json();
@@ -23,6 +24,19 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
         .catch(console.error);
     }
   }, [mode]);
+
+  useEffect(() => {
+    if (modules.length > 0 && selectedModule === null) {
+      setSelectedModule(modules[0]);
+      onModuleSelect(modules[0]);
+    }
+  }, [modules, selectedModule, onModuleSelect]);
+
+  // any user action should update selectedId, e.g.:
+  const handleSelect = (mod) => {
+    setSelectedModule(mod);
+    onModuleSelect(mod);
+  };
 
   const isActive = (path) =>
     currentPage.startsWith(path) ? 'active' : 'inactive';
@@ -49,7 +63,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
         <>
           {/* admin nav items */}
           <div
-            className={`sidebar-item ${isActive('admin/modules')}`}
+            className={`sidebar-item ${isActive('/admin/modules')}`}
             onClick={() => navigate('/admin/modules')}
           >
             <img
@@ -60,7 +74,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
             Modules
           </div>
           <div
-            className={`sidebar-item ${isActive('admin/roles')}`}
+            className={`sidebar-item ${isActive('/admin/roles')}`}
             onClick={() => navigate('/admin/roles')}
           >
             <img
@@ -71,7 +85,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
             Roles
           </div>
           <div
-            className={`sidebar-item ${isActive('admin/users')}`}
+            className={`sidebar-item ${isActive('/admin/users')}`}
             onClick={() => navigate('/admin/users')}
           >
             <img
@@ -81,6 +95,16 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
             />
             Users
           </div>
+
+          {/* switch back to admin */}
+          <div className="sidebar-footer">
+            <div
+              className="sidebar-item"
+              onClick={() => navigate('/modules')}
+            >
+              🔧 Switch to User
+            </div>
+          </div>
         </>
       ) : (
         <>
@@ -89,8 +113,8 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
             {modules.map((modName) => (
               <li
                 key={modName}
-                className="sidebar-item inactive"
-                onClick={() => onModuleSelect(modName)}
+                className={`sidebar-item ${selectedModule === modName ? 'active' : 'inactive'}`}
+                onClick={() => handleSelect(modName)}
               >
                 {modName}
               </li>
@@ -99,12 +123,12 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
 
           {/* switch back to admin */}
           <div className="sidebar-footer">
-            <button
-              className="sidebar-item switch-to-admin"
+            <div
+              className="sidebar-item"
               onClick={() => navigate('/admin/modules')}
             >
               🔧 Switch to Admin
-            </button>
+            </div>
           </div>
         </>
       )}

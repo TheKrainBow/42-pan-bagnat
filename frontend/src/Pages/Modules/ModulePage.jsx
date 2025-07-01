@@ -14,7 +14,7 @@ export default function ModulePage({ moduleName }) {
   return (
     <div className="module-page-container">
       <iframe
-        src={`/module-page/${moduleName}`}
+        src={`http://localhost/module-page/${moduleName}`}
         title={moduleName}
         frameBorder="0"
         className="module-iframe"
