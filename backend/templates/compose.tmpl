@@ -64,12 +64,13 @@ volumes:
 
 {{- if len $.Networks }}
 networks:
-{{- range .Networks }}
-  {{ . }}:
-{{- if eq . "pan-bagnat-net" }}
+{{- range $.Networks }}
+  {{ .Name }}:
+    {{- if eq .Type "external" }}
     external: true
-{{- else }}
+    {{- else }}
+    name: {{ .Name }}
     driver: bridge
-{{- end }}
+    {{- end }}
 {{- end }}
 {{- end }}

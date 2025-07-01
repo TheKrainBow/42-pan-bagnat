@@ -2,10 +2,15 @@ package docker
 
 // ModuleManifest mirrors module.yml
 type ModuleManifest struct {
-	Module   ModuleInfo   `yaml:"module"`
-	Networks []string     `yaml:"networks,omitempty"`
-	Services []ServiceDef `yaml:"services"`
-	Volumes  []string     `yaml:"volumes,omitempty"`
+	Module   ModuleInfo      `yaml:"module"`
+	Networks []ModuleNetwork `yaml:"networks,omitempty"`
+	Services []ServiceDef    `yaml:"services"`
+	Volumes  []string        `yaml:"volumes,omitempty"`
+}
+
+type ModuleNetwork struct {
+	Name string `yaml:"name"`
+	Type string `yaml:"type"`
 }
 
 type ModuleInfo struct {
