@@ -138,7 +138,7 @@ func GetModuleLogs(w http.ResponseWriter, r *http.Request) {
 		limit = 50
 	}
 
-	dest := ModuleLogGetResponse{}
+	dest := ModuleLogsGetResponse{}
 	pagination := core.ModuleLogsPagination{
 		ModuleID:      moduleID,
 		OrderBy:       core.GenerateModuleLogsOrderBy(order),
@@ -211,4 +211,70 @@ func GetModuleConfig(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]string{
 		"config": cfg, // this is the entire YAML, newlines preserved
 	})
+}
+
+// @Summary      Get Module List
+// @Description  Return the module.yml of a given module
+// @Tags         modules
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} Module
+// @Router       /modules/{moduleID}/config [get]
+func GetModulePages(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var pages []core.ModulePage
+	var nextToken string
+
+	w.Header().Set("Content-Type", "application/json")
+	moduleID := chi.URLParam(r, "moduleID")
+	if moduleID == "" {
+		http.Error(w, "ID not found", http.StatusBadRequest)
+		return
+	}
+
+	filter := r.URL.Query().Get("filter")
+	pageToken := r.URL.Query().Get("next_page_token")
+	order := r.URL.Query().Get("order")
+	limitStr := r.URL.Query().Get("limit")
+	limit := 0
+	if limitStr != "" {
+		limit, _ = strconv.Atoi(limitStr)
+	} else {
+		limit = 50
+	}
+
+	dest := ModulePagesGetResponse{}
+	pagination := core.ModulePagesPagination{
+		ModuleID:       moduleID,
+		OrderBy:        core.GenerateModulePagesOrderBy(order),
+		Filter:         filter,
+		LastModulePage: nil,
+		Limit:          limit,
+	}
+
+	if pageToken != "" {
+		pagination, err = core.DecodeModulePagesPaginationToken(pageToken)
+		if err != nil {
+			http.Error(w, "Failed in core.GetModules()", http.StatusInternalServerError)
+			fmt.Printf("Couldn't decode token:\n%s\n: %s\n", pageToken, err.Error())
+			return
+		}
+	}
+	pages, nextToken, err = core.GetModulePages(pagination)
+	if err != nil {
+		log.Printf("error while getting modules: %s\n", err.Error())
+		http.Error(w, "Failed in core.GetModules()", http.StatusInternalServerError)
+		return
+	}
+	dest.NextPage = nextToken
+	dest.ModulePages = api.ModulePagesToAPIModulePages(pages)
+
+	// Marshal the dest struct into JSON
+	destJSON, err := json.Marshal(dest)
+	if err != nil {
+		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, string(destJSON))
 }

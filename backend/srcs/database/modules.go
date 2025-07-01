@@ -87,6 +87,37 @@ type ModuleLogPagination struct {
 	Filter   string
 }
 
+type ModulePage struct {
+	Name        string `json:"name"`
+	DisplayName string `json:"display_name"`
+	URL         string `json:"url"`
+	IsPublic    bool   `json:"is_public"`
+	ModuleID    string `json:"module_id"`
+}
+
+type ModulePagesOrderField string
+
+const (
+	ModulePagesName        ModulePagesOrderField = "name"
+	ModulePagesDisplayName ModulePagesOrderField = "display_name"
+	ModulePagesURL         ModulePagesOrderField = "url"
+	ModulePagesIsPublic    ModulePagesOrderField = "is_public"
+)
+
+// single sort instruction
+type ModulePagesOrder struct {
+	Field ModulePagesOrderField
+	Order OrderDirection
+}
+
+type ModulePagesPagination struct {
+	ModuleID string              // required: which module’s pages
+	Filter   string              // optional: substring to search in display_name
+	OrderBy  *[]ModulePagesOrder // optional: how to sort; defaults to name DESC
+	LastPage *ModulePage         // optional: cursor—last page from previous “page”
+	Limit    int                 // optional: max rows to return
+}
+
 func GetModule(moduleID string) (*Module, error) {
 	row := mainDB.QueryRow(`
 		SELECT id, ssh_public_key, ssh_private_key, name, slug, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update
@@ -317,6 +348,25 @@ func InsertModule(m Module) error {
 	return err
 }
 
+func InsertModulePage(m ModulePage) error {
+	_, err := mainDB.Exec(`
+		INSERT INTO module_page (module_id, name, display_name, url, is_public)
+		VALUES ($1, $2, $3, $4, $5)
+	`, m.ModuleID, m.Name, m.DisplayName, m.URL, m.IsPublic)
+	return err
+}
+
+func DeleteModulePageByName(name string) error {
+	_, err := mainDB.Exec(`
+        DELETE FROM module_page
+         WHERE name = $1
+    `, name)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // InsertModuleLog inserts a new entry into module_log.
 // It marshals the Meta map into JSONB and relies on the DB default
 // to set created_at = now().
@@ -512,6 +562,131 @@ SELECT id, module_id, created_at, level, message, meta
 			return nil, err
 		}
 		out = append(out, l)
+	}
+
+	return out, nil
+}
+
+// GetModulePages pages through module_page for one module,
+// supporting ordering, filtering, and cursor-based pagination.
+func GetModulePages(p ModulePagesPagination) ([]ModulePage, error) {
+	// 1) Default ordering if none specified
+	if p.OrderBy == nil || len(*p.OrderBy) == 0 {
+		tmp := []ModulePagesOrder{{Field: ModulePagesName, Order: Desc}}
+		p.OrderBy = &tmp
+	}
+
+	// 2) Build ORDER BY clauses, ensure stable sort by name
+	hasName := false
+	var orderClauses []string
+	for _, ord := range *p.OrderBy {
+		orderClauses = append(orderClauses,
+			fmt.Sprintf("%s %s", ord.Field, ord.Order),
+		)
+		if ord.Field == ModulePagesName {
+			hasName = true
+		}
+	}
+	firstOrder := (*p.OrderBy)[0].Order
+	if !hasName {
+		orderClauses = append(orderClauses,
+			fmt.Sprintf("%s %s", ModulePagesName, firstOrder),
+		)
+	}
+
+	// 3) Build WHERE conditions & collect args
+	var whereConds []string
+	var args []any
+	argPos := 1
+
+	// always filter by module_id
+	whereConds = append(whereConds, fmt.Sprintf("module_id = $%d", argPos))
+	args = append(args, p.ModuleID)
+	argPos++
+
+	// text‐filter on display_name
+	if p.Filter != "" {
+		whereConds = append(whereConds,
+			fmt.Sprintf("display_name ILIKE '%%' || $%d || '%%'", argPos),
+		)
+		args = append(args, p.Filter)
+		argPos++
+	}
+
+	// cursor pagination: tuple comparison on ordered fields
+	if p.LastPage != nil {
+		cmp := "<"
+		if firstOrder == Asc {
+			cmp = ">"
+		}
+		var cols, holders []string
+		for _, ord := range *p.OrderBy {
+			cols = append(cols, string(ord.Field))
+			holders = append(holders, fmt.Sprintf("$%d", argPos))
+			switch ord.Field {
+			case ModulePagesName:
+				args = append(args, p.LastPage.Name)
+			case ModulePagesDisplayName:
+				args = append(args, p.LastPage.DisplayName)
+			case ModulePagesURL:
+				args = append(args, p.LastPage.URL)
+			case ModulePagesIsPublic:
+				args = append(args, p.LastPage.IsPublic)
+			}
+			argPos++
+		}
+		if !hasName {
+			cols = append(cols, string(ModulePagesName))
+			holders = append(holders, fmt.Sprintf("$%d", argPos))
+			args = append(args, p.LastPage.Name)
+			argPos++
+		}
+		whereConds = append(whereConds,
+			fmt.Sprintf("(%s) %s (%s)",
+				strings.Join(cols, ", "),
+				cmp,
+				strings.Join(holders, ", "),
+			),
+		)
+	}
+
+	// 4) Assemble SQL
+	var sb strings.Builder
+	sb.WriteString(`
+SELECT name, display_name, url, is_public, module_id
+  FROM module_page`)
+	if len(whereConds) > 0 {
+		sb.WriteString("\nWHERE ")
+		sb.WriteString(strings.Join(whereConds, " AND "))
+	}
+	sb.WriteString("\nORDER BY ")
+	sb.WriteString(strings.Join(orderClauses, ", "))
+	if p.Limit > 0 {
+		sb.WriteString(fmt.Sprintf("\nLIMIT %d", p.Limit))
+	}
+	sb.WriteString(";")
+	query := sb.String()
+
+	// 5) Execute and scan
+	rows, err := mainDB.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []ModulePage
+	for rows.Next() {
+		var pg ModulePage
+		if err := rows.Scan(
+			&pg.Name,
+			&pg.DisplayName,
+			&pg.URL,
+			&pg.IsPublic,
+			&pg.ModuleID,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, pg)
 	}
 
 	return out, nil

@@ -96,3 +96,23 @@ func ModuleLogsToAPIModuleLogs(logs []core.ModuleLog) (dest []ModuleLog) {
 	}
 	return dest
 }
+
+func ModulePageToAPIModulePage(modulePage core.ModulePage) ModulePage {
+	return ModulePage{
+		ModuleID:    modulePage.ModuleID,
+		Name:        modulePage.Name,
+		DisplayName: modulePage.DisplayName,
+		URL:         modulePage.URL,
+		IsPublic:    modulePage.IsPublic,
+	}
+}
+
+func ModulePagesToAPIModulePages(pages []core.ModulePage) (dest []ModulePage) {
+	for _, module := range pages {
+		dest = append(dest, ModulePageToAPIModulePage(module))
+	}
+	if len(dest) == 0 {
+		return (make([]ModulePage, 0))
+	}
+	return dest
+}
