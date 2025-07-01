@@ -1,49 +1,59 @@
 // src/components/Sidebar.jsx
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Sidebar.css'
+import './Sidebar.css';
 
 export default function Sidebar({ currentPage, onModuleSelect }) {
   const navigate = useNavigate();
   const mode = currentPage.startsWith('/admin/') ? 'admin' : 'user';
-  const [selectedModule, setSelectedModule] = useState(null);
 
-  const [modules, setModules] = useState([]);
+  // selectedPage will be one of the page objects (or null)
+  const [selectedPage, setSelectedPage] = useState(null);
 
+  // pages is the array of { name, display_name, url, is_public, module_id }
+  const [pages, setPages] = useState([]);
+
+  // Fetch your pages list when in user mode
   useEffect(() => {
     document.body.classList.add('theme-dark');
     document.body.classList.remove('theme-light');
 
     if (mode === 'user') {
-      fetch('http://localhost/__register')
+      fetch('http://localhost:8080/api/v1/modules/pages')
         .then((res) => {
           if (!res.ok) throw new Error(res.statusText);
           return res.json();
         })
-        .then(setModules)
+        .then((data) => {
+          // pull out the array
+          setPages(data.pages);
+        })
         .catch(console.error);
     }
   }, [mode]);
 
+  // On first load, auto-select the very first page
   useEffect(() => {
-    if (modules.length > 0 && selectedModule === null) {
-      setSelectedModule(modules[0]);
-      onModuleSelect(modules[0]);
+    if (pages.length > 0 && selectedPage === null) {
+      setSelectedPage(pages[0]);
+      onModuleSelect(pages[0]);
     }
-  }, [modules, selectedModule, onModuleSelect]);
+  }, [pages, selectedPage, onModuleSelect]);
 
-  // any user action should update selectedId, e.g.:
-  const handleSelect = (mod) => {
-    setSelectedModule(mod);
-    onModuleSelect(mod);
+  // called when user clicks a page
+  const handleSelect = (page) => {
+    setSelectedPage(page);
+    onModuleSelect(page);
+    navigate(page.url);
   };
 
+  // helper for admin nav highlighting
   const isActive = (path) =>
     currentPage.startsWith(path) ? 'active' : 'inactive';
 
   return (
     <aside className="sidebar">
-      {/* header */}
+      {/* header/logo */}
       <div
         className="sidebar-header"
         onClick={() =>
@@ -51,77 +61,37 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
         }
         style={{ cursor: 'pointer' }}
       >
-        <img
-          src="/icons/panbagnat.png"
-          alt="Logo"
-          className="sidebar-logo"
-        />
+        <img src="/icons/panbagnat.png" alt="Logo" className="sidebar-logo" />
         <span className="sidebar-title">Pan Bagnat</span>
       </div>
 
       {mode === 'admin' ? (
-        <>
-          {/* admin nav items */}
+        // … your existing admin links …
+        <div className="sidebar-footer">
           <div
-            className={`sidebar-item ${isActive('/admin/modules')}`}
-            onClick={() => navigate('/admin/modules')}
+            className="sidebar-item"
+            onClick={() => navigate('/modules')}
           >
-            <img
-              src="/icons/modules.png"
-              alt="Modules"
-              className="sidebar-icon"
-            />
-            Modules
+            🔧 Switch to User
           </div>
-          <div
-            className={`sidebar-item ${isActive('/admin/roles')}`}
-            onClick={() => navigate('/admin/roles')}
-          >
-            <img
-              src="/icons/roles.png"
-              alt="Roles"
-              className="sidebar-icon"
-            />
-            Roles
-          </div>
-          <div
-            className={`sidebar-item ${isActive('/admin/users')}`}
-            onClick={() => navigate('/admin/users')}
-          >
-            <img
-              src="/icons/users.png"
-              alt="Users"
-              className="sidebar-icon"
-            />
-            Users
-          </div>
-
-          {/* switch back to admin */}
-          <div className="sidebar-footer">
-            <div
-              className="sidebar-item"
-              onClick={() => navigate('/modules')}
-            >
-              🔧 Switch to User
-            </div>
-          </div>
-        </>
+        </div>
       ) : (
         <>
-          {/* user list */}
+          {/* user pages list */}
           <ul className="sidebar-user-modules">
-            {modules.map((modName) => (
+            {pages.map((page) => (
               <li
-                key={modName}
-                className={`sidebar-item ${selectedModule === modName ? 'active' : 'inactive'}`}
-                onClick={() => handleSelect(modName)}
+                key={page.name}
+                className={`sidebar-item ${
+                  selectedPage?.name === page.name ? 'active' : 'inactive'
+                }`}
+                onClick={() => handleSelect(page)}
               >
-                {modName}
+                {page.display_name}
               </li>
             ))}
           </ul>
 
-          {/* switch back to admin */}
           <div className="sidebar-footer">
             <div
               className="sidebar-item"

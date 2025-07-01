@@ -83,7 +83,7 @@ type ModulePage struct {
 }
 
 type ModulePagesPagination struct {
-	ModuleID       string
+	ModuleID       *string
 	OrderBy        []database.ModulePagesOrder
 	Filter         string
 	LastModulePage *database.ModulePage
@@ -290,6 +290,20 @@ func GetModule(moduleID string) (Module, error) {
 		return dest, fmt.Errorf("couldn't get module's roles in db: %w", err)
 	}
 	dest.Roles = DatabaseRolesToRoles(roles)
+	return dest, nil
+}
+
+func GetPage(pageName string) (ModulePage, error) {
+	var dest ModulePage
+
+	module, err := database.GetPage(pageName)
+	if err != nil {
+		return ModulePage{}, fmt.Errorf("couldn't get module in db: %w", err)
+	}
+	if module == nil {
+		return ModulePage{}, nil
+	}
+	dest = DatabaseModulePageToModulePage(*module)
 	return dest, nil
 }
 
