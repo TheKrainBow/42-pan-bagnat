@@ -18,17 +18,7 @@ services:
       - '80:80'
     depends_on:
       - frontend
-      - express
       - backend
-    networks:
-      - pan-bagnat-net
-
-  express:
-    build:
-      context: ./express
-      dockerfile: Dockerfile
-    ports:
-      - '3000'
     networks:
       - pan-bagnat-net
 
