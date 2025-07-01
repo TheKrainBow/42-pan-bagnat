@@ -1,0 +1,64 @@
+.front-pages-panel {
+  padding: 1rem;
+  background: #1e1e1e;
+  color: #f0f0f0;
+  border-radius: 8px;
+  font-family: sans-serif;
+}
+
+.front-pages-panel h3 {
+  margin-bottom: 1rem;
+  font-size: 1.2rem;
+  border-bottom: 1px solid #444;
+  padding-bottom: 0.5rem;
+}
+
+.page-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.page-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  gap: 0.5rem;
+  background: #2a2a2a;
+  padding: 0.5rem;
+  border-radius: 4px;
+}
+
+.page-info {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.page-name {
+  font-weight: bold;
+  margin-bottom: 0.2rem;
+}
+
+.page-url-input {
+  background: #111;
+  color: #f0f0f0;
+  border: 1px solid #555;
+  padding: 0.25rem;
+  border-radius: 4px;
+  width: 100%;
+}
+
+.add-page-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.add-page-form input {
+  background: #111;
+  color: #f0f0f0;
+  border: 1px solid #555;
+  padding: 0.5rem;
+  border-radius: 4px;
+}

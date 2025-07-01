@@ -10,6 +10,7 @@ import ModuleWarningSection from 'Modules/components/ModuleWarningSection';
 import ModuleStatusBadge from 'Modules/components/ModuleStatusBadge';
 import ModuleAboutSection from './components/ModuleAboutSection';
 import ModuleConfigViewer from './components/ModuleConfigPanel';
+import ModulePageSettings from './components/ModulePageSettings';
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();
@@ -112,6 +113,11 @@ const ModuleDetails = () => {
             className={`custom-btn ${activeTab === 'settings' ? 'blue' : 'gray'}`}
             onClick={() => setActiveTab('settings')}
           />
+          <Button
+            label="Pages"
+            className={`custom-btn ${activeTab === 'pages' ? 'blue' : 'gray'}`}
+            onClick={() => setActiveTab('pages')}
+          />
         </div>
 
         <div className="tab-content">
@@ -123,6 +129,7 @@ const ModuleDetails = () => {
               statusUpdating={statusUpdating}
             />}
           {activeTab === 'config' && <ModuleConfigViewer moduleId={module.id}/>}
+          {activeTab === 'pages' && <ModulePageSettings moduleId={module.id}/>}
         </div>
       </div>
     </div>
