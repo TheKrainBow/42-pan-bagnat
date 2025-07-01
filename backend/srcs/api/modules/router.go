@@ -23,6 +23,7 @@ func RegisterRoutes(r chi.Router) {
 	r.Post("/{moduleID}/deploy", DeployConfig)
 
 	r.Get("/{moduleID}/pages", GetModulePages)
+	r.Get("/pages", GetPages)
 	r.Post("/{moduleID}/pages", PostModulePage)
 	r.Delete("/{moduleID}/pages/{pageName}", DeleteModulePage)
 }

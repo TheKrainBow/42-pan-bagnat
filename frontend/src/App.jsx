@@ -28,7 +28,7 @@ function Main() {
     <div className="app-container">
       <Sidebar
         currentPage={path}
-        onModuleSelect={setActiveModule}
+        onModuleSelect={(page) => setActiveModule(page.name)}
       />
 
       <main className="main-content">
