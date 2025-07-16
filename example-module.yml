@@ -1,7 +1,3 @@
-module:
-  name: hello-world
-  version: "0.1.0"
-
 services:
   - name: db
     image: postgres:15
