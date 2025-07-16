@@ -338,7 +338,7 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 
 	modulePage, err := core.ImportModulePage(input.ModuleID, input.Name, input.DisplayName, input.URL, input.IsPublic)
 	if err != nil {
-		log.Printf("failed to import module page: %v", err)
+		core.LogModule(moduleID, "ERROR", "Couldn't add a module Page", err)
 		http.Error(w, "Failed to import module page", http.StatusInternalServerError)
 		return
 	}
@@ -349,5 +349,7 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
 		return
 	}
+
+	core.LogModule(moduleID, "INFO", fmt.Sprintf("Created page at '/module-page/%s' from '%s'", dest.Name, dest.URL), nil)
 	fmt.Fprint(w, string(destJSON))
 }

@@ -30,12 +30,23 @@ func CloneModuleRepo(module Module) error {
 	}
 
 	sshCommand := "ssh -i " + tmpKey.Name() + " -o StrictHostKeyChecking=no"
-	cmd := exec.Command("git", "clone", module.GitURL, targetDir)
+	cmd := exec.Command(
+		"git", "clone",
+		"-b", module.GitBranch,
+		"--single-branch",
+		module.GitURL,
+		targetDir,
+	)
 	cmd.Env = append(os.Environ(), "GIT_SSH_COMMAND="+sshCommand)
 
-	output, err := cmd.CombinedOutput()
+	err = runAndLog(module.ID, cmd)
 	if err != nil {
-		return LogModule(module.ID, "ERROR", "git clone failed", fmt.Errorf("%w - %s", err, string(output)))
+		return LogModule(
+			module.ID,
+			"ERROR",
+			"git clone failed",
+			err,
+		)
 	}
 
 	newStatus := "disabled"
