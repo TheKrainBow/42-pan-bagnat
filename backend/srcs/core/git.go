@@ -85,11 +85,9 @@ func PullModuleRepo(module Module) error {
 
 	cmd := exec.Command("git", "-C", targetDir, "pull", "--rebase")
 	cmd.Env = append(os.Environ(), "GIT_SSH_COMMAND="+sshCommand)
-
-	output, err := cmd.CombinedOutput()
+	err = runAndLog(module.ID, cmd)
 	if err != nil {
-		wrappedErr := fmt.Errorf("%w | output: %s", err, output)
-		return LogModule(module.ID, "ERROR", "git pull failed", wrappedErr)
+		return LogModule(module.ID, "ERROR", "git pull failed", err)
 	}
 	return LogModule(module.ID, "INFO", fmt.Sprintf("Pulled module from URL %s", module.GitURL), nil)
 }
@@ -102,9 +100,9 @@ func UpdateModuleGitRemote(moduleID, moduleSlug, newGitURL string) error {
 	targetDir := filepath.Join(baseRepoPath, moduleSlug)
 
 	cmd := exec.Command("git", "-C", targetDir, "remote", "set-url", "origin", newGitURL)
-	output, err := cmd.CombinedOutput()
+	err := runAndLog(moduleID, cmd)
 	if err != nil {
-		return fmt.Errorf("failed to update remote url: %w\nOutput: %s", err, output)
+		return LogModule(moduleID, "ERROR", "failed to update remote url", err)
 	}
 
 	err = database.PatchModule(database.ModulePatch{
