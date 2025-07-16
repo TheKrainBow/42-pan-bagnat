@@ -97,31 +97,25 @@ func SaveModuleConfig(module Module, content string) error {
 }
 
 func DeployModule(module Module) error {
-	// 1) Locate the repo dir
 	baseRepoPath := os.Getenv("REPO_BASE_PATH")
 	if baseRepoPath == "" {
 		baseRepoPath = "../../repos" // fallback for local dev
 	}
 	dir := filepath.Join(baseRepoPath, module.Slug)
 
-	// 2) Run `docker compose up -d`
 	cmd := exec.Command("docker", "compose", "up", "-d")
 	cmd.Dir = dir
-	output, err := cmd.CombinedOutput()
+	err := runAndLog(module.ID, cmd)
 	if err != nil {
-		// include both the go error and the raw output in meta.error
-		wrapped := fmt.Errorf("%w: %s", err, string(output))
 		return LogModule(
 			module.ID,
 			"ERROR",
-			"docker compose up failed",
-			wrapped,
+			"Failed to docker up",
+			err,
 		)
 	}
 
-	LogModule(module.ID, "INFO", fmt.Sprintf("docker compose up -d:\n%s", output), nil)
 	SetModuleStatus(module.ID, Enabled)
-	// 3) Log success
 	LogModule(module.ID, "INFO", "docker compose up succeeded", nil)
 	return nil
 }

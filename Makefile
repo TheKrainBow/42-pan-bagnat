@@ -102,7 +102,6 @@ fprune-all:
 		docker system prune -af --volumes || true; \
 	  fi \
 	done
-	@rm -r repos/* 2> /dev/null || true;
 
 #########################################################################################
 #                                       TESTS                                           #
