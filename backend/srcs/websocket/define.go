@@ -29,3 +29,5 @@ func (c ControlMessage) Bytes() []byte {
 	b, _ := json.Marshal(c)
 	return b
 }
+
+var Secret []byte = []byte("MokkoIsNotFat")
