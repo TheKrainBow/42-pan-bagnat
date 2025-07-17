@@ -10,6 +10,7 @@ import (
 	"backend/api/users"
 	"backend/api/version"
 	_ "backend/docs"
+	"backend/websocket"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -58,6 +59,13 @@ func main() {
 		r.Get("/version", version.GetVersion)
 	})
 
+	go websocket.Dispatch()
+
+	// Mount WebSocket endpoint
+	r.HandleFunc("/ws", websocket.Handler())
+
+	// Webhook endpoint pushes into websocket.Events
+	r.Post("/webhooks/events", websocket.WebhookHandler([]byte("toto")))
 	log.Printf("Backend listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
