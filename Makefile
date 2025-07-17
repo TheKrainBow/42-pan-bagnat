@@ -93,15 +93,19 @@ REPO_DIRS := $(wildcard repos/*)
 
 .PHONY: fprune-all
 fprune-all:
+	echo $(REPO_DIRS)
 	@for dir in $(REPO_DIRS); do \
 	  if [ -d $$dir ]; then \
 	    echo "==> fprune in $$dir"; \
-	    cd $$dir; \
-		$(DOCKER_COMPOSE) down --volumes --remove-orphans || true; \
-		docker network rm pan-bagnat_default 2>/dev/null || true; \
-		docker system prune -af --volumes || true; \
-	  fi \
-	done
+	    ( \
+	      cd "$$dir" && \
+	      $(DOCKER_COMPOSE) down --volumes --remove-orphans || true; \
+	      docker network rm pan-bagnat_default 2>/dev/null || true; \
+	      docker system prune -af --volumes || true; \
+	    ); \
+	  fi; \
+	done; \
+	rm -rf $(REPO_DIRS)
 
 #########################################################################################
 #                                       TESTS                                           #
