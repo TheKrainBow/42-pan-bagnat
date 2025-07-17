@@ -390,21 +390,36 @@ func DeleteModulePageByName(name string) error {
 // InsertModuleLog inserts a new entry into module_log.
 // It marshals the Meta map into JSONB and relies on the DB default
 // to set created_at = now().
-func InsertModuleLog(l ModuleLog) error {
+func InsertModuleLog(l ModuleLog) (ModuleLog, error) {
 	metaJSON, err := json.Marshal(l.Meta)
 	if err != nil {
-		return fmt.Errorf("failed to marshal meta: %w", err)
+		return ModuleLog{}, fmt.Errorf("failed to marshal meta: %w", err)
 	}
 
-	_, err = mainDB.Exec(`
+	row := mainDB.QueryRow(`
 		INSERT INTO module_log (module_id, level, message, meta)
 		VALUES ($1, $2, $3, $4)
+		RETURNING id, module_id, level, message, meta, created_at
 	`, l.ModuleID, l.Level, l.Message, metaJSON)
-	if err != nil {
-		return fmt.Errorf("failed to insert module_log: %w", err)
+
+	var resultMeta []byte
+	var out ModuleLog
+	if err := row.Scan(
+		&out.ID,
+		&out.ModuleID,
+		&out.Level,
+		&out.Message,
+		&resultMeta,
+		&out.CreatedAt,
+	); err != nil {
+		return ModuleLog{}, fmt.Errorf("failed to insert module_log: %w", err)
 	}
 
-	return nil
+	if err := json.Unmarshal(resultMeta, &out.Meta); err != nil {
+		return ModuleLog{}, fmt.Errorf("failed to unmarshal returned meta: %w", err)
+	}
+
+	return out, nil
 }
 
 func PatchModule(patch ModulePatch) error {
