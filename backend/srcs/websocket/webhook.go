@@ -36,7 +36,11 @@ func WebhookHandler(secret []byte) http.HandlerFunc {
 			return
 		}
 
-		log.Printf("webhook received: %#v", evt)
+		log.Printf("webhook received:")
+		log.Printf("  EventType: %#v", evt.EventType)
+		log.Printf("  ModuleID:  %#v", evt.ModuleID)
+		log.Printf("  Timestamp: %#v", evt.Timestamp)
+		log.Printf("  Payload:   %+v", string(evt.Payload))
 		Events <- evt
 		w.WriteHeader(http.StatusAccepted)
 	}

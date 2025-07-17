@@ -65,7 +65,7 @@ func main() {
 	r.HandleFunc("/ws", websocket.Handler())
 
 	// Webhook endpoint pushes into websocket.Events
-	r.Post("/webhooks/events", websocket.WebhookHandler([]byte("toto")))
+	r.Post("/webhooks/events", websocket.WebhookHandler(websocket.Secret))
 	log.Printf("Backend listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
 }
