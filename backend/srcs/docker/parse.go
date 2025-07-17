@@ -28,7 +28,6 @@ func GenerateDockerComposeFromConfig(moduleSlug string, configYAML string) (stri
 		baseRepoPath = "../templates" // fallback for local dev
 	}
 	templatePath := filepath.Join(baseRepoPath, "compose.tmpl")
-	fmt.Printf("Full path: `%s`\n", templatePath)
 	tmpl, err := template.ParseFiles(templatePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse compose template: %w", err)
