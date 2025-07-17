@@ -2,18 +2,19 @@ package core
 
 import (
 	"backend/database"
+	"backend/websocket"
 	"fmt"
 	"time"
 )
 
 func LogModule(moduleID, level, message string, err error) error {
 	// Build the JSON meta payload
-	meta := map[string]interface{}{}
+	meta := map[string]any{}
 	if err != nil {
 		meta["error"] = err.Error()
 	}
 
-	database.InsertModuleLog(database.ModuleLog{
+	log, _ := database.InsertModuleLog(database.ModuleLog{
 		ModuleID: moduleID,
 		Level:    level,
 		Message:  message,
@@ -31,7 +32,8 @@ func LogModule(moduleID, level, message string, err error) error {
 		)
 	}
 
-	// 3) Return the DB error (nil if success)
+	websocket.SendLogEvent(log)
+
 	if err != nil {
 		return fmt.Errorf("%s: %w", message, err)
 	}
