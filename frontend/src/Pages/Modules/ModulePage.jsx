@@ -9,7 +9,7 @@ export default function ModulePage({ moduleName }) {
       iframe.onload = function () {
         console.log('Iframe loaded successfully.');
         const iframeDoc = iframe.contentWindow.document;
-        const basePath = iframe.src.split('/module-page')[0] + '/module-page/PiscineMonitor/';
+        const basePath = iframe.src.split('/module-page')[0] + `/module-page/${moduleName}/`;
         const baseTag = document.createElement('base');
         baseTag.setAttribute('href', basePath);
         iframeDoc.head.appendChild(baseTag);
