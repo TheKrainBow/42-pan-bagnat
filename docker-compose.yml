@@ -32,19 +32,9 @@ services:
       - ./backend/.env
     depends_on:
       - db
-      - init-repos-perms
     volumes:
-      - ./repos:/data/repos:Z
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - pan-bagnat-net
-
-  init-repos-perms:
-    image: busybox
-    command: ["sh", "-c", "mkdir -p /mnt/repos && chmod -R 777 /mnt/repos"]
-    volumes:
-      - ./repos:/mnt/repos
-      - /var/run/docker.sock:/var/run/docker.sock
+      - ./repos:/data/repos
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - pan-bagnat-net
   db:
