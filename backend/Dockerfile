@@ -45,12 +45,27 @@ RUN apt-get update && apt-get install -y \
     docker-compose-plugin \
   && rm -rf /var/lib/apt/lists/*
 
+RUN groupadd -g 1001 app \
+ && useradd -u 1001 -g app -m -s /bin/sh app \
+ && mkdir -p /app /data/templates \
+ && chown -R app:app /app /data
+
+ARG DOCKER_GID=968
+RUN groupadd -g ${DOCKER_GID} docker \
+  && usermod -aG docker app
+
 WORKDIR /app
 
 # Copy the binary from the builder stage
 COPY --from=builder /app/main .
 COPY ./templates /data/templates/
 
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+USER app
+
 EXPOSE 8080
 
-CMD ["./main"]
+ENTRYPOINT ["sh", "/app/entrypoint.sh"]
+CMD []
