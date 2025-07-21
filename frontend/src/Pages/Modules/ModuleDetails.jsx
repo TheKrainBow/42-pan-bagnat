@@ -1,5 +1,5 @@
 // ModuleDetails.jsx
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useContext, useEffect, useState, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import './ModuleDetails.css';
 import AppIcon from 'Global/AppIcon';
@@ -11,6 +11,8 @@ import ModuleStatusBadge from 'Modules/components/ModuleStatusBadge';
 import ModuleAboutSection from './components/ModuleAboutSection';
 import ModuleConfigViewer from './components/ModuleConfigPanel';
 import ModulePageSettings from './components/ModulePageSettings';
+import { socketService } from 'Global/SocketService';
+console.log('socketService ID:', socketService._instanceId);
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();
@@ -20,6 +22,30 @@ const ModuleDetails = () => {
   const [activeTab, setActiveTab] = useState('logs');
   const [showWarning, setShowWarning] = useState(false);
   const logsRef = useRef();
+  const fetchedRef = useRef(false);
+
+  const subscribedRef = useRef(false);
+
+  useEffect(() => {
+    socketService.subscribeModule(moduleId);
+    subscribedRef.current = true;
+  
+   // listen for _all_ messages, but only act on log events for this module
+    const unsubscribe = socketService.subscribe(msg => {
+      if (msg.eventType === 'log' && msg.module_id === moduleId) {
+        logsRef.current?.appendLog({
+          ...msg.payload,
+          created_at: msg.timestamp,
+        });
+      }
+    });
+
+    // cleanup
+    return () => {
+      socketService.unsubscribeModule(moduleId);
+      unsubscribe();
+    };
+  }, [moduleId]);
 
   const fetchModule = async () => {
     try {
@@ -36,10 +62,11 @@ const ModuleDetails = () => {
 
   const handleAfterRetry = () => {
     fetchModule();            // re‐fetch module info
-    logsRef.current?.refresh(); // reload logs
   };
 
   useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
     fetchModule();
   }, [moduleId]);
 
