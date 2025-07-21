@@ -142,3 +142,9 @@
   color: #aaa;
   font-style: italic;
 }
+
+.page-item.dirty {
+  border-left: 4px solid #ffeb3b; /* yellow accent */
+  /* optional: slightly brighter bg */
+  background-color: rgba(255, 235, 59, 0.1);
+}
