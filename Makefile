@@ -93,7 +93,7 @@ REPO_DIRS := $(wildcard repos/*)
 
 .PHONY: fprune-all
 fprune-all:
-	echo $(REPO_DIRS)
+	@echo $(REPO_DIRS)
 	@for dir in $(REPO_DIRS); do \
 	  if [ -d $$dir ]; then \
 	    echo "==> fprune in $$dir"; \
