@@ -22,14 +22,16 @@ func LogModule(moduleID, level, message string, err error) error {
 	})
 
 	ts := time.Now().Format(time.RFC3339)
-	if err != nil {
-		fmt.Printf("%s [%s] [module:%s] %s – error: %v\n",
-			ts, level, moduleID, message, err,
-		)
-	} else {
-		fmt.Printf("%s [%s] [module:%s] %s\n",
-			ts, level, moduleID, message,
-		)
+	if level == "ERROR" {
+		if err != nil {
+			fmt.Printf("%s [%s] [module:%s] %s – error: %v\n",
+				ts, level, moduleID, message, err,
+			)
+		} else {
+			fmt.Printf("%s [%s] [module:%s] %s\n",
+				ts, level, moduleID, message,
+			)
+		}
 	}
 
 	websocket.SendLogEvent(log)
