@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import Button from 'Global/Button';
 import './ModulePageSettings.css';
 
@@ -6,8 +6,11 @@ export default function ModulePageSettings({ moduleId }) {
   const [pages, setPages] = useState([]);
   const [newPage, setNewPage] = useState({ name: '', url: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const fetchedRef = useRef(false);
 
   const fetchPages = () => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
     fetch(`http://localhost:8080/api/v1/modules/${moduleId}/pages`)
       .then(r => r.json())
       .then(data => {

@@ -6,14 +6,17 @@ import './ModuleConfigPanel.css'
 import Button from 'Global/Button';
 
 export default function ModuleConfigPanel({ moduleId }) {
-  const [moduleYaml, setModuleYaml]     = useState('')
-  const [composeYaml, setComposeYaml]   = useState('')
-  const [isSaving, setIsSaving]         = useState(false)
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [isDeploying, setIsDeploying]   = useState(false)
-  const saveTimer = useRef()
+  const [moduleYaml, setModuleYaml]     = useState('');
+  const [composeYaml, setComposeYaml]   = useState('');
+  const [isSaving, setIsSaving]         = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isDeploying, setIsDeploying]   = useState(false);
+  const saveTimer = useRef();
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
     fetch(`http://localhost:8080/api/v1/modules/${moduleId}/config`)
       .then(r => r.json())
       .then(d => setModuleYaml(d.config))
