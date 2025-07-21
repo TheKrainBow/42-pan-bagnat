@@ -1,91 +1,180 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
 import Button from 'Global/Button';
 import './ModulePageSettings.css';
 
 export default function ModulePageSettings({ moduleId }) {
-  const [pages, setPages] = useState([]);
-  const [newPage, setNewPage] = useState({ name: '', url: '' });
+  const [pages, setPages] = useState([]);            // holds both existing & new rows
+  const [edits, setEdits] = useState({});            // keyed by row.id
   const [isSaving, setIsSaving] = useState(false);
-  const fetchedRef = useRef(false);
 
-  const fetchPages = () => {
-    if (fetchedRef.current) return;
-    fetchedRef.current = true;
-    fetch(`http://localhost:8080/api/v1/modules/${moduleId}/pages`)
-      .then(r => r.json())
-      .then(data => {
-        const pageList = data.pages || [];
-        setPages(pageList);
-        const editMap = {};
-        pageList.forEach(p => editMap[p.name] = p.url);
-        setUrlEdits(editMap);
-      })
-      .catch(console.error);
+  // load existing pages
+  const fetchPages = async () => {
+    try {
+      const res = await fetch(`
+        http://localhost:8080/api/v1/modules/${moduleId}/pages
+      `);
+      const data = await res.json();
+      const list = (data.pages || []).map(p => ({
+        id: p.name,        // use name as stable id for existing
+        name: p.name,
+        url: p.url,
+        isPublic: p.isPublic,
+        isNew: false
+      }));
+      setPages(list);
+
+      // initialize edit state
+      const initial = {};
+      list.forEach(p => {
+        initial[p.id] = { ...p, dirty: false };
+      });
+      setEdits(initial);
+    } catch (err) {
+      console.error('Fetch failed:', err);
+    }
   };
 
-  useEffect(fetchPages, [moduleId]);
+  // effect to fetch pages on mount or moduleId change
+  useEffect(() => {
+    // wrap async call inside effect
+    fetchPages();
+  }, [moduleId]);
 
-  const handleAdd = async () => {
-    if (!newPage.name || !newPage.url) return;
+  // begin a new blank row
+  const handleAddRow = () => {
+    const tempId = `new-${Date.now()}`;
+    const newRow = { id: tempId, name: '', url: '', isPublic: false, isNew: true };
+
+    setPages(ps => [...ps, newRow]);
+    setEdits(e => ({
+      ...e,
+      [tempId]: { ...newRow, dirty: true }
+    }));
+  };
+
+  // on any field change
+  const handleChange = (id, field, value) => {
+    setEdits(e => ({
+      ...e,
+      [id]: {
+        ...e[id],
+        [field]: value,
+        dirty: true
+      }
+    }));
+  };
+
+  // save either POST (new) or PATCH (existing)
+  const handleSave = async (id) => {
+    const { name, url, isPublic, isNew } = edits[id];
+    if (!name || !url) return;
+
     setIsSaving(true);
     try {
-      await fetch(`http://localhost:8080/api/v1/modules/${moduleId}/pages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newPage),
-      });
-      setNewPage({ name: '', url: '' });
-      fetchPages();
+      if (isNew) {
+        await fetch(
+          `http://localhost:8080/api/v1/modules/${moduleId}/pages`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, url, isPublic })
+          }
+        );
+      } else {
+        await fetch(
+          `http://localhost:8080/api/v1/modules/${moduleId}/pages/${encodeURIComponent(id)}`,
+          {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, url, isPublic })
+          }
+        );
+      }
+      await fetchPages();
     } catch (err) {
-      console.error('Add failed:', err);
+      console.error('Save failed:', err);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDelete = async (name) => {
-    if (!confirm(`Delete page "${name}"?`)) return;
-    await fetch(`http://localhost:8080/api/v1/modules/${moduleId}/pages/${name}`, {
-      method: 'DELETE',
-    });
-    fetchPages();
+  // delete row
+  const handleDelete = async (id) => {
+    if (!window.confirm('Delete this page?')) return;
+
+    const row = pages.find(p => p.id === id);
+    if (row.isNew) {
+      setPages(ps => ps.filter(p => p.id !== id));
+      setEdits(e => { const copy = { ...e }; delete copy[id]; return copy; });
+    } else {
+      try {
+        await fetch(
+          `http://localhost:8080/api/v1/modules/${moduleId}/pages/${encodeURIComponent(id)}`,
+          { method: 'DELETE' }
+        );
+        await fetchPages();
+      } catch (err) {
+        console.error('Delete failed:', err);
+      }
+    }
   };
 
   return (
     <div className="front-pages-panel">
-      <h3>Front Pages</h3>
-      <ul className="page-list">
-        {pages.map(({ name, url }) => (
-          <li key={name} className="page-item">
-            <div className="page-info">
-              <span className="page-name">{name}</span>
-              <span className="page-url">{url}</span>
-            </div>
-            <Button label="Delete" color="red" onClick={() => handleDelete(name)} />
-          </li>
-        ))}
-      </ul>
-
-      <div className="add-page-form">
-        <input
-          type="text"
-          placeholder="Page name"
-          value={newPage.name}
-          onChange={e => setNewPage({ ...newPage, name: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Page URL"
-          value={newPage.url}
-          onChange={e => setNewPage({ ...newPage, url: e.target.value })}
-        />
-        <Button
-          label={isSaving ? 'Adding...' : 'Add Page'}
-          color="green"
-          onClick={handleAdd}
-          disabled={isSaving}
-        />
+      <div className="front-pages-header">
+        <h3>Front Pages</h3>
+        <Button label="Add Page" color="green" onClick={handleAddRow} />
       </div>
+
+      {pages.length === 0 ? (
+        <div className="no-pages">No pages added yet.</div>
+      ) : (
+        <ul className="page-list">
+          {pages.map(({ id }) => {
+            const edit = edits[id] || {};
+            return (
+              <li key={id} className="page-item">
+                <div className="page-info">
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={edit.name || ''}
+                    onChange={e => handleChange(id, 'name', e.target.value)}
+                  />
+                  <input
+                    className="page-url-input"
+                    type="text"
+                    placeholder="URL"
+                    value={edit.url || ''}
+                    onChange={e => handleChange(id, 'url', e.target.value)}
+                  />
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={edit.isPublic || false}
+                      onChange={e => handleChange(id, 'isPublic', e.target.checked)}
+                    />
+                    Public
+                  </label>
+                </div>
+                <div className="page-actions">
+                  <Button
+                    label="Save"
+                    color="green"
+                    onClick={() => handleSave(id)}
+                    disabled={!edit.dirty || isSaving}
+                  />
+                  <Button
+                    label="Delete"
+                    color="red"
+                    onClick={() => handleDelete(id)}
+                  />
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </div>
   );
 }
