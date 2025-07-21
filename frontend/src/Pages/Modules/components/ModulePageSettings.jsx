@@ -6,6 +6,7 @@ export default function ModulePageSettings({ moduleId }) {
   const [pages, setPages] = useState([]);            // holds both existing & new rows
   const [edits, setEdits] = useState({});            // keyed by row.id
   const [isSaving, setIsSaving] = useState(false);
+  const hasUnsaved = Object.values(edits).some(e => e.dirty);
 
   // load existing pages
   const fetchPages = async () => {
@@ -119,13 +120,27 @@ export default function ModulePageSettings({ moduleId }) {
     }
   };
 
+  // 1) beforeunload: catches reloads / tab closes
+  useEffect(() => {
+    const handleBeforeUnload = e => {
+      if (!hasUnsaved) return;
+      e.preventDefault();
+      // Chrome requires returnValue to be set
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [hasUnsaved]);
+
   return (
     <div className="front-pages-panel">
       <div className="front-pages-header">
         <h3>Front Pages</h3>
         <Button label="Add Page" color="green" onClick={handleAddRow} />
       </div>
-
+    
       {pages.length === 0 ? (
         <div className="no-pages">No pages added yet.</div>
       ) : (
@@ -133,7 +148,10 @@ export default function ModulePageSettings({ moduleId }) {
           {pages.map(({ id }) => {
             const edit = edits[id] || {};
             return (
-              <li key={id} className="page-item">
+              <li
+                key={id}
+                className={`page-item${edit.dirty ? ' dirty' : ''}`}
+              >
                 <div className="page-info">
                   <input
                     type="text"
