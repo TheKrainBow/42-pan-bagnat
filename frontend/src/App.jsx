@@ -1,5 +1,7 @@
 // src/App.jsx (or wherever Main lives)
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, createContext } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+
 import './App.css';
 import Users from './Pages/Users/Users';
 import Roles from './Pages/Roles/Roles';
@@ -7,21 +9,11 @@ import Modules from './Pages/Modules/Modules';
 import ModuleDetails from './Pages/Modules/ModuleDetails';
 import ModulePage from './Pages/Modules/ModulePage';
 import Sidebar from 'Global/Sidebar';
-import {
-  BrowserRouter as Router,
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-} from 'react-router-dom';
+import { socketService } from 'Global/SocketService';
 
 function Main() {
   const location = useLocation();
-
-  // derive currentPage (you were slicing the leading slash already)
   const path = location.pathname;
-
-  // state to track which user‐mode module is active
   const [activeModule, setActiveModule] = useState(null);
 
   return (
@@ -54,6 +46,8 @@ function Main() {
     </div>
   );
 }
+
+console.log('SocketService ID:', socketService.id);
 
 export default function App() {
   return (
