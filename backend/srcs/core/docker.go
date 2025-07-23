@@ -10,7 +10,7 @@ import (
 )
 
 func InitModuleForDocker(module Module) error {
-	LogModule(module.ID, "INFO", "Setting up module.yml", nil)
+	LogModule(module.ID, "INFO", "Setting up module.yml", nil, nil)
 	baseRepoPath := os.Getenv("REPO_BASE_PATH")
 	if baseRepoPath == "" {
 		baseRepoPath = "../../repos" // fallback for local dev
@@ -22,22 +22,22 @@ func InitModuleForDocker(module Module) error {
 
 	out, err := os.OpenFile(modPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
-		return LogModule(module.ID, "ERROR", "failed to create module.yml", err)
+		return LogModule(module.ID, "ERROR", "failed to create module.yml", nil, err)
 	}
 	defer out.Close()
 
 	if _, err := os.Stat(tplPath); err == nil {
 		in, err := os.Open(tplPath)
 		if err != nil {
-			return LogModule(module.ID, "ERROR", "failed to open module-template.yml", err)
+			return LogModule(module.ID, "ERROR", "failed to open module-template.yml", nil, err)
 		}
 		defer in.Close()
 
 		if _, err := io.Copy(out, in); err != nil {
-			return LogModule(module.ID, "ERROR", "failed to copy template to module.yml", err)
+			return LogModule(module.ID, "ERROR", "failed to copy template to module.yml", nil, err)
 		}
 	} else {
-		LogModule(module.ID, "INFO", "no module-template.yml, generating an empty module.yml", err)
+		LogModule(module.ID, "INFO", "no module-template.yml, generating an empty module.yml", nil, err)
 	}
 	return nil
 }
@@ -51,14 +51,14 @@ func GetModuleConfig(module Module) (string, error) {
 
 	data, err := os.ReadFile(modPath)
 	if err != nil {
-		return "", LogModule(module.ID, "ERROR", fmt.Sprintf("failed to read module.yml from %s", modPath), err)
+		return "", LogModule(module.ID, "ERROR", fmt.Sprintf("failed to read module.yml from %s", modPath), nil, err)
 	}
 
 	return string(data), nil
 }
 
 func SaveModuleConfig(module Module, content string) error {
-	LogModule(module.ID, "INFO", "Saving config to module.yml", nil)
+	LogModule(module.ID, "INFO", "Saving config to module.yml", nil, nil)
 	baseRepoPath := os.Getenv("REPO_BASE_PATH")
 	if baseRepoPath == "" {
 		baseRepoPath = "../../repos" // fallback for local dev
@@ -71,6 +71,7 @@ func SaveModuleConfig(module Module, content string) error {
 			module.ID,
 			"ERROR",
 			fmt.Sprintf("failed to write module.yml to %s", modPath),
+			nil,
 			err,
 		)
 	}
@@ -81,6 +82,7 @@ func SaveModuleConfig(module Module, content string) error {
 			module.ID,
 			"ERROR",
 			fmt.Sprintf("failed to generate docker compose file to %s", composePath),
+			nil,
 			err,
 		)
 	}
@@ -90,6 +92,7 @@ func SaveModuleConfig(module Module, content string) error {
 			module.ID,
 			"ERROR",
 			fmt.Sprintf("failed to write docker-compose.yml to %s", modPath),
+			nil,
 			err,
 		)
 	}
@@ -111,11 +114,12 @@ func DeployModule(module Module) error {
 			module.ID,
 			"ERROR",
 			"Failed to docker up",
+			nil,
 			err,
 		)
 	}
 
 	SetModuleStatus(module.ID, Enabled)
-	LogModule(module.ID, "INFO", "docker compose up succeeded", nil)
+	LogModule(module.ID, "INFO", "docker compose up succeeded", nil, nil)
 	return nil
 }

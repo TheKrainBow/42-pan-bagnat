@@ -7,9 +7,12 @@ import (
 	"time"
 )
 
-func LogModule(moduleID, level, message string, err error) error {
+func LogModule(moduleID, level, message string, meta map[string]any, err error) error {
 	// Build the JSON meta payload
-	meta := map[string]any{}
+	if meta == nil {
+		meta = make(map[string]any, 1)
+	}
+
 	if err != nil {
 		meta["error"] = err.Error()
 	}

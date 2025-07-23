@@ -121,7 +121,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
                 }`}
                 onClick={() => handleSelect(page)}
               >
-                {page.display_name}
+                {page.name}
               </li>
             ))}
           </ul>
