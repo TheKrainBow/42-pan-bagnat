@@ -8,13 +8,13 @@ import (
 )
 
 type User struct {
-	ID        string    `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
-	FtLogin   string    `json:"login" example:"heinz"`
-	FtID      string    `json:"ft_id" example:"1492"`
-	FtIsStaff bool      `json:"ft_is_staff" example:"true"`
-	PhotoURL  string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id"`
-	LastSeen  time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
-	IsStaff   bool      `json:"is_staff" example:"true"`
+	ID        string    `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X" db:"id"`
+	FtLogin   string    `json:"login" example:"heinz" db:"login"`
+	FtID      string    `json:"ft_id" example:"1492" db:"ft_id"`
+	FtIsStaff bool      `json:"ft_is_staff" example:"true" db:"ft_is_staff"`
+	PhotoURL  string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id" db:"photo_url"`
+	LastSeen  time.Time `json:"last_update" example:"2025-02-18T15:00:00Z" db:"last_update"`
+	IsStaff   bool      `json:"is_staff" example:"true" db:"is_staff"`
 }
 
 type UserPatch struct {

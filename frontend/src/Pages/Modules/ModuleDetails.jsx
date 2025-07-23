@@ -12,6 +12,7 @@ import ModuleAboutSection from './components/ModuleAboutSection';
 import ModuleConfigViewer from './components/ModuleConfigPanel';
 import ModulePageSettings from './components/ModulePageSettings';
 import { socketService } from 'Global/SocketService';
+import { setModuleStatusUpdater } from 'Global/SocketService';
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();
@@ -24,6 +25,20 @@ const ModuleDetails = () => {
   const fetchedRef = useRef(false);
 
   const subscribedRef = useRef(false);
+
+  useEffect(() => {
+    // Register live update handler
+    setModuleStatusUpdater((id, newStatus) => {
+      if (id === moduleId) {
+        setModule(prev => ({ ...prev, status: newStatus }));
+      }
+    });
+
+    return () => {
+      // Unregister when component unmounts
+      setModuleStatusUpdater(null);
+    };
+  }, [moduleId]);
 
   useEffect(() => {
     socketService.subscribeModule(moduleId);

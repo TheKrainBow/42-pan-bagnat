@@ -329,7 +329,7 @@ func TestPatchModule(t *testing.T) {
 		LateCommits: &lateCommits,
 	}
 
-	err = PatchModule(patch)
+	_, err = PatchModule(patch)
 	if err != nil {
 		t.Fatalf("PatchModule() failed: %v", err)
 	}
