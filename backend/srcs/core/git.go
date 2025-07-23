@@ -51,7 +51,7 @@ func CloneModuleRepo(module Module) error {
 	}
 
 	newStatus := "disabled"
-	err = database.PatchModule(database.ModulePatch{
+	_, err = database.PatchModule(database.ModulePatch{
 		ID:     module.ID,
 		Status: &newStatus,
 	})
@@ -106,7 +106,7 @@ func UpdateModuleGitRemote(moduleID, moduleSlug, newGitURL string) error {
 		return LogModule(moduleID, "ERROR", "failed to update remote url", nil, err)
 	}
 
-	err = database.PatchModule(database.ModulePatch{
+	_, err = database.PatchModule(database.ModulePatch{
 		ID:     moduleID,
 		GitURL: &newGitURL,
 	})

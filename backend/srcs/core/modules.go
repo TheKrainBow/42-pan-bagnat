@@ -2,6 +2,7 @@ package core
 
 import (
 	"backend/database"
+	"backend/websocket"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -282,10 +283,10 @@ func GetModule(moduleID string) (Module, error) {
 	if err != nil {
 		return Module{}, fmt.Errorf("couldn't get module in db: %w", err)
 	}
-	if module == nil {
+	if module.ID == "" {
 		return Module{}, nil
 	}
-	dest = DatabaseModuleToModule(*module)
+	dest = DatabaseModuleToModule(module)
 	roles, err := database.GetModuleRoles(moduleID)
 	if err != nil {
 		return dest, fmt.Errorf("couldn't get module's roles in db: %w", err)
@@ -428,16 +429,27 @@ func GetModuleLogs(pagination ModuleLogsPagination) ([]ModuleLog, string, error)
 
 func SetModuleStatus(moduleID string, status ModuleStatus) error {
 	LogModule(moduleID, "INFO", fmt.Sprintf("Changing module status to %s", string(status)), nil, nil)
-	newStatus := "enabled"
-	err := database.PatchModule(
+	oldModule, err := database.GetModule(moduleID)
+	if err != nil {
+		LogModule(moduleID, "ERROR", "Couldn't fetch module", nil, err)
+	}
+	newStatus := string(status)
+	module, err := database.PatchModule(
 		database.ModulePatch{
 			ID:     moduleID,
 			Status: &newStatus,
 		},
 	)
+
 	if err != nil {
 		return LogModule(moduleID, "ERROR", "Failed to change status", nil, err)
 	}
+
+	_ = oldModule
+	log.Printf("Sending ws notif for status update\n")
+	// if oldModule.Status != module.Status {
+	websocket.SendModuleStatusChangedEvent(module.ID, module.Name, string(module.Status))
+	// }
 	return nil
 }
 

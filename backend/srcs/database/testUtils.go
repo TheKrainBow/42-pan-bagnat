@@ -1,18 +1,19 @@
 package database
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"os"
 	"strings"
 	"testing"
 
+	"github.com/jmoiron/sqlx"
+
 	_ "github.com/lib/pq"
 )
 
-var mainDB *sql.DB
-var testDB *sql.DB
+var mainDB *sqlx.DB
+var testDB *sqlx.DB
 
 func init() {
 	var err error
@@ -20,7 +21,7 @@ func init() {
 	if connStr == "" {
 		log.Fatal("DATABASE_URL is not set")
 	}
-	mainDB, err = sql.Open("postgres", connStr)
+	mainDB, err = sqlx.Open("postgres", connStr)
 	if err != nil {
 		log.Fatal("Couldn't connect to database: ", err)
 	}
@@ -89,7 +90,7 @@ func DropDatabase(t *testing.T, dbName string) {
 	}
 }
 
-func CreateAndPopulateDatabase(t *testing.T, dbName string, sqlFile string) *sql.DB {
+func CreateAndPopulateDatabase(t *testing.T, dbName string, sqlFile string) *sqlx.DB {
 	_, err := mainDB.Exec(fmt.Sprintf(
 		"DROP DATABASE IF EXISTS %s WITH (FORCE)",
 		dbName,
@@ -106,7 +107,7 @@ func CreateAndPopulateDatabase(t *testing.T, dbName string, sqlFile string) *sql
 		t.Fatalf("failed to create test database %s: %v", dbName, err)
 	}
 
-	testDB, err = sql.Open("postgres", fmt.Sprintf("postgresql://admin:pw_admin@localhost/%s?sslmode=disable", dbName))
+	testDB, err = sqlx.Open("postgres", fmt.Sprintf("postgresql://admin:pw_admin@localhost/%s?sslmode=disable", dbName))
 	if err != nil {
 		t.Fatalf("failed to connect to test database %s: %v", dbName, err)
 	}

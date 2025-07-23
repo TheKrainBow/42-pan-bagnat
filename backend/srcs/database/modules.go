@@ -33,19 +33,19 @@ const (
 )
 
 type Module struct {
-	ID            string    `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
-	SSHPublicKey  string    `json:"ssh_public_key" example:"ssh-rsa AAAA..."`
-	SSHPrivateKey string    `json:"ssh_private_key" example:"-----BEGIN OPENSSH PRIVATE KEY-----..."`
-	Name          string    `json:"name" example:"Captain Hook"`
-	Slug          string    `json:"slug" example:"captain-hook-main"`
-	Version       string    `json:"version" example:"1.2"`
-	Status        string    `json:"status" example:"enabled"`
-	GitURL        string    `json:"git_url" example:"https://github.com/some-user/some-repo"`
-	GitBranch     string    `json:"git_branch" example:"main"`
-	IconURL       string    `json:"icon_url" example:"https://someURL/image.png"`
-	LatestVersion string    `json:"latest_version" example:"1.7"`
-	LateCommits   int       `json:"late_commits" example:"2"`
-	LastUpdate    time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
+	ID            string    `json:"id" db:"id"`
+	SSHPublicKey  string    `json:"ssh_public_key" db:"ssh_public_key"`
+	SSHPrivateKey string    `json:"ssh_private_key" db:"ssh_private_key"`
+	Name          string    `json:"name" db:"name"`
+	Slug          string    `json:"slug" db:"slug"`
+	Version       string    `json:"version" db:"version"`
+	Status        string    `json:"status" db:"status"`
+	GitURL        string    `json:"git_url" db:"git_url"`
+	GitBranch     string    `json:"git_branch" db:"git_branch"`
+	IconURL       string    `json:"icon_url" db:"icon_url"`
+	LatestVersion string    `json:"latest_version" db:"latest_version"`
+	LateCommits   int       `json:"late_commits" db:"late_commits"`
+	LastUpdate    time.Time `json:"last_update" db:"last_update"`
 }
 
 type ModulePatch struct {
@@ -63,12 +63,12 @@ type ModulePatch struct {
 }
 
 type ModuleLog struct {
-	ID        int64                  `json:"id"`
-	ModuleID  string                 `json:"module_id"`
-	Level     string                 `json:"level"`
-	Message   string                 `json:"message"`
-	Meta      map[string]interface{} `json:"meta"`
-	CreatedAt time.Time              `json:"created_at"`
+	ID        int64                  `json:"id" db:"id"`
+	ModuleID  string                 `json:"module_id" db:"module_id"`
+	Level     string                 `json:"level" db:"level"`
+	Message   string                 `json:"message" db:"message"`
+	Meta      map[string]interface{} `json:"meta" db:"meta"`
+	CreatedAt time.Time              `json:"created_at" db:"created_at"`
 }
 
 type ModuleOrder struct {
@@ -98,12 +98,12 @@ type ModulePagePatch struct {
 }
 
 type ModulePage struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Slug     string `json:"slug"`
-	URL      string `json:"url"`
-	IsPublic bool   `json:"is_public"`
-	ModuleID string `json:"module_id"`
+	ID       string `json:"id" db:"id"`
+	Name     string `json:"name" db:"name"`
+	Slug     string `json:"slug" db:"slug"`
+	URL      string `json:"url" db:"url"`
+	IsPublic bool   `json:"is_public" db:"is_public"`
+	ModuleID string `json:"module_id" db:"module_id"`
 }
 
 type ModulePagesOrderField string
@@ -129,7 +129,7 @@ type ModulePagesPagination struct {
 	Limit    int                 // optional: max rows to return
 }
 
-func GetModule(moduleID string) (*Module, error) {
+func GetModule(moduleID string) (Module, error) {
 	row := mainDB.QueryRow(`
 		SELECT id, ssh_public_key, ssh_private_key, name, slug, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update
 		FROM modules
@@ -152,9 +152,9 @@ func GetModule(moduleID string) (*Module, error) {
 		&module.LateCommits,
 		&module.LastUpdate,
 	); err != nil {
-		return nil, err
+		return Module{}, err
 	}
-	return &module, nil
+	return module, nil
 }
 
 func GetPage(pageName string) (*ModulePage, error) {
@@ -478,9 +478,9 @@ func InsertModuleLog(l ModuleLog) (ModuleLog, error) {
 	return out, nil
 }
 
-func PatchModule(patch ModulePatch) error {
+func PatchModule(patch ModulePatch) (Module, error) {
 	if patch.ID == "" {
-		return fmt.Errorf("missing module ID")
+		return Module{}, fmt.Errorf("missing module ID")
 	}
 
 	v := reflect.ValueOf(patch)
@@ -514,7 +514,7 @@ func PatchModule(patch ModulePatch) error {
 	}
 
 	if len(setClauses) == 0 {
-		return nil // nothing to update
+		return GetModule(patch.ID) // nothing to update
 	}
 
 	// Always update last_update to NOW()
@@ -524,11 +524,16 @@ func PatchModule(patch ModulePatch) error {
 		UPDATE modules
 		SET %s
 		WHERE id = $%d
+		RETURNING *
 	`, strings.Join(setClauses, ", "), argPos)
 	args = append(args, patch.ID)
 
-	_, err := mainDB.Exec(query, args...)
-	return err
+	var updated Module
+	err := mainDB.Get(&updated, query, args...)
+	if err != nil {
+		return Module{}, err
+	}
+	return updated, nil
 }
 
 // GetModuleLogs pages through module_log for one module,

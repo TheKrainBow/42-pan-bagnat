@@ -6,6 +6,7 @@ import Header from 'Global/Header';
 import ModuleImport from 'Modules/components/ModuleImport';
 import ModuleStatusBadge from 'Modules/components/ModuleStatusBadge';
 import { Link } from 'react-router-dom';
+import { setModuleStatusUpdater } from 'Global/SocketService';
 
 const Modules = () => {
   const [modules, setModules] = useState([]);
@@ -17,6 +18,22 @@ const Modules = () => {
   const scrollContainerRef = useRef(null);
   const isFirst = useRef(true);
   const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    // Register live update handler
+    setModuleStatusUpdater((id, newStatus) => {
+      setModules(prev =>
+        prev.map(mod =>
+          mod.id === id ? { ...mod, status: newStatus } : mod
+        )
+      );
+    });
+
+    // Cleanup on unmount
+    return () => {
+      setModuleStatusUpdater(null);
+    };
+  }, []);
 
   const fetchModules = useCallback(async (append = false, token = '') => {
     if (loadingRef.current) return;
