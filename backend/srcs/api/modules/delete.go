@@ -5,6 +5,7 @@ import (
 	"backend/core"
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -47,25 +48,27 @@ func DeleteModule(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(destJSON))
 }
 
-// @Summary      Delete Module
-// @Description  Delete a module for your campus (All module datas will be lost!)
-// @Tags         modules
+// @Summary      Delete Module page
+// @Description  Delete a module page for your campus (All page datas will be lost!)
+// @Tags         pages
 // @Accept       json
 // @Produce      json
 // @Param        input body ModulePatchInput true "Module input"
 // @Success      200
-// @Router       /modules/{moduleID}/pages/{pageName} [delete]
+// @Router       /modules/{moduleID}/pages/{pageID} [delete]
 func DeleteModulePage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	pageName := chi.URLParam(r, "pageName")
+	pageID := chi.URLParam(r, "pageID")
+	moduleID := chi.URLParam(r, "moduleID")
+	log.Printf("%s | %s", moduleID, pageID)
 
-	if pageName == "" {
+	if pageID == "" {
 		http.Error(w, "Missing field page_name", http.StatusBadRequest)
 		return
 	}
 
-	err := core.DeleteModulePage(pageName)
+	err := core.DeleteModulePage(pageID)
 	if err != nil {
 		http.Error(w, "error while deleting module page", http.StatusInternalServerError)
 	}

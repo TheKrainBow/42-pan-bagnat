@@ -117,11 +117,20 @@ const ModuleLogs = forwardRef(({ moduleId }, ref) => {
               <div className="log-main">
                 {`${ts} [${log.level}] ${log.message}`}
               </div>
-              {log.meta?.error && (
-                <div className="log-error-detail">
-                  {log.meta.error}
-                </div>
-              )}
+              {log.meta && Object.entries(log.meta).map(([key, val]) => {
+                const isError = key === 'error';
+                return (
+                  <div
+                    key={key}
+                    className={isError ? 'log-error-detail' : 'log-meta-detail'}
+                  >
+                    {isError
+                      ? val               // show just the error message
+                      : `${key}: ${val}` // prefix others with their key
+                    }
+                  </div>
+                )
+              })}
             </div>
           );
         })

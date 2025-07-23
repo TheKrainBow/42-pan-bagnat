@@ -47,11 +47,13 @@ CREATE INDEX idx_module_log_module_time ON module_log (module_id, created_at DES
 -- MODULE PAGES --
 
 CREATE TABLE module_page (
-  name TEXT PRIMARY KEY,
-  display_name TEXT,
+  id TEXT PRIMARY KEY, -- user_ULID
+  name TEXT,
+  slug TEXT,
   url TEXT,
   is_public BOOLEAN NOT NULL,
-  module_id TEXT NOT NULL REFERENCES modules(id) ON DELETE CASCADE
+  module_id TEXT NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
+  UNIQUE (module_id, name)
 );
 
 -- JOIN TABLES --
