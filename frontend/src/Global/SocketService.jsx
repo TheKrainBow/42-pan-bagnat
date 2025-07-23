@@ -1,6 +1,11 @@
 // src/socketService.js
-import { Icons } from 'react-toastify';
 import { toast } from 'react-toastify';
+
+let moduleStatusUpdater = null;
+
+export const setModuleStatusUpdater = (fn) => {
+  moduleStatusUpdater = fn;
+};
 
 class SocketService {
   constructor() {
@@ -29,16 +34,50 @@ class SocketService {
       let msg;
       try { msg = JSON.parse(ev.data) } catch { return }
 
-      // 🔔 Notification support
-      if (msg?.eventType === "Notification" && msg?.payload) {
-        let { level, message, url } = msg.payload;
+      console.log(msg)
+      if (msg?.eventType === "module_status_changed" && msg?.payload) {
+        const { module_id, module_name, new_status } = msg.payload;
 
-        const baseOptions = {
-          onClick: url ? () => window.location.href = url : undefined,
-          className: url ? 'toast-simple' : undefined,
-          type: level?.toLowerCase(), // 'success', 'error', 'warning', etc.
-        };
-        toast(message, baseOptions); // fallback
+        const status = new_status?.toLowerCase();
+        const url = `/admin/modules/${module_id}`;
+
+        let message = '';
+        let type = 'info';
+
+        switch (status) {
+          case 'enabled':
+            message = `Module ${module_name} is now enabled`;
+            type = 'success';
+            break;
+          case 'disabled':
+            message = `Module ${module_name} is now disabled`;
+            type = 'error';
+            break;
+          case 'downloading':
+            message = `⬇Module ${module_name} is downloading`;
+            type = 'warning';
+            break;
+          case 'waitingforaction':
+          case 'waiting_for_action':
+            message = `Module ${module_name} is waiting for an action`;
+            type = 'warning';
+            break;
+          default:
+            message = `Module ${module_name} status changed to ${status}`;
+            type = 'info';
+        }
+
+        toast(message, {
+          type,
+          onClick: () => window.location.href = url,
+          className: 'toast-simple',
+        });
+        if (moduleStatusUpdater) {
+          console.log("thing shoulv updated!")
+          moduleStatusUpdater(module_id, new_status);
+        } else {
+          console.log("update function not set!")
+        }
       }
 
       this.listeners.forEach(fn => fn(msg));
