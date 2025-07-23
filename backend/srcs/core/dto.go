@@ -82,11 +82,12 @@ func DatabaseModuleLogsToModuleLogs(dbLogs []database.ModuleLog) (dest []ModuleL
 
 func DatabaseModulePageToModulePage(dbPage database.ModulePage) ModulePage {
 	return ModulePage{
-		ModuleID:    dbPage.ModuleID,
-		Name:        dbPage.Name,
-		DisplayName: dbPage.DisplayName,
-		URL:         dbPage.URL,
-		IsPublic:    dbPage.IsPublic,
+		ID:       dbPage.ID,
+		ModuleID: dbPage.ModuleID,
+		Name:     dbPage.Name,
+		Slug:     dbPage.Slug,
+		URL:      dbPage.URL,
+		IsPublic: dbPage.IsPublic,
 	}
 }
 

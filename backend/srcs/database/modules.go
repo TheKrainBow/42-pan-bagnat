@@ -1,7 +1,9 @@
 package database
 
 import (
+	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -87,21 +89,30 @@ type ModuleLogPagination struct {
 	Filter   string
 }
 
+type ModulePagePatch struct {
+	ID       string  `json:"id"`
+	Name     *string `json:"name"`
+	Slug     *string `json:"slug"`
+	URL      *string `json:"url"`
+	IsPublic *bool   `json:"is_public"`
+}
+
 type ModulePage struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
-	URL         string `json:"url"`
-	IsPublic    bool   `json:"is_public"`
-	ModuleID    string `json:"module_id"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Slug     string `json:"slug"`
+	URL      string `json:"url"`
+	IsPublic bool   `json:"is_public"`
+	ModuleID string `json:"module_id"`
 }
 
 type ModulePagesOrderField string
 
 const (
-	ModulePagesName        ModulePagesOrderField = "name"
-	ModulePagesDisplayName ModulePagesOrderField = "display_name"
-	ModulePagesURL         ModulePagesOrderField = "url"
-	ModulePagesIsPublic    ModulePagesOrderField = "is_public"
+	ModulePagesName     ModulePagesOrderField = "name"
+	ModulePagesSlug     ModulePagesOrderField = "slug"
+	ModulePagesURL      ModulePagesOrderField = "url"
+	ModulePagesIsPublic ModulePagesOrderField = "is_public"
 )
 
 // single sort instruction
@@ -148,15 +159,16 @@ func GetModule(moduleID string) (*Module, error) {
 
 func GetPage(pageName string) (*ModulePage, error) {
 	row := mainDB.QueryRow(`
-		SELECT name, display_name, module_id, is_public, url
+		SELECT id, name, slug, module_id, is_public, url
 		FROM module_page
-		WHERE name = $1
+		WHERE slug = $1
 	`, pageName)
 
 	var page ModulePage
 	if err := row.Scan(
+		&page.ID,
 		&page.Name,
-		&page.DisplayName,
+		&page.Slug,
 		&page.ModuleID,
 		&page.IsPublic,
 		&page.URL,
@@ -166,7 +178,51 @@ func GetPage(pageName string) (*ModulePage, error) {
 	return &page, nil
 }
 
-func IsSlugTaken(slug string) (bool, error) {
+func IsPageSlugTaken(slug string) (bool, error) {
+	var exists bool
+	err := mainDB.QueryRow(`
+		SELECT EXISTS (
+			SELECT 1 FROM pages WHERE slug = $1
+		)
+	`, slug).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
+	row := mainDB.QueryRow(`
+		UPDATE module_page
+		SET
+		name      = COALESCE($1, name),
+		slug      = COALESCE($2, slug),
+		url       = COALESCE($3, url),
+		is_public = COALESCE($4, is_public)
+		WHERE id = $5
+		RETURNING id, name, slug, url, is_public, module_id;
+	`, p.Name, p.Slug, p.URL, p.IsPublic,
+		p.ID,
+	)
+
+	var out ModulePage
+	if err := row.Scan(
+		&out.ID,
+		&out.Name,
+		&out.Slug,
+		&out.URL,
+		&out.IsPublic,
+		&out.ModuleID,
+	); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return ModulePage{}, fmt.Errorf("ModulePage %s doesn't exist", p.ID)
+		}
+		return ModulePage{}, fmt.Errorf("PatchModulePage scan: %w", err)
+	}
+	return out, nil
+}
+
+func IsModuleSlugTaken(slug string) (bool, error) {
 	var exists bool
 	err := mainDB.QueryRow(`
 		SELECT EXISTS (
@@ -370,9 +426,9 @@ func InsertModule(m Module) error {
 
 func InsertModulePage(m ModulePage) error {
 	_, err := mainDB.Exec(`
-		INSERT INTO module_page (module_id, name, display_name, url, is_public)
-		VALUES ($1, $2, $3, $4, $5)
-	`, m.ModuleID, m.Name, m.DisplayName, m.URL, m.IsPublic)
+		INSERT INTO module_page (id, module_id, name, slug, url, is_public)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, m.ID, m.ModuleID, m.Name, m.Slug, m.URL, m.IsPublic)
 	return err
 }
 
@@ -665,8 +721,8 @@ func GetModulePages(p ModulePagesPagination) ([]ModulePage, error) {
 			switch ord.Field {
 			case ModulePagesName:
 				args = append(args, p.LastPage.Name)
-			case ModulePagesDisplayName:
-				args = append(args, p.LastPage.DisplayName)
+			case ModulePagesSlug:
+				args = append(args, p.LastPage.Slug)
 			case ModulePagesURL:
 				args = append(args, p.LastPage.URL)
 			case ModulePagesIsPublic:
@@ -692,7 +748,7 @@ func GetModulePages(p ModulePagesPagination) ([]ModulePage, error) {
 	// 4) Assemble SQL
 	var sb strings.Builder
 	sb.WriteString(`
-SELECT name, display_name, url, is_public, module_id
+SELECT id, name, slug, url, is_public, module_id
   FROM module_page`)
 	if len(whereConds) > 0 {
 		sb.WriteString("\nWHERE ")
@@ -717,8 +773,9 @@ SELECT name, display_name, url, is_public, module_id
 	for rows.Next() {
 		var pg ModulePage
 		if err := rows.Scan(
+			&pg.ID,
 			&pg.Name,
-			&pg.DisplayName,
+			&pg.Slug,
 			&pg.URL,
 			&pg.IsPublic,
 			&pg.ModuleID,
