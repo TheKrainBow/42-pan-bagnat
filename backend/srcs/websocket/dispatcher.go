@@ -50,7 +50,7 @@ func Dispatch() {
 		msg, _ := json.Marshal(evt)
 		subsMu.Lock()
 		for conn, modules := range subs {
-			if modules[evt.ModuleID] {
+			if evt.EventType == "Notification" || modules[evt.ModuleID] {
 				conn.WriteMessage(websocket.TextMessage, msg)
 			}
 		}

@@ -12,7 +12,6 @@ import ModuleAboutSection from './components/ModuleAboutSection';
 import ModuleConfigViewer from './components/ModuleConfigPanel';
 import ModulePageSettings from './components/ModulePageSettings';
 import { socketService } from 'Global/SocketService';
-console.log('socketService ID:', socketService._instanceId);
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();

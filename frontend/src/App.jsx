@@ -10,6 +10,9 @@ import ModuleDetails from './Pages/Modules/ModuleDetails';
 import ModulePage from './Pages/Modules/ModulePage';
 import Sidebar from 'Global/Sidebar';
 import { socketService } from 'Global/SocketService';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import "./Notifications.css"
 
 function Main() {
   const location = useLocation();
@@ -43,6 +46,13 @@ function Main() {
           />
         </Routes>
       </main>
+      <ToastContainer
+        position="bottom-right"
+        autoClose={2000}
+        pauseOnHover={true}
+        newestOnTop={true}
+        limit={5}
+      />
     </div>
   );
 }
