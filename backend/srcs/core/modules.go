@@ -506,8 +506,8 @@ func ImportModulePage(moduleID, name, url string, isPublic bool) (ModulePage, er
 	return dest, nil
 }
 
-func DeleteModulePage(pageName string) error {
-	err := database.DeleteModulePageByName(pageName)
+func DeleteModulePage(pageID string) error {
+	err := database.DeleteModulePageByName(pageID)
 	if err != nil {
 		fmt.Printf("couldn't delete module page: %s\n", err.Error())
 		return err
