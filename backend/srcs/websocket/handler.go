@@ -20,7 +20,7 @@ func Handler() http.HandlerFunc {
 			return
 		}
 
-		fmt.Printf("WS connected: %s", conn.RemoteAddr())
+		fmt.Printf("WS connected: %s\n", conn.RemoteAddr())
 		RegisterConn(conn)
 		defer UnregisterConn(conn)
 

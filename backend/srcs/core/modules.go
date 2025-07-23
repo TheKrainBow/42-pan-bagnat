@@ -75,11 +75,12 @@ type ModuleLogsPagination struct {
 }
 
 type ModulePage struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
-	URL         string `json:"url"`
-	IsPublic    bool   `json:"is_public"`
-	ModuleID    string `json:"module_id"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Slug     string `json:"slug"`
+	URL      string `json:"url"`
+	IsPublic bool   `json:"is_public"`
+	ModuleID string `json:"module_id"`
 }
 
 type ModulePagesPagination struct {
@@ -182,8 +183,8 @@ func GenerateModulePagesOrderBy(order string) (dest []database.ModulePagesOrder)
 		switch arg {
 		case string(database.ModulePagesName):
 			field = database.ModulePagesName
-		case string(database.ModulePagesDisplayName):
-			field = database.ModulePagesDisplayName
+		case string(database.ModulePagesSlug):
+			field = database.ModulePagesSlug
 		case string(database.ModulePagesIsPublic):
 			field = database.ModulePagesIsPublic
 		case string(database.ModulePagesURL):
@@ -307,6 +308,24 @@ func GetPage(pageName string) (ModulePage, error) {
 	return dest, nil
 }
 
+func GeneratePageSlug(name string) string {
+	slug := strings.ToLower(name)
+	slug = strings.TrimSpace(slug)
+	slug = regexp.MustCompile(`\s+`).ReplaceAllString(slug, "-")
+	attempt := ""
+	for {
+		isTaken, err := database.IsModuleSlugTaken(slug + attempt)
+		if err != nil {
+			log.Printf("error while generating slug `%s`: %s\n", slug+attempt, err)
+			return ""
+		}
+		if !isTaken {
+			return slug + attempt
+		}
+		attempt += "-"
+	}
+}
+
 func GenerateModuleSlug(name, branch string) string {
 	slugBase := strings.ToLower(name)
 	slugBase = strings.TrimSpace(slugBase)
@@ -314,7 +333,7 @@ func GenerateModuleSlug(name, branch string) string {
 	slug := fmt.Sprintf("%s-%s", slugBase, strings.ToLower(branch))
 	attempt := ""
 	for {
-		isTaken, err := database.IsSlugTaken(slug + attempt)
+		isTaken, err := database.IsModuleSlugTaken(slug + attempt)
 		if err != nil {
 			log.Printf("error while generating slug `%s`: %s\n", slug+attempt, err)
 			return ""
@@ -408,7 +427,7 @@ func GetModuleLogs(pagination ModuleLogsPagination) ([]ModuleLog, string, error)
 }
 
 func SetModuleStatus(moduleID string, status ModuleStatus) error {
-	LogModule(moduleID, "INFO", fmt.Sprintf("Changing module status to %s", string(status)), nil)
+	LogModule(moduleID, "INFO", fmt.Sprintf("Changing module status to %s", string(status)), nil, nil)
 	newStatus := "enabled"
 	err := database.PatchModule(
 		database.ModulePatch{
@@ -417,7 +436,7 @@ func SetModuleStatus(moduleID string, status ModuleStatus) error {
 		},
 	)
 	if err != nil {
-		return LogModule(moduleID, "ERROR", "Failed to change status", err)
+		return LogModule(moduleID, "ERROR", "Failed to change status", nil, err)
 	}
 	return nil
 }
@@ -456,23 +475,30 @@ func GetModulePages(pagination ModulePagesPagination) ([]ModulePage, string, err
 	return dest, token, nil
 }
 
-func ImportModulePage(moduleID, name, displayName, url string, isPublic bool) (ModulePage, error) {
+func ImportModulePage(moduleID, name, url string, isPublic bool) (ModulePage, error) {
+	pageID, err := GenerateULID(PageKind)
+	if err != nil {
+		return ModulePage{}, fmt.Errorf("failed to generate page ID: %w", err)
+	}
+
 	// Prepare module struct
 	dest := ModulePage{
-		ModuleID:    moduleID,
-		Name:        name,
-		DisplayName: displayName,
-		URL:         url,
-		IsPublic:    isPublic,
+		ID:       pageID,
+		ModuleID: moduleID,
+		Name:     name,
+		Slug:     GeneratePageSlug(name),
+		URL:      url,
+		IsPublic: isPublic,
 	}
 
 	// Insert into DB
 	if err := database.InsertModulePage(database.ModulePage{
-		ModuleID:    dest.ModuleID,
-		Name:        dest.Name,
-		DisplayName: dest.DisplayName,
-		URL:         dest.URL,
-		IsPublic:    dest.IsPublic,
+		ID:       dest.ID,
+		ModuleID: dest.ModuleID,
+		Name:     dest.Name,
+		Slug:     dest.Slug,
+		URL:      dest.URL,
+		IsPublic: dest.IsPublic,
 	}); err != nil {
 		return ModulePage{}, fmt.Errorf("failed to insert module in DB: %w", err)
 	}
@@ -487,4 +513,29 @@ func DeleteModulePage(pageName string) error {
 		return err
 	}
 	return nil
+}
+
+func UpdateModulePage(pageID string, name, url *string, isPublic *bool) (ModulePage, error) {
+	// Build the patch struct for the DB layer
+	patch := database.ModulePagePatch{
+		ID:       pageID,
+		Name:     name,
+		URL:      url,
+		IsPublic: isPublic,
+	}
+
+	if name != nil {
+		newSlug := GeneratePageSlug(*name)
+		patch.Slug = &newSlug
+	}
+
+	// Apply the patch
+	dbPage, err := database.PatchModulePage(patch)
+	if err != nil {
+		return ModulePage{}, err
+	}
+
+	// Convert to core model
+	page := DatabaseModulePageToModulePage(dbPage)
+	return page, nil
 }

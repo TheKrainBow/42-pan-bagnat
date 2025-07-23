@@ -16,11 +16,10 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     ports:
       - '80:80'
-    depends_on:
-      - frontend
-      - backend
     networks:
       - pan-bagnat-net
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   backend:
     container_name: pan-bagnat-backend-1

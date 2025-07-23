@@ -31,7 +31,7 @@ func main() {
 	// Set up the CORS middleware
 	corsMiddleware := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost*"}, // allow React frontend to access the backend
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
 	})
@@ -47,7 +47,6 @@ func main() {
 
 	r.Route("/api/v1", func(r chi.Router) {
 		r.Route("/modules", func(r chi.Router) {
-			// We must register routes in the package the have the handlers, so chi doesn't break
 			modules.RegisterRoutes(r)
 		})
 		r.Route("/users", func(r chi.Router) {

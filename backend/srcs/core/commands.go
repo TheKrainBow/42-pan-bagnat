@@ -37,11 +37,11 @@ func runAndLog(moduleID string, cmd *exec.Cmd) error {
 			if line == "" {
 				continue
 			}
-			LogModule(moduleID, level, line, nil)
+			LogModule(moduleID, level, line, nil, nil)
 		}
 		if err := scanner.Err(); err != nil {
 			if !errors.Is(err, os.ErrClosed) && !errors.Is(err, io.ErrClosedPipe) {
-				LogModule(moduleID, "ERROR", fmt.Sprintf("reading pipe: %v", err), err)
+				LogModule(moduleID, "ERROR", fmt.Sprintf("reading pipe: %v", err), nil, err)
 			}
 		}
 	}

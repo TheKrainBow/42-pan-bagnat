@@ -10,7 +10,7 @@ import (
 )
 
 func CloneModuleRepo(module Module) error {
-	LogModule(module.ID, "INFO", fmt.Sprintf("Cloning repo %s in repos/%s", module.GitURL, module.Slug), nil)
+	LogModule(module.ID, "INFO", fmt.Sprintf("Cloning repo %s in repos/%s", module.GitURL, module.Slug), nil, nil)
 	baseRepoPath := os.Getenv("REPO_BASE_PATH")
 	if baseRepoPath == "" {
 		baseRepoPath = "../../repos" // fallback for local dev
@@ -20,13 +20,13 @@ func CloneModuleRepo(module Module) error {
 	tmpKey, err := os.CreateTemp("", "id_rsa_")
 
 	if err != nil {
-		return LogModule(module.ID, "error", "failed to create temp ssh key file", err)
+		return LogModule(module.ID, "error", "failed to create temp ssh key file", nil, err)
 	}
 
 	defer os.Remove(tmpKey.Name())
 
 	if err := os.WriteFile(tmpKey.Name(), []byte(module.SSHPrivateKey), 0600); err != nil {
-		return LogModule(module.ID, "error", "failed to write private ssh key", err)
+		return LogModule(module.ID, "error", "failed to write private ssh key", nil, err)
 	}
 
 	sshCommand := "ssh -i " + tmpKey.Name() + " -o StrictHostKeyChecking=no"
@@ -45,6 +45,7 @@ func CloneModuleRepo(module Module) error {
 			module.ID,
 			"ERROR",
 			"git clone failed",
+			nil,
 			err,
 		)
 	}
@@ -55,7 +56,7 @@ func CloneModuleRepo(module Module) error {
 		Status: &newStatus,
 	})
 	if err != nil {
-		return LogModule(module.ID, "ERROR", "error while updating status to database", err)
+		return LogModule(module.ID, "ERROR", "error while updating status to database", nil, err)
 	}
 	err = InitModuleForDocker(module)
 	if err != nil {
@@ -73,12 +74,12 @@ func PullModuleRepo(module Module) error {
 
 	tmpKey, err := os.CreateTemp("", "id_rsa_")
 	if err != nil {
-		return LogModule(module.ID, "error", "failed to create temp key file", err)
+		return LogModule(module.ID, "error", "failed to create temp key file", nil, err)
 	}
 	defer os.Remove(tmpKey.Name())
 
 	if err := os.WriteFile(tmpKey.Name(), []byte(module.SSHPrivateKey), 0600); err != nil {
-		return LogModule(module.ID, "error", "failed to write private key", err)
+		return LogModule(module.ID, "error", "failed to write private key", nil, err)
 	}
 
 	sshCommand := "ssh -i " + tmpKey.Name() + " -o StrictHostKeyChecking=no"
@@ -87,9 +88,9 @@ func PullModuleRepo(module Module) error {
 	cmd.Env = append(os.Environ(), "GIT_SSH_COMMAND="+sshCommand)
 	err = runAndLog(module.ID, cmd)
 	if err != nil {
-		return LogModule(module.ID, "ERROR", "git pull failed", err)
+		return LogModule(module.ID, "ERROR", "git pull failed", nil, err)
 	}
-	return LogModule(module.ID, "INFO", fmt.Sprintf("Pulled module from URL %s", module.GitURL), nil)
+	return LogModule(module.ID, "INFO", fmt.Sprintf("Pulled module from URL %s", module.GitURL), nil, nil)
 }
 
 func UpdateModuleGitRemote(moduleID, moduleSlug, newGitURL string) error {
@@ -102,7 +103,7 @@ func UpdateModuleGitRemote(moduleID, moduleSlug, newGitURL string) error {
 	cmd := exec.Command("git", "-C", targetDir, "remote", "set-url", "origin", newGitURL)
 	err := runAndLog(moduleID, cmd)
 	if err != nil {
-		return LogModule(moduleID, "ERROR", "failed to update remote url", err)
+		return LogModule(moduleID, "ERROR", "failed to update remote url", nil, err)
 	}
 
 	err = database.PatchModule(database.ModulePatch{

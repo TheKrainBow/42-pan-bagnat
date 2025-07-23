@@ -303,11 +303,10 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 
 	// Parse input
 	var input struct {
-		ModuleID    string `json:"module_id"`
-		Name        string `json:"name"`
-		DisplayName string `json:"display_name"`
-		URL         string `json:"url"`
-		IsPublic    bool   `json:"is_public"`
+		ModuleID string `json:"module_id"`
+		Name     string `json:"name"`
+		URL      string `json:"url"`
+		IsPublic bool   `json:"is_public"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
@@ -332,13 +331,9 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if strings.TrimSpace(input.DisplayName) == "" {
-		input.DisplayName = input.Name
-	}
-
-	modulePage, err := core.ImportModulePage(input.ModuleID, input.Name, input.DisplayName, input.URL, input.IsPublic)
+	modulePage, err := core.ImportModulePage(input.ModuleID, input.Name, input.URL, input.IsPublic)
 	if err != nil {
-		core.LogModule(moduleID, "ERROR", "Couldn't add a module Page", err)
+		core.LogModule(moduleID, "ERROR", "Couldn't add a module Page", nil, err)
 		http.Error(w, "Failed to import module page", http.StatusInternalServerError)
 		return
 	}
@@ -350,6 +345,6 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	core.LogModule(moduleID, "INFO", fmt.Sprintf("Created page at '/module-page/%s' from '%s'", dest.Name, dest.URL), nil)
+	core.LogModule(moduleID, "INFO", fmt.Sprintf("Created page at '/module-page/%s' from '%s'", dest.Slug, dest.URL), nil, nil)
 	fmt.Fprint(w, string(destJSON))
 }

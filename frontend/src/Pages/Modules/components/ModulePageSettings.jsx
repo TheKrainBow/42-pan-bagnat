@@ -16,10 +16,10 @@ export default function ModulePageSettings({ moduleId }) {
       `);
       const data = await res.json();
       const list = (data.pages || []).map(p => ({
-        id: p.name,        // use name as stable id for existing
+        id: p.id,
         name: p.name,
         url: p.url,
-        isPublic: p.isPublic,
+        isPublic: p.is_public,
         isNew: false
       }));
       setPages(list);
@@ -72,13 +72,18 @@ export default function ModulePageSettings({ moduleId }) {
 
     setIsSaving(true);
     try {
+      const payload = {
+        name,
+        url,
+        is_public: isPublic,
+      };
       if (isNew) {
         await fetch(
           `http://localhost:8080/api/v1/modules/${moduleId}/pages`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, url, isPublic })
+            body: JSON.stringify(payload),
           }
         );
       } else {
@@ -87,7 +92,7 @@ export default function ModulePageSettings({ moduleId }) {
           {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, url, isPublic })
+            body: JSON.stringify(payload),
           }
         );
       }

@@ -14,19 +14,19 @@ import { socketService } from 'Global/SocketService';
 function Main() {
   const location = useLocation();
   const path = location.pathname;
-  const [activeModule, setActiveModule] = useState(null);
+  const [activePage, setActivePage] = useState(null);
 
   return (
     <div className="app-container">
       <Sidebar
         currentPage={path}
-        onModuleSelect={(page) => setActiveModule(page.name)}
+        onModuleSelect={(page) => setActivePage(page)}
       />
 
       <main className="main-content">
         <Routes>
           {/* user‐mode home shows the ModulePage */}
-          <Route path="/modules" element={<ModulePage moduleName={activeModule} />} />
+          <Route path="/modules" element={<ModulePage page={activePage} />} />
 
           {/* admin screens */}
           <Route path="/admin/modules" element={<Modules onSort="name" />} />

@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import './ModulePage.css';
 
-export default function ModulePage({ moduleName }) {
+export default function ModulePage({ page }) {
   useEffect(() => {
     const iframe = document.getElementById('moduleIframe');
     
@@ -9,7 +9,7 @@ export default function ModulePage({ moduleName }) {
       iframe.onload = function () {
         console.log('Iframe loaded successfully.');
         const iframeDoc = iframe.contentWindow.document;
-        const basePath = iframe.src.split('/module-page')[0] + `/module-page/${moduleName}/`;
+        const basePath = iframe.src.split('/module-page')[0] + `/module-page/${page.slug}/`;
         const baseTag = document.createElement('base');
         baseTag.setAttribute('href', basePath);
         iframeDoc.head.appendChild(baseTag);
@@ -24,9 +24,9 @@ export default function ModulePage({ moduleName }) {
     } else {
       console.log('Iframe not found!');
     }
-  }, [moduleName]);  // Re-run when moduleName changes
+  }, [page]);  // Re-run when page.slug changes
 
-  if (!moduleName) {
+  if (!page || !page.slug) {
     return (
       <div className="module-page-placeholder">
         <p>Select a module from the sidebar to get started.</p>
@@ -38,8 +38,8 @@ export default function ModulePage({ moduleName }) {
     <div className="module-page-container">
       <iframe
         id="moduleIframe"
-        src={`http://localhost/module-page/${moduleName}`}  // Path to the inner website
-        title={moduleName}
+        src={`http://localhost/module-page/${page.slug}`}  // Path to the inner website
+        title={page.slug}
         frameBorder="0"
         className="module-iframe"
       />

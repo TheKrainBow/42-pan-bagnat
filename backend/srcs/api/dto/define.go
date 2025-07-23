@@ -56,11 +56,12 @@ type ModuleLog struct {
 }
 
 type ModulePage struct {
-	Name        string `json:"name"`
-	DisplayName string `json:"display_name"`
-	URL         string `json:"url"`
-	IsPublic    bool   `json:"is_public"`
-	ModuleID    string `json:"module_id"`
+	ID       string `json:"id" example:"page_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	Name     string `json:"name"`
+	Slug     string `json:"slug"`
+	URL      string `json:"url"`
+	IsPublic bool   `json:"is_public"`
+	ModuleID string `json:"module_id"`
 }
 
 const (
