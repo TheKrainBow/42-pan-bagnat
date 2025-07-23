@@ -5,7 +5,7 @@ import "encoding/json"
 // Event is what your modules POST via the webhook.
 type Event struct {
 	EventType string          `json:"eventType"`
-	ModuleID  string          `json:"module_id"`
+	ModuleID  string          `json:"module_id,omitempty"`
 	Timestamp string          `json:"timestamp"`
 	Payload   json.RawMessage `json:"payload"`
 }

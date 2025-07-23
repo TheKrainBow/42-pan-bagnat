@@ -1,4 +1,7 @@
 // src/socketService.js
+import { Icons } from 'react-toastify';
+import { toast } from 'react-toastify';
+
 class SocketService {
   constructor() {
     this.listeners = new Set();
@@ -25,6 +28,19 @@ class SocketService {
     this.socket.addEventListener('message', ev => {
       let msg;
       try { msg = JSON.parse(ev.data) } catch { return }
+
+      // 🔔 Notification support
+      if (msg?.eventType === "Notification" && msg?.payload) {
+        let { level, message, url } = msg.payload;
+
+        const baseOptions = {
+          onClick: url ? () => window.location.href = url : undefined,
+          className: url ? 'toast-simple' : undefined,
+          type: level?.toLowerCase(), // 'success', 'error', 'warning', etc.
+        };
+        toast(message, baseOptions); // fallback
+      }
+
       this.listeners.forEach(fn => fn(msg));
     });
 
