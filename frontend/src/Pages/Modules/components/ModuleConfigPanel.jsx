@@ -48,22 +48,22 @@ export default function ModuleConfigPanel({ moduleId }) {
   }, [moduleYaml, moduleId])
 
   const handleDeploy = async () => {
-    setIsDeploying(true)
+    setIsDeploying(true);
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/modules/${moduleId}/deploy`, {
+      await fetch(`http://localhost:8080/api/v1/modules/${moduleId}/deploy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: moduleYaml }),
-      })
-      if (!res.ok) throw new Error(res.statusText)
-      alert('✅ Deployed successfully')
+      });
+      // No alerts — wait for WS notification
     } catch (e) {
-      console.error('Deploy failed', e)
-      alert('❌ Deploy failed: ' + e.message)
+      console.error('Deploy request failed to send:', e);
+      // You can optionally toast here if it's a *network* error
+      toast.error('❌ Failed to start deployment');
     } finally {
-      setIsDeploying(false)
+      setIsDeploying(false);
     }
-  }
+  };
 
   return (
     <div className="config-panel">
