@@ -432,11 +432,11 @@ func InsertModulePage(m ModulePage) error {
 	return err
 }
 
-func DeleteModulePageByName(name string) error {
+func DeleteModulePageByName(id string) error {
 	_, err := mainDB.Exec(`
         DELETE FROM module_page
-         WHERE name = $1
-    `, name)
+         WHERE id = $1
+    `, id)
 	if err != nil {
 		return err
 	}
