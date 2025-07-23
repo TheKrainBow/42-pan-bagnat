@@ -1,0 +1,26 @@
+/* Styles personnalisés pour les notifications toast */
+/* Styles spécifiques pour les notifications simples */
+.toast-simple {
+	cursor: pointer !important;
+	transition: background-color 0.2s ease;
+}
+
+.toast-simple:hover {
+	background-color: rgba(255, 255, 255, 0.95); /* or any subtle hover effect */
+}
+
+/* Styles spécifiques pour les notifications avec boutons */
+.toast-with-buttons {
+	width: fit-content !important;
+	min-width: 200px !important;
+	max-width: 300px !important;
+}
+
+
+.Toastify__progress-bar {
+  background: #e06c75 !important; /* bright green */
+}
+
+.Toastify__toast-icon {
+  display: inline-block !important;
+}
