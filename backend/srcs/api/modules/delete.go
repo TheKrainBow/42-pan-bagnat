@@ -5,7 +5,6 @@ import (
 	"backend/core"
 	"encoding/json"
 	"fmt"
-	"log"
 	"math/rand"
 	"net/http"
 	"time"
@@ -61,7 +60,6 @@ func DeleteModulePage(w http.ResponseWriter, r *http.Request) {
 
 	pageID := chi.URLParam(r, "pageID")
 	moduleID := chi.URLParam(r, "moduleID")
-	log.Printf("%s | %s", moduleID, pageID)
 
 	if pageID == "" {
 		http.Error(w, "Missing field page_name", http.StatusBadRequest)
@@ -73,5 +71,6 @@ func DeleteModulePage(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "error while deleting module page", http.StatusInternalServerError)
 	}
 
+	core.LogModule(moduleID, "INFO", fmt.Sprintf("Deleted page '%s'", pageID), nil, nil)
 	fmt.Fprint(w, "OK")
 }
