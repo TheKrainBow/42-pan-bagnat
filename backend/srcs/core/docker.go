@@ -85,17 +85,20 @@ func DeployModule(module Module) error {
 	dir := filepath.Join(baseRepoPath, module.Slug)
 	file := "docker-compose-panbagnat.yml"
 
-	cmd := exec.Command("docker", "compose", "-f", file, "up", "-d")
-	cmd.Dir = dir
-	err := runAndLog(module.ID, cmd)
+	// Step 1: docker compose build
+	cmdBuild := exec.Command("docker", "compose", "-f", file, "build")
+	cmdBuild.Dir = dir
+	err := runAndLog(module.ID, cmdBuild)
 	if err != nil {
-		return LogModule(
-			module.ID,
-			"ERROR",
-			"Failed to docker up",
-			nil,
-			err,
-		)
+		return LogModule(module.ID, "ERROR", "Failed to docker build", nil, err)
+	}
+
+	// Step 2: docker compose up -d
+	cmdUp := exec.Command("docker", "compose", "-f", file, "up", "-d")
+	cmdUp.Dir = dir
+	err = runAndLog(module.ID, cmdUp)
+	if err != nil {
+		return LogModule(module.ID, "ERROR", "Failed to docker up", nil, err)
 	}
 
 	SetModuleStatus(module.ID, Enabled)

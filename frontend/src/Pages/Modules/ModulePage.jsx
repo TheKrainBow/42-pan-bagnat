@@ -38,7 +38,7 @@ export default function ModulePage({ page }) {
     <div className="module-page-container">
       <iframe
         id="moduleIframe"
-        src={`http://localhost/module-page/${page.slug}`}  // Path to the inner website
+        src={`http://localhost/module-page/${page.slug}/index.html`}  // Path to the inner website
         title={page.slug}
         frameBorder="0"
         className="module-iframe"
