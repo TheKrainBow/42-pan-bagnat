@@ -1,7 +1,6 @@
 package core
 
 import (
-	"backend/docker"
 	"fmt"
 	"io"
 	"os"
@@ -10,34 +9,35 @@ import (
 )
 
 func InitModuleForDocker(module Module) error {
-	LogModule(module.ID, "INFO", "Setting up module.yml", nil, nil)
+	LogModule(module.ID, "INFO", "Setting up docker-compose-panbagnat.yml", nil, nil)
 	baseRepoPath := os.Getenv("REPO_BASE_PATH")
 	if baseRepoPath == "" {
 		baseRepoPath = "../../repos" // fallback for local dev
 	}
 	targetDir := filepath.Join(baseRepoPath, module.Slug)
 
-	tplPath := filepath.Join(targetDir, "module-template.yml")
-	modPath := filepath.Join(targetDir, "module.yml")
+	defaultPath := filepath.Join(targetDir, "docker-compose.yml")
+	pbPath := filepath.Join(targetDir, "docker-compose-panbagnat.yml")
 
-	out, err := os.OpenFile(modPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+	out, err := os.OpenFile(pbPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
-		return LogModule(module.ID, "ERROR", "failed to create module.yml", nil, err)
+		return LogModule(module.ID, "ERROR", "failed to create docker-compose-panbagnat.yml", nil, err)
 	}
 	defer out.Close()
 
-	if _, err := os.Stat(tplPath); err == nil {
-		in, err := os.Open(tplPath)
+	if _, err := os.Stat(defaultPath); err == nil {
+		in, err := os.Open(defaultPath)
 		if err != nil {
-			return LogModule(module.ID, "ERROR", "failed to open module-template.yml", nil, err)
+			return LogModule(module.ID, "ERROR", "failed to open docker-compose.yml", nil, err)
 		}
 		defer in.Close()
 
 		if _, err := io.Copy(out, in); err != nil {
-			return LogModule(module.ID, "ERROR", "failed to copy template to module.yml", nil, err)
+			return LogModule(module.ID, "ERROR", "failed to copy docker-compose.yml to docker-compose-panbagnat.yml", nil, err)
 		}
+		LogModule(module.ID, "INFO", "docker-compose-panbagnat.yml created using docker-compose.yml", nil, nil)
 	} else {
-		LogModule(module.ID, "INFO", "no module-template.yml, generating an empty module.yml", nil, err)
+		LogModule(module.ID, "INFO", "docker-compose.yml not found, created empty docker-compose-panbagnat.yml", nil, nil)
 	}
 	return nil
 }
@@ -47,51 +47,29 @@ func GetModuleConfig(module Module) (string, error) {
 	if baseRepoPath == "" {
 		baseRepoPath = "../../repos" // fallback for local dev
 	}
-	modPath := filepath.Join(baseRepoPath, module.Slug, "module.yml")
+	modPath := filepath.Join(baseRepoPath, module.Slug, "docker-compose-panbagnat.yml")
 
 	data, err := os.ReadFile(modPath)
 	if err != nil {
-		return "", LogModule(module.ID, "ERROR", fmt.Sprintf("failed to read module.yml from %s", modPath), nil, err)
+		return "", LogModule(module.ID, "ERROR", fmt.Sprintf("failed to read docker-compose-panbagnat.yml from %s", modPath), nil, err)
 	}
 
 	return string(data), nil
 }
 
 func SaveModuleConfig(module Module, content string) error {
-	LogModule(module.ID, "INFO", "Saving config to module.yml", nil, nil)
+	LogModule(module.ID, "INFO", "Saving config to docker-compose-panbagnat.yml", nil, nil)
 	baseRepoPath := os.Getenv("REPO_BASE_PATH")
 	if baseRepoPath == "" {
 		baseRepoPath = "../../repos" // fallback for local dev
 	}
-	modPath := filepath.Join(baseRepoPath, module.Slug, "module.yml")
-	composePath := filepath.Join(baseRepoPath, module.Slug, "docker-compose.yml")
+	modPath := filepath.Join(baseRepoPath, module.Slug, "docker-compose-panbagnat.yml")
 
 	if err := os.WriteFile(modPath, []byte(content), 0o644); err != nil {
 		return LogModule(
 			module.ID,
 			"ERROR",
-			fmt.Sprintf("failed to write module.yml to %s", modPath),
-			nil,
-			err,
-		)
-	}
-
-	composeYAML, err := docker.GenerateDockerComposeFromConfig(module.Slug, content)
-	if err != nil {
-		return LogModule(
-			module.ID,
-			"ERROR",
-			fmt.Sprintf("failed to generate docker compose file to %s", composePath),
-			nil,
-			err,
-		)
-	}
-
-	if err := os.WriteFile(composePath, []byte(composeYAML), 0o644); err != nil {
-		return LogModule(
-			module.ID,
-			"ERROR",
-			fmt.Sprintf("failed to write docker-compose.yml to %s", modPath),
+			fmt.Sprintf("failed to write docker-compose-panbagnat.yml to %s", modPath),
 			nil,
 			err,
 		)
@@ -105,8 +83,9 @@ func DeployModule(module Module) error {
 		baseRepoPath = "../../repos" // fallback for local dev
 	}
 	dir := filepath.Join(baseRepoPath, module.Slug)
+	file := "docker-compose-panbagnat.yml"
 
-	cmd := exec.Command("docker", "compose", "up", "-d")
+	cmd := exec.Command("docker", "compose", "-f", file, "up", "-d")
 	cmd.Dir = dir
 	err := runAndLog(module.ID, cmd)
 	if err != nil {
