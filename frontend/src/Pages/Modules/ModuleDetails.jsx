@@ -9,7 +9,7 @@ import ModuleSettings from 'Modules/components/ModuleSettings';
 import ModuleWarningSection from 'Modules/components/ModuleWarningSection';
 import ModuleStatusBadge from 'Modules/components/ModuleStatusBadge';
 import ModuleAboutSection from './components/ModuleAboutSection';
-import ModuleConfigViewer from './components/ModuleConfigPanel';
+import ModuleConfigViewer from './components/DockerComposeEditor';
 import ModulePageSettings from './components/ModulePageSettings';
 import { socketService } from 'Global/SocketService';
 import { setModuleStatusUpdater } from 'Global/SocketService';
