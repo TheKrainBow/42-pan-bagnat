@@ -12,7 +12,7 @@ export default function ModulePageSettings({ moduleId }) {
   const fetchPages = async () => {
     try {
       const res = await fetch(`
-        http://localhost:8080/api/v1/modules/${moduleId}/pages
+        /api/v1/modules/${moduleId}/pages
       `);
       const data = await res.json();
       const list = (data.pages || []).map(p => ({
@@ -79,7 +79,7 @@ export default function ModulePageSettings({ moduleId }) {
       };
       if (isNew) {
         await fetch(
-          `http://localhost:8080/api/v1/modules/${moduleId}/pages`,
+          `/api/v1/modules/${moduleId}/pages`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -88,7 +88,7 @@ export default function ModulePageSettings({ moduleId }) {
         );
       } else {
         await fetch(
-          `http://localhost:8080/api/v1/modules/${moduleId}/pages/${encodeURIComponent(id)}`,
+          `/api/v1/modules/${moduleId}/pages/${encodeURIComponent(id)}`,
           {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
@@ -115,7 +115,7 @@ export default function ModulePageSettings({ moduleId }) {
     } else {
       try {
         await fetch(
-          `http://localhost:8080/api/v1/modules/${moduleId}/pages/${encodeURIComponent(id)}`,
+          `/api/v1/modules/${moduleId}/pages/${encodeURIComponent(id)}`,
           { method: 'DELETE' }
         );
         await fetchPages();
