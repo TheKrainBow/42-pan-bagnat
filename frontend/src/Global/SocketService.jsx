@@ -79,6 +79,22 @@ class SocketService {
           console.log("update function not set!")
         }
       }
+      if (msg?.eventType === "module_deleted" && msg?.payload) {
+        const { module_id, module_name } = msg.payload;
+
+        toast(`🗑️ Module ${module_name} was deleted`, {
+          className: 'toast-simple',
+          autoClose: 10000,
+          onClick: () => {
+            window.location.href = '/admin/modules';
+          },
+          onClose: () => {
+            if (window.location.pathname === `/admin/modules/${module_id}`) {
+              window.location.href = '/admin/modules';
+            }
+          }
+        });
+      }
 
       this.listeners.forEach(fn => fn(msg));
     });
