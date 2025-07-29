@@ -1,38 +1,36 @@
-// components/ModuleSettings.jsx
 import React from 'react';
 import RoleBadge from 'Global/RoleBadge';
 import Button from 'Global/Button';
 import './ModuleSettings.css';
 
-const ModuleSettings = ({ roles, status, onToggleStatus, statusUpdating }) => {
-  const handleFetchData = () => {
-    console.log('Fetching data...');
-  };
-  const handleUpdate = () => {
-    console.log('Handling update...');
-  };
-  const handleUninstall = () => {
-    console.log('Handling uninstall...');
-  };
+const ModuleSettings = ({
+  roles,
+  status,
+  statusUpdating,
+  onToggleStatus,
+  onFetchData,
+  onUpdate,
+  onUninstall
+}) => {
   return (
     <div className="module-settings-container">
       <div className="module-settings-actions">
         <Button
           label="Fetch Data"
           color="gray"
-          onClick={handleFetchData}
+          onClick={onFetchData}
           disabled={status === 'waiting_for_action'}
         />
         <Button
           label="Update"
           color="blue"
-          onClick={handleUpdate}
+          onClick={onUpdate}
           disabled={status === 'waiting_for_action'}
         />
         <Button
           label="Uninstall"
           color="red"
-          onClick={handleUninstall}
+          onClick={onUninstall}
         />
       </div>
 
@@ -56,7 +54,9 @@ const ModuleSettings = ({ roles, status, onToggleStatus, statusUpdating }) => {
         <div className="role-badges">
           {Array.isArray(roles) && roles.length > 0 ? (
             roles.map(role => (
-              <RoleBadge key={role.id} hexColor={role.color}>{role.name}</RoleBadge>
+              <RoleBadge key={role.id} hexColor={role.color}>
+                {role.name}
+              </RoleBadge>
             ))
           ) : (
             <span style={{ opacity: 0.5 }}>No roles assigned</span>

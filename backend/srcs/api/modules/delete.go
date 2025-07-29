@@ -1,16 +1,11 @@
 package modules
 
 import (
-	api "backend/api/dto"
 	"backend/core"
-	"encoding/json"
 	"fmt"
-	"math/rand"
 	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
-	"github.com/oklog/ulid/v2"
 )
 
 // @Summary      Delete Module
@@ -24,27 +19,20 @@ import (
 func DeleteModule(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	t := time.Now()
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(t.UnixNano())), 0)
-	id := ulid.MustNew(ulid.Timestamp(t), entropy)
-	dest := api.Module{
-		ID:            id.String(),
-		Name:          "Test",
-		Version:       "1.2",
-		Status:        api.Enabled,
-		GitURL:        "https://github.com/some-user/some-repo",
-		LatestVersion: "1.7",
-		LastUpdate:    time.Date(2025, 02, 18, 15, 0, 0, 0, time.UTC),
-	}
+	moduleID := chi.URLParam(r, "moduleID")
 
-	// Marshal the dest struct into JSON
-	destJSON, err := json.Marshal(dest)
-	if err != nil {
-		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
+	if moduleID == "" {
+		http.Error(w, "Missing field moduleID", http.StatusBadRequest)
 		return
 	}
 
-	fmt.Fprint(w, string(destJSON))
+	err := core.DeleteModule(moduleID)
+	if err != nil {
+		fmt.Printf("Error while deleting module: %s\n", err.Error())
+		http.Error(w, "error while deleting module", http.StatusInternalServerError)
+	}
+
+	fmt.Fprint(w, "OK")
 }
 
 // @Summary      Delete Module page

@@ -11,7 +11,7 @@ const ModuleImport = ({ onClose }) => {
   const navigate = useNavigate();
 
   const [moduleName, setModuleName] = useState('Hello World');
-  const [gitUrl, setGitUrl] = useState('git@github.com:pan-bagnat/hello-world.git');
+  const [gitUrl, setGitUrl] = useState('https://github.com/pan-bagnat/hello-world.git');
   const [gitBranch, setGitBranch] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 

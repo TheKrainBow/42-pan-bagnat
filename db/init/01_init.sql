@@ -59,13 +59,13 @@ CREATE TABLE module_page (
 -- JOIN TABLES --
 
 CREATE TABLE user_roles (
-  user_id TEXT REFERENCES users(id),
-  role_id TEXT REFERENCES roles(id),
+  user_id TEXT REFERENCES users(id) ON DELETE CASCADE,
+  role_id TEXT REFERENCES roles(id) ON DELETE CASCADE,
   PRIMARY KEY (user_id, role_id)
 );
 
 CREATE TABLE module_roles (
-  module_id TEXT REFERENCES modules(id),
-  role_id TEXT REFERENCES roles(id),
+  module_id TEXT REFERENCES modules(id) ON DELETE CASCADE,
+  role_id   TEXT REFERENCES roles(id) ON DELETE CASCADE,
   PRIMARY KEY (module_id, role_id)
 );
