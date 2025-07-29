@@ -34,7 +34,7 @@ const ModuleLogs = forwardRef(({ moduleId }, ref) => {
       else params.set('limit', 20);
 
       const res = await fetch(
-        `http://localhost:8080/api/v1/modules/${moduleId}/logs?${params}`
+        `/api/v1/modules/${moduleId}/logs?${params}`
       );
       if (!res.ok) throw new Error(res.statusText);
       const data = await res.json();

@@ -347,7 +347,6 @@ func GetPages(w http.ResponseWriter, r *http.Request) {
 func PageRedirection(w http.ResponseWriter, r *http.Request) {
 	pageName := chi.URLParam(r, "pageName")
 
-	// Fetch up to 1 page for this module
 	pages, err := core.GetPage(pageName)
 	if err != nil {
 		http.Error(w, "error looking up module pages: "+err.Error(), http.StatusInternalServerError)
@@ -360,17 +359,16 @@ func PageRedirection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Set up the reverse‐proxy
-	proxy := httputil.NewSingleHostReverseProxy(targetURL)
-
-	// Strip off "/module-page/{mod}" so that
-	// /module-page/toto/foo/bar → /foo/bar on the target.
 	suffix := strings.TrimPrefix(r.URL.Path, "/module-page/"+pageName)
 	if suffix == "" {
 		suffix = "/"
 	}
 	r.URL.Path = suffix
+	r.Host = targetURL.Host
+	r.RequestURI = ""
 
-	fmt.Printf("url: %s\n", r.URL.Path)
+	fmt.Printf("Proxying to: %s%s\n", targetURL, suffix)
+
+	proxy := httputil.NewSingleHostReverseProxy(targetURL)
 	proxy.ServeHTTP(w, r)
 }

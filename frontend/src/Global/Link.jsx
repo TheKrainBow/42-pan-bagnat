@@ -7,11 +7,19 @@ const Link = ({ url, shorten = false }) => {
   if (!url) return null;
 
   const handleClick = () => {
-    navigator.clipboard.writeText(url);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(sshKey)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        })
+        .catch((err) => {
+          console.error("Copy failed", err);
+        });
+    } else {
+      console.warn("Clipboard API not supported");
+    }
   };
-
 
   let visibleText = url;
   if (typeof shorten === 'number' && shorten < url.length) {
