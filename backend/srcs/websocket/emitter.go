@@ -71,3 +71,32 @@ func SendModuleStatusChangedEvent(moduleID, moduleName, newStatus string) {
 		log.Printf("%s [WARN] WS event channel full, dropped module status event for %q\n", ts, moduleID)
 	}
 }
+
+// SendModuleDeletedEvent builds and dispatches a WebSocket event when a module is deleted.
+// If the channel is full, the event is dropped and a warning is logged.
+func SendModuleDeletedEvent(moduleID, moduleName string) {
+	ts := time.Now().Format(time.RFC3339)
+
+	payloadMap := map[string]any{
+		"module_id":   moduleID,
+		"module_name": moduleName,
+	}
+
+	payloadBytes, err := json.Marshal(payloadMap)
+	if err != nil {
+		log.Printf("%s [ERROR] failed to marshal module_deleted payload: %v", ts, err)
+		return
+	}
+
+	evt := Event{
+		EventType: "module_deleted",
+		Timestamp: ts,
+		Payload:   json.RawMessage(payloadBytes),
+	}
+
+	select {
+	case Events <- evt:
+	default:
+		log.Printf("%s [WARN] WS event channel full, dropped module deleted event for %q\n", ts, moduleID)
+	}
+}

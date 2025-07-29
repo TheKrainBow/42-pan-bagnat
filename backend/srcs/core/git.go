@@ -9,6 +9,21 @@ import (
 	"path/filepath"
 )
 
+func DeleteModuleRepoDir(module Module) error {
+	baseRepoPath := os.Getenv("REPO_BASE_PATH")
+	if baseRepoPath == "" {
+		baseRepoPath = "../../repos"
+	}
+	targetDir := filepath.Join(baseRepoPath, module.Slug)
+
+	if err := os.RemoveAll(targetDir); err != nil {
+		return fmt.Errorf("failed to delete repo folder %s: %w", targetDir, err)
+	}
+
+	log.Printf("✅ Deleted repo folder %s\n", targetDir)
+	return nil
+}
+
 func CloneModuleRepo(module Module) error {
 	LogModule(module.ID, "INFO", fmt.Sprintf("Cloning repo %s in repos/%s", module.GitURL, module.Slug), nil, nil)
 	baseRepoPath := os.Getenv("REPO_BASE_PATH")

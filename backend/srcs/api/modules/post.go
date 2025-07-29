@@ -3,7 +3,6 @@ package modules
 import (
 	api "backend/api/dto"
 	"backend/core"
-	"backend/docker"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -200,53 +199,6 @@ func GitUpdateRemote(w http.ResponseWriter, r *http.Request) {
 
 type composeRequest struct {
 	Config string `json:"config"`
-}
-
-type composeResponse struct {
-	Compose string `json:"compose"`
-}
-
-func ComposeModule(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-
-	moduleID := chi.URLParam(r, "moduleID")
-	if moduleID == "" {
-		http.Error(w, "moduleID is required", http.StatusBadRequest)
-		return
-	}
-
-	var req composeRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, fmt.Sprintf("invalid request: %v", err), http.StatusBadRequest)
-		return
-	}
-
-	module, err := core.GetModule(moduleID)
-	if err != nil {
-		log.Printf("error while getting module %s: %s\n", moduleID, err.Error())
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Error while getting module " + moduleID))
-		return
-	}
-
-	if module.ID == "" {
-		log.Printf("error while cloning module %s: module doesn't exist\n", moduleID)
-		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte("module " + moduleID + " doesn't exist"))
-		return
-	}
-
-	composeYAML, err := docker.GenerateDockerComposeFromConfig(module.Slug, req.Config)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("failed to generate docker-compose: %v", err), http.StatusInternalServerError)
-		return
-	}
-
-	resp := composeResponse{Compose: composeYAML}
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
-		http.Error(w, fmt.Sprintf("failed to encode response: %v", err), http.StatusInternalServerError)
-		return
-	}
 }
 
 func DeployConfig(w http.ResponseWriter, r *http.Request) {

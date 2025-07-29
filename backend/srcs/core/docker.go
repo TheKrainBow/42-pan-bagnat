@@ -101,7 +101,32 @@ func DeployModule(module Module) error {
 		return LogModule(module.ID, "ERROR", "Failed to docker up", nil, err)
 	}
 
-	SetModuleStatus(module.ID, Enabled)
+	SetModuleStatus(module.ID, Enabled, true)
 	LogModule(module.ID, "INFO", "docker compose up succeeded", nil, nil)
+	return nil
+}
+
+func CleanupModuleDockerResources(module Module) error {
+	baseRepoPath := os.Getenv("REPO_BASE_PATH")
+	if baseRepoPath == "" {
+		baseRepoPath = "../../repos" // fallback for local dev
+	}
+	dir := filepath.Join(baseRepoPath, module.Slug)
+	file := "docker-compose-panbagnat.yml"
+
+	cmdDown := exec.Command("docker", "compose", "-f", file, "down", "--volumes", "--remove-orphans", "--rmi", "all")
+	cmdDown.Dir = dir
+	if err := runAndLog(module.ID, cmdDown); err != nil {
+		return LogModule(module.ID, "ERROR", "Failed to docker compose down", nil, err)
+	}
+
+	cmdPrune := exec.Command("docker", "image", "prune", "-a", "-f")
+	cmdPrune.Dir = dir
+	if err := runAndLog(module.ID, cmdPrune); err != nil {
+		return LogModule(module.ID, "ERROR", "Failed to docker compose down", nil, err)
+	}
+
+	LogModule(module.ID, "INFO", "docker cleanup completed", nil, nil)
+	SetModuleStatus(module.ID, Disabled, false)
 	return nil
 }

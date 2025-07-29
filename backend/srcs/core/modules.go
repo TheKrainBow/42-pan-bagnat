@@ -427,7 +427,7 @@ func GetModuleLogs(pagination ModuleLogsPagination) ([]ModuleLog, string, error)
 	return dest, token, nil
 }
 
-func SetModuleStatus(moduleID string, status ModuleStatus) error {
+func SetModuleStatus(moduleID string, status ModuleStatus, sendWebhook bool) error {
 	LogModule(moduleID, "INFO", fmt.Sprintf("Changing module status to %s", string(status)), nil, nil)
 	oldModule, err := database.GetModule(moduleID)
 	if err != nil {
@@ -447,9 +447,9 @@ func SetModuleStatus(moduleID string, status ModuleStatus) error {
 
 	_ = oldModule
 	log.Printf("Sending ws notif for status update\n")
-	// if oldModule.Status != module.Status {
-	websocket.SendModuleStatusChangedEvent(module.ID, module.Name, string(module.Status))
-	// }
+	if oldModule.Status != module.Status && sendWebhook {
+		websocket.SendModuleStatusChangedEvent(module.ID, module.Name, string(module.Status))
+	}
 	return nil
 }
 
@@ -518,8 +518,33 @@ func ImportModulePage(moduleID, name, url string, isPublic bool) (ModulePage, er
 	return dest, nil
 }
 
+func DeleteModule(moduleID string) error {
+	module, err := GetModule(moduleID)
+	if err != nil {
+		return fmt.Errorf("module %s not found", moduleID)
+	}
+	err = CleanupModuleDockerResources(module)
+	if err != nil {
+		LogModule(moduleID, "WARN", "couldn't clean docker ressources", nil, err)
+	}
+
+	err = DeleteModuleRepoDir(module)
+	if err != nil {
+		LogModule(moduleID, "WARN", "couldn't delete repo folder", nil, err)
+	}
+
+	err = database.DeleteModule(moduleID)
+	if err != nil {
+		fmt.Printf("couldn't delete module: %s\n", err.Error())
+		return err
+	}
+
+	websocket.SendModuleDeletedEvent(module.ID, module.Name)
+	return nil
+}
+
 func DeleteModulePage(pageID string) error {
-	err := database.DeleteModulePageByName(pageID)
+	err := database.DeleteModulePage(pageID)
 	if err != nil {
 		fmt.Printf("couldn't delete module page: %s\n", err.Error())
 		return err

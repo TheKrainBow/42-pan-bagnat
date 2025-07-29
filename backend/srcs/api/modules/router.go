@@ -17,7 +17,6 @@ func RegisterRoutes(r chi.Router) {
 	r.Post("/{moduleID}/git/update-remote", GitUpdateRemote)
 
 	r.Get("/{moduleID}/config", GetModuleConfig)
-	r.Post("/{moduleID}/compose", ComposeModule)
 
 	r.Post("/{moduleID}/deploy", DeployConfig)
 

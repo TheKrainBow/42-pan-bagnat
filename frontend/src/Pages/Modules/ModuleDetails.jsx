@@ -74,6 +74,11 @@ const ModuleDetails = () => {
     }
   };
 
+  const handleUninstall = () => {
+    fetch(`/api/v1/modules/${moduleId}`, { method: 'DELETE' })
+      .catch(err => console.error('Failed to uninstall:', err));
+  };
+
   const handleAfterRetry = () => {
     fetchModule();            // re‐fetch module info
   };
@@ -166,8 +171,9 @@ const ModuleDetails = () => {
           {activeTab === 'settings' && <ModuleSettings
               roles={module.roles}
               status={module.status}
-              onToggleStatus={toggleModuleStatus}
               statusUpdating={statusUpdating}
+              onToggleStatus={toggleModuleStatus}
+              onUninstall={handleUninstall}
             />}
           {activeTab === 'config' && <ModuleConfigViewer moduleId={module.id}/>}
           {activeTab === 'pages' && <ModulePageSettings moduleId={module.id}/>}
