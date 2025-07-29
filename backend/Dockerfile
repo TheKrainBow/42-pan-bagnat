@@ -47,8 +47,8 @@ RUN apt-get update && apt-get install -y \
 
 RUN groupadd -g 1001 app \
  && useradd -u 1001 -g app -m -s /bin/sh app \
- && mkdir -p /app /data/templates \
- && chown -R app:app /app /data
+ && mkdir -p /app\
+ && chown -R app:app /app
 
 ARG DOCKER_GID=968
 RUN groupadd -g ${DOCKER_GID} docker \
@@ -58,7 +58,6 @@ WORKDIR /app
 
 # Copy the binary from the builder stage
 COPY --from=builder /app/main .
-COPY ./templates /data/templates/
 
 COPY entrypoint.sh /app/entrypoint.sh
 RUN chmod +x /app/entrypoint.sh
