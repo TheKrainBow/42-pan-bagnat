@@ -1,18 +1,14 @@
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
-import tsconfigPaths from 'vite-tsconfig-paths';
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react-swc';
+import path from 'path';
 
-// https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tsconfigPaths()],
-  server: {
-    proxy: {
-      // forward /__register and module-page calls to your Express API
-      '/module-page': {
-        target: 'http://localhost:3000',
-        changeOrigin: true,
-        secure: false,
-      },
+  plugins: [react()],
+  resolve: {
+    alias: {
+      Global: path.resolve(__dirname, 'src/Global'),
+      Pages: path.resolve(__dirname, 'src/Pages'),
+      Modules: path.resolve(__dirname, 'src/Pages/Modules'),
     },
   },
-})
+});
