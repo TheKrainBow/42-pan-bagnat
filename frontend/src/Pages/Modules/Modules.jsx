@@ -49,7 +49,7 @@ const Modules = () => {
         params.set('limit', 20);
       }
 
-      const res = await fetch(`http://localhost:8080/api/v1/modules?${params.toString()}`);
+      const res = await fetch(`/api/v1/modules?${params.toString()}`);
       const data = await res.json();
 
       setModules(prev =>
@@ -109,7 +109,7 @@ const Modules = () => {
 
   const handleSubmit = async ({ gitUrl, sshKey }) => {
     try {
-      const response = await fetch('http://localhost:8080/api/v1/modules', {
+      const response = await fetch('/api/v1/modules', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

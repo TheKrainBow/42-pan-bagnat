@@ -20,7 +20,7 @@ signature=$(printf '%s' "$payload" \
   | awk '{print $NF}')
 
 # 4) Send the webhook
-curl -v http://localhost:8080/webhooks/events \
+curl -v /webhooks/events \
   -H "Content-Type: application/json" \
   -H "X-Hook-Signature: $signature" \
   --data "$payload"

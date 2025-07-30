@@ -17,7 +17,8 @@ class SocketService {
 
   _connect() {
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
-    const endpoint = `${protocol}://localhost:8080/ws`;
+    const host = window.location.host;
+    const endpoint = `${protocol}://${host}/ws`;
     this.socket = new WebSocket(endpoint);
 
     this.socket.addEventListener('open', () => {

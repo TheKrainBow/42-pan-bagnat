@@ -6,7 +6,7 @@
         "contact": {},
         "version": "1.1"
     },
-    "host": "localhost:8080",
+    "host": "heinz.42nice.fr:8080",
     "basePath": "/api/v1",
     "paths": {
         "/modules": {

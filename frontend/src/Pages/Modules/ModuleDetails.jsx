@@ -36,7 +36,7 @@ const ModuleDetails = () => {
 
   const fetchModule = async () => {
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/modules/${moduleId}`);
+      const res = await fetch(`/api/v1/modules/${moduleId}`);
       const data = await res.json();
       setModule(data);
     } catch (err) {

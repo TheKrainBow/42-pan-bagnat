@@ -40,7 +40,7 @@ const Roles = () => {
         params.set('limit', 20);
       }
 
-      const res = await fetch(`http://localhost:8080/api/v1/roles?${params.toString()}`);
+      const res = await fetch(`/api/v1/roles?${params.toString()}`);
       const data = await res.json();
 
       setRoles(prev =>

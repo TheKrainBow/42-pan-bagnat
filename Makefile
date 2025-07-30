@@ -2,7 +2,7 @@
 #                                       CONFIG                                          #
 #########################################################################################
 DOCKER_COMPOSE = docker compose
-DATABASE_URL = postgres://admin:pw_admin@localhost/panbagnat?sslmode=disable
+DATABASE_URL = postgres://admin:pw_admin@heinz.42nice.fr/panbagnat?sslmode=disable
 
 #########################################################################################
 #                                                                                       #
