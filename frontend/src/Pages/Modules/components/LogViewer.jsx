@@ -33,12 +33,21 @@ const LogViewer = forwardRef(({ logType = 'module', moduleId = "", containerName
     }
   }, [logs]);
 
+  const handleAppendLog = log => {
+    const c = containerRef.current;
+    if (c) {
+      wasAtBottomBeforeRef.current =
+        Math.abs((c.scrollHeight - c.scrollTop) - c.clientHeight) <= 5;
+    }
+    setLogs(prev => [log, ...prev]);
+  };
+
   useEffect(() => {
   if (logType !== 'module' || !moduleId) return;
     socketService.subscribeModule(moduleId);
     const unsubscribe = socketService.subscribe(msg => {
       if (msg.eventType === 'log' && msg.module_id === moduleId) {
-        appendLog({
+        handleAppendLog({
           ...msg.payload,
           created_at: msg.timestamp,
         });
@@ -102,14 +111,7 @@ const LogViewer = forwardRef(({ logType = 'module', moduleId = "", containerName
       setNextToken(null);
       fetchLogs();
     },
-    appendLog: log => {
-      const c = containerRef.current;
-      if (c) {
-        wasAtBottomBeforeRef.current =
-          Math.abs((c.scrollHeight - c.scrollTop) - c.clientHeight) <= 5;
-      }
-      setLogs(prev => [log, ...prev]);
-    }
+    appendLog: handleAppendLog
   }), [source, logType]);
 
   useLayoutEffect(() => {
