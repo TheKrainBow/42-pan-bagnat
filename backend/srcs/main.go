@@ -30,11 +30,15 @@ func main() {
 
 	// Set up the CORS middleware
 	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   []string{
+		AllowedOrigins: []string{
 			"http://localhost:*",
 			"http://localhost",
+			"https://localhost:*",
+			"https://localhost",
 			"http://127.0.0.1:*",
 			"http://127.0.0.1",
+			"https://127.0.0.1:*",
+			"https://127.0.0.1",
 			"http://heinz.42nice.fr",
 			"https://heinz.42nice.fr",
 		},
