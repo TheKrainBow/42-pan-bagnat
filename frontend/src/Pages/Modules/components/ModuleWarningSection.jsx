@@ -8,16 +8,25 @@ const ModuleWarningSection = ({ sshKey, moduleID, onRetrySuccess, onRetry }) => 
   const [retry, setRetry] = useState(null);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(sshKey);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(sshKey)
+        .then(() => {
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1500);
+        })
+        .catch((err) => {
+          console.error("Copy failed", err);
+        });
+    } else {
+      console.warn("Clipboard API not supported");
+    }
   };
 
   const handleRetryClone = async () => {
     setRetrying(true);
     setRetrySuccess(null);
     try {
-      const res = await fetch(`http://localhost:8080/api/v1/modules/${moduleID}/git/clone`, {
+      const res = await fetch(`/api/v1/modules/${moduleID}/git/clone`, {
         method: 'POST'
       });
       setRetrySuccess(res.ok);
