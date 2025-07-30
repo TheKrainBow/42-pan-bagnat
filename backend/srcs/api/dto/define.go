@@ -64,6 +64,11 @@ type ModulePage struct {
 	ModuleID string `json:"module_id"`
 }
 
+type ModuleContainer struct {
+	Name   string `json:"name"`
+	Status string `json:"status"`
+}
+
 const (
 	Enabled          ModuleStatus = "enabled"
 	Disabled         ModuleStatus = "disabled"
