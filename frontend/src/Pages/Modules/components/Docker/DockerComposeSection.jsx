@@ -13,7 +13,7 @@ export default function DockerComposeSection({ moduleId }) {
     if (fetchedRef.current) return
     fetchedRef.current = true
 
-    fetch(`http://localhost:8080/api/v1/modules/${moduleId}/config`)
+    fetch(`/api/v1/modules/${moduleId}/config`)
       .then(r => r.json())
       .then(d => setConfigYaml(d.config))
       .catch(() => setConfigYaml('# Error loading docker-compose-panbagnat.yml'))
@@ -22,7 +22,7 @@ export default function DockerComposeSection({ moduleId }) {
   const handleDeploy = async () => {
     setIsDeploying(true)
     try {
-      await fetch(`http://localhost:8080/api/v1/modules/${moduleId}/deploy`, {
+      await fetch(`/api/v1/modules/${moduleId}/deploy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: configYaml }),

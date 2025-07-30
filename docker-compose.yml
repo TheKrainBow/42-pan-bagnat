@@ -14,15 +14,22 @@ services:
     image: nginx:alpine
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl/42nice.fr.crt:/etc/ssl/42nice.fr.crt:ro
+      - ./nginx/ssl/42nice.fr.key:/etc/ssl/42nice.fr.key:ro
     ports:
       - '80:80'
+      - '443:443'
     networks:
       - pan-bagnat-net
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    depends_on:
+      - backend
+      - frontend
 
   backend:
     container_name: pan-bagnat-backend-1
+    user: "root:root"
     build:
       context: ./backend
     ports:
@@ -59,8 +66,6 @@ services:
 
 volumes:
   postgres_data:
-  dind_data:
-  git_repos:
 
 networks:
   pan-bagnat-net:

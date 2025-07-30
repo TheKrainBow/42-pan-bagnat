@@ -19,7 +19,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
     document.body.classList.remove('theme-light');
 
     if (mode === 'user') {
-      fetch('http://localhost:8080/api/v1/modules/pages')
+      fetch('/api/v1/modules/pages')
         .then((res) => {
           if (!res.ok) throw new Error(res.statusText);
           return res.json();

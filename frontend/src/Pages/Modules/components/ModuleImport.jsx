@@ -32,7 +32,7 @@ const ModuleImport = ({ onClose }) => {
     setIsSubmitting(true);
     const finalBranch = gitBranch.trim() === '' ? 'main' : gitBranch;
     try {
-      const res = await fetch('http://localhost:8080/api/v1/modules', {
+      const res = await fetch('/api/v1/modules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: moduleName, git_url: gitUrl, git_branch: finalBranch }),

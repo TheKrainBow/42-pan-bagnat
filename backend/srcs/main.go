@@ -23,14 +23,21 @@ import (
 // @title Pan Bagnat API
 // @version 1.1
 // @description API REST du projet Pan Bagnat.
-// @host localhost:8080
+// @host heinz.42nice.fr:8080
 // @BasePath /api/v1
 func main() {
 	port := getPort()
 
 	// Set up the CORS middleware
 	corsMiddleware := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost*"}, // allow React frontend to access the backend
+		AllowedOrigins:   []string{
+			"http://localhost:*",
+			"http://localhost",
+			"http://127.0.0.1:*",
+			"http://127.0.0.1",
+			"http://heinz.42nice.fr",
+			"https://heinz.42nice.fr",
+		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
 		AllowCredentials: true,
