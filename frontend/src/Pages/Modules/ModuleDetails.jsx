@@ -4,14 +4,11 @@ import { useParams, Link } from 'react-router-dom';
 import './ModuleDetails.css';
 import AppIcon from 'Global/AppIcon';
 import Button from 'Global/Button';
-import ModuleLogs from 'Modules/components/ModuleLogs';
+import LogViewer from 'Pages/Modules/components/LogViewer';
 import ModuleSettings from 'Modules/components/ModuleSettings';
 import ModuleWarningSection from 'Modules/components/ModuleWarningSection';
 import ModuleStatusBadge from 'Modules/components/ModuleStatusBadge';
-import ModuleAboutSection from './components/ModuleAboutSection';
-import ModuleConfigViewer from './components/DockerComposeEditor';
-import ModulePageSettings from './components/ModulePageSettings';
-import { socketService } from 'Global/SocketService';
+import ModuleDockerSection from './components/Docker/ModuleDockerSection';
 import { setModuleStatusUpdater } from 'Global/SocketService';
 
 const ModuleDetails = () => {
@@ -21,10 +18,7 @@ const ModuleDetails = () => {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [activeTab, setActiveTab] = useState('logs');
   const [showWarning, setShowWarning] = useState(false);
-  const logsRef = useRef();
   const fetchedRef = useRef(false);
-
-  const subscribedRef = useRef(false);
 
   useEffect(() => {
     // Register live update handler
@@ -37,27 +31,6 @@ const ModuleDetails = () => {
     return () => {
       // Unregister when component unmounts
       setModuleStatusUpdater(null);
-    };
-  }, [moduleId]);
-
-  useEffect(() => {
-    socketService.subscribeModule(moduleId);
-    subscribedRef.current = true;
-  
-   // listen for _all_ messages, but only act on log events for this module
-    const unsubscribe = socketService.subscribe(msg => {
-      if (msg.eventType === 'log' && msg.module_id === moduleId) {
-        logsRef.current?.appendLog({
-          ...msg.payload,
-          created_at: msg.timestamp,
-        });
-      }
-    });
-
-    // cleanup
-    return () => {
-      socketService.unsubscribeModule(moduleId);
-      unsubscribe();
     };
   }, [moduleId]);
 
@@ -112,8 +85,6 @@ const ModuleDetails = () => {
   if (loading) return <div className="loading">Loading...</div>;
   if (!module) return <div className="error">Module not found.</div>;
 
-  const isCloned = module.last_update && new Date(module.last_update).getFullYear() > 2000;
-
   return (
     <div className="module-detail-container">
       <Link to="/admin/modules" className="custom-btn link">
@@ -139,44 +110,36 @@ const ModuleDetails = () => {
           onRetry={handleAfterRetry}
         />
       )}
-      <ModuleAboutSection module={module}></ModuleAboutSection>
 
       {/* Running Info */}
       <div className="module-running-section">
         <div className="tabs">
+          <Button
+            label="Docker"
+            className={`custom-btn ${activeTab === 'docker' ? 'blue' : 'gray'}`}
+            onClick={() => setActiveTab('docker')}
+          />
           <Button
             label="Logs"
             className={`custom-btn ${activeTab === 'logs' ? 'blue' : 'gray'}`}
             onClick={() => setActiveTab('logs')}
           />
           <Button
-            label="Config"
-            className={`custom-btn ${activeTab === 'config' ? 'blue' : 'gray'}`}
-            onClick={() => setActiveTab('config')}
-          />
-          <Button
             label="Settings"
             className={`custom-btn ${activeTab === 'settings' ? 'blue' : 'gray'}`}
             onClick={() => setActiveTab('settings')}
           />
-          <Button
-            label="Pages"
-            className={`custom-btn ${activeTab === 'pages' ? 'blue' : 'gray'}`}
-            onClick={() => setActiveTab('pages')}
-          />
         </div>
 
         <div className="tab-content">
-          {activeTab === 'logs' && <ModuleLogs ref={logsRef} moduleId={module.id}/>}
+          {activeTab === 'logs' && <LogViewer logType="module" moduleId={module.id}/>}
           {activeTab === 'settings' && <ModuleSettings
-              roles={module.roles}
-              status={module.status}
+              module={module}
               statusUpdating={statusUpdating}
               onToggleStatus={toggleModuleStatus}
               onUninstall={handleUninstall}
             />}
-          {activeTab === 'config' && <ModuleConfigViewer moduleId={module.id}/>}
-          {activeTab === 'pages' && <ModulePageSettings moduleId={module.id}/>}
+          {activeTab === 'docker' && <ModuleDockerSection moduleId={module.id}/>}
         </div>
       </div>
     </div>
