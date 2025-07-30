@@ -283,6 +283,73 @@ func GetModulePages(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(destJSON))
 }
 
+func GetContainerLogs(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	moduleID := chi.URLParam(r, "moduleID")
+	if moduleID == "" {
+		http.Error(w, "ID not found", http.StatusBadRequest)
+		return
+	}
+
+	containerName := chi.URLParam(r, "containerName")
+	if containerName == "" {
+		http.Error(w, "Container name not found", http.StatusBadRequest)
+		return
+	}
+
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		log.Printf("error while getting module %s: %s\n", moduleID, err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error while getting module " + moduleID))
+		return
+	}
+
+	logs, err := core.GetContainerLogs(module, containerName)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to get logs: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(logs)
+}
+
+// @Summary      Get Module List
+// @Description  Return the module.yml of a given module
+// @Tags         modules
+// @Accept       json
+// @Produce      json
+// @Success      200 {object} Module
+// @Router       /modules/{moduleID}/config [get]
+func GetModuleContainers(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	moduleID := chi.URLParam(r, "moduleID")
+	if moduleID == "" {
+		http.Error(w, "ID not found", http.StatusBadRequest)
+		return
+	}
+
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		log.Printf("error while getting module %s: %s\n", moduleID, err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Error while getting module " + moduleID))
+		return
+	}
+
+	containers, err := core.GetModuleContainers(module)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to get containers: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(containers); err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+	}
+}
+
 // @Summary      Get Module List
 // @Description  Return the module.yml of a given module
 // @Tags         modules

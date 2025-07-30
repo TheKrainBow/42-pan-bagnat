@@ -92,6 +92,25 @@ type ModulePagesPagination struct {
 	Limit          int
 }
 
+type ContainerStatus string
+
+const (
+	ContainerRunning    ContainerStatus = "running"
+	ContainerExited     ContainerStatus = "exited"
+	ContainerPaused     ContainerStatus = "paused"
+	ContainerCreated    ContainerStatus = "created"
+	ContainerRestarting ContainerStatus = "restarting"
+	ContainerDead       ContainerStatus = "dead"
+	ContainerUnknown    ContainerStatus = "unknown"
+)
+
+type ModuleContainer struct {
+	Name   string          `json:"name"`
+	Status ContainerStatus `json:"status"`
+	Reason string          `json:"reason"`
+	Since  string          `json:"since"`
+}
+
 func GenerateModuleOrderBy(order string) (dest []database.ModuleOrder) {
 	if order == "" {
 		return nil

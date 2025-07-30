@@ -39,3 +39,6 @@ type ModulePagesGetResponse struct {
 	ModulePages []api.ModulePage `json:"pages"`
 	NextPage    string           `json:"next_page_token" example:"BAD87as"`
 }
+
+type ModuleContainersGetResponse struct {
+}
