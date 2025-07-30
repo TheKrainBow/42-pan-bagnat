@@ -1,16 +1,21 @@
 .module-detail-container {
-  padding: 24px;
+  padding: 12px;
   background-color: var(--background);
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 12px;
   font-size: 15px;
   line-height: 1.6;
-  overflow: auto;
+  overflow: hidden;
 }
 
 .module-header {
+  background-color: var(--light-background);
+  border: 1px solid var(--border);
+  padding: 10px;
+  padding-left: 24px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   gap: 16px;
@@ -19,11 +24,13 @@
 .module-running-section {
   background-color: var(--light-background);
   border: 1px solid var(--border);
-  padding: 16px;
   border-radius: 8px;
   display: flex;
   flex-direction: column;
   gap: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .module-running-section .tabs {
@@ -42,10 +49,17 @@
 .tabs {
   display: flex;
   gap: 12px;
+  padding-left: 12px;
+  padding-top: 12px;
 }
 
 .tab-content {
   background-color: var(--background);
   border-radius: 6px;
   padding: 12px;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }

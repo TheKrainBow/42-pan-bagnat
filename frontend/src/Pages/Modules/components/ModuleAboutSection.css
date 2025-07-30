@@ -2,10 +2,6 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  background-color: var(--light-background);
-  padding: 16px;
-  border-radius: 8px;
   gap: 24px;
   flex-wrap: wrap;
-  border: 1px solid var(--border);
 }

@@ -1,0 +1,25 @@
+
+.docker-tabs {
+  display: flex;
+  gap: 12px;
+}
+
+.docker-tab-content {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background-color: var(--background);
+  border-radius: 6px;
+  padding-top: 12px;
+  overflow: hidden;
+}
+
+.module-docker-section {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}

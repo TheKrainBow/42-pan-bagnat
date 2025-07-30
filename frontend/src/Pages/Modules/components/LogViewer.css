@@ -1,24 +1,19 @@
 .log-box {
+  flex-grow: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: auto;
+
   background: #1e1e1e;
   color: #ddd;
-
-  /* fill the available space but never grow beyond it */
-  flex: 1 1 auto;         
-  width: 100%;            
-  max-width: 100%;        
-  min-width: 0;           
-
-  max-height: 400px;        
-
-  /* allow vertical *and* horizontal scrollbars */
-  overflow-y: auto;
-  overflow-x: auto;        
-
+  width: 100%;
   font-family: monospace;
   font-size: 14px;
   padding: 8px;
   border-radius: 4px;
-  box-sizing: border-box;   /* include padding in width calculations */
+  box-sizing: border-box;
+  border: 1px solid #333;
   scrollbar-width: thin;
   scrollbar-color: #e06c75 #2e2e2e;
 }
@@ -27,6 +22,7 @@
   width: 8px;
   height: 8px;             /* if you ever need horizontal too */
 }
+
 .log-box::-webkit-scrollbar-track {
   background: #2e2e2e;
   border-radius: 4px;
