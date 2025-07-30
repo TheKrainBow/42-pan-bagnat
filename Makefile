@@ -2,7 +2,7 @@
 #                                       CONFIG                                          #
 #########################################################################################
 DOCKER_COMPOSE = docker compose
-DATABASE_URL = postgres://admin:pw_admin@heinz.42nice.fr/panbagnat?sslmode=disable
+DATABASE_URL = postgres://admin:pw_admin@localhost/panbagnat?sslmode=disable
 
 #########################################################################################
 #                                                                                       #
@@ -66,6 +66,12 @@ up-dev:																					## Docker | Up latest built images for all container
 	$(DOCKER_COMPOSE) up -d
 
 down:																					## Docker | Down docker images. (Doesn't delete images)
+	@for dir in repos/*; do \
+		if [ -d $$dir ] && [ -f $$dir/docker-compose.yml ]; then \
+			echo "==> Stopping containers in $$dir"; \
+			(cd $$dir && docker compose down); \
+		fi \
+	done
 	$(DOCKER_COMPOSE) down
 
 prune:																					## Docker | Delete created images
