@@ -1,11 +1,13 @@
 package core
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 )
 
 func InitModuleForDocker(module Module) error {
@@ -106,6 +108,103 @@ func DeployModule(module Module) error {
 	return nil
 }
 
+func GetModuleContainers(module Module) ([]ModuleContainer, error) {
+	project := module.Slug
+
+	cmd := exec.Command("docker", "ps", "-a",
+		"--filter", fmt.Sprintf("label=com.docker.compose.project=%s", project),
+		"--format", "{{.Names}}|{{.Status}}",
+	)
+
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("docker ps failed: %w", err)
+	}
+
+	lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
+	var containers []ModuleContainer
+
+	for _, line := range lines {
+		parts := strings.SplitN(line, "|", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		fullName := parts[0]
+		rawStatus := parts[1]
+
+		// Simplify container name
+		name := strings.TrimPrefix(fullName, project+"-")
+		name = strings.TrimSuffix(name, "-1")
+
+		// Parse status into enum
+		var status ContainerStatus
+		var reason, since string
+		lowered := strings.ToLower(rawStatus)
+
+		switch {
+		case strings.HasPrefix(lowered, "up"):
+			status = ContainerRunning
+			reason = "Up"
+			since = strings.TrimPrefix(rawStatus, "Up ")
+		case strings.HasPrefix(lowered, "exited"):
+			status = ContainerExited
+			parts := strings.SplitN(rawStatus, " ", 2)
+			reason = parts[0]
+			if len(parts) > 1 {
+				since = parts[1]
+			}
+		case strings.HasPrefix(lowered, "paused"):
+			status = ContainerPaused
+			reason = "Paused"
+			since = strings.TrimPrefix(rawStatus, "Paused ")
+		case strings.HasPrefix(lowered, "created"):
+			status = ContainerCreated
+			reason = "Created"
+			since = strings.TrimPrefix(rawStatus, "Created ")
+		case strings.HasPrefix(lowered, "restarting"):
+			status = ContainerRestarting
+			reason = "Restarting"
+			since = strings.TrimPrefix(rawStatus, "Restarting ")
+		case strings.HasPrefix(lowered, "dead"):
+			status = ContainerDead
+			reason = "Dead"
+			since = strings.TrimPrefix(rawStatus, "Dead ")
+		default:
+			status = ContainerUnknown
+			reason = rawStatus
+		}
+
+		containers = append(containers, ModuleContainer{
+			Name:   name,
+			Status: status,
+			Reason: reason,
+			Since:  since,
+		})
+	}
+
+	return containers, nil
+}
+
+func GetContainerLogs(module Module, containerName string) ([]string, error) {
+	fullName := fmt.Sprintf("%s-%s-1", module.Slug, containerName)
+
+	cmd := exec.Command("docker", "logs", "--tail=1000", fullName)
+
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stdout
+
+	if err := cmd.Run(); err != nil {
+		return nil, fmt.Errorf("docker logs failed: %w", err)
+	}
+
+	lines := strings.Split(strings.TrimRight(stdout.String(), "\n"), "\n")
+	return lines, nil
+}
+
 func CleanupModuleDockerResources(module Module) error {
 	baseRepoPath := os.Getenv("REPO_BASE_PATH")
 	if baseRepoPath == "" {
@@ -128,5 +227,34 @@ func CleanupModuleDockerResources(module Module) error {
 
 	LogModule(module.ID, "INFO", "docker cleanup completed", nil, nil)
 	SetModuleStatus(module.ID, Disabled, false)
+	return nil
+}
+
+func StartContainer(module Module, containerName string) error {
+	return runDockerCommand(module, containerName, "start")
+}
+
+func StopContainer(module Module, containerName string) error {
+	return runDockerCommand(module, containerName, "stop")
+}
+
+func RestartContainer(module Module, containerName string) error {
+	return runDockerCommand(module, containerName, "restart")
+}
+
+func DeleteContainer(module Module, containerName string) error {
+	return runDockerCommand(module, containerName, "rm")
+}
+
+func runDockerCommand(module Module, containerName, action string) error {
+	fullName := fmt.Sprintf("%s-%s-1", module.Slug, containerName)
+	cmd := exec.Command("docker", action, fullName)
+
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("docker %s failed: %v – %s", action, err, stderr.String())
+	}
 	return nil
 }

@@ -300,3 +300,80 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 	core.LogModule(moduleID, "INFO", fmt.Sprintf("Created page at '/module-page/%s' from '%s'", dest.Slug, dest.URL), nil, nil)
 	fmt.Fprint(w, string(destJSON))
 }
+
+func StartModuleContainer(w http.ResponseWriter, r *http.Request) {
+	moduleID := chi.URLParam(r, "moduleID")
+	containerName := chi.URLParam(r, "containerName")
+
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		http.Error(w, "Module not found", http.StatusNotFound)
+		return
+	}
+
+	if err := core.StartContainer(module, containerName); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to start container: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func StopModuleContainer(w http.ResponseWriter, r *http.Request) {
+	moduleID := chi.URLParam(r, "moduleID")
+	containerName := chi.URLParam(r, "containerName")
+
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		http.Error(w, "Module not found", http.StatusNotFound)
+		return
+	}
+
+	if err := core.StopContainer(module, containerName); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to stop container: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func RestartModuleContainer(w http.ResponseWriter, r *http.Request) {
+	moduleID := chi.URLParam(r, "moduleID")
+	containerName := chi.URLParam(r, "containerName")
+
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		http.Error(w, "Module not found", http.StatusNotFound)
+		return
+	}
+
+	if err := core.RestartContainer(module, containerName); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to restart container: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func DeleteModuleContainer(w http.ResponseWriter, r *http.Request) {
+	moduleID := chi.URLParam(r, "moduleID")
+	containerName := chi.URLParam(r, "containerName")
+
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		http.Error(w, "Module not found", http.StatusNotFound)
+		return
+	}
+
+	if err := core.StopContainer(module, containerName); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to stop container: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if err := core.DeleteContainer(module, containerName); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to delete container: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
