@@ -25,11 +25,7 @@ const ModuleDetails = () => {
   const [activeSubTab, setActiveSubTab] = useState(subtab);
   const fetchedRef = useRef(false);
 
-  const btnRef = useRef();
-
-  const triggerAttention = () => {
-    btnRef.current?.animateHighlight();
-  };
+  const retryButtonRef = useRef();
 
   useEffect(() => {
     // Register live update handler
@@ -61,10 +57,6 @@ const ModuleDetails = () => {
   const handleUninstall = () => {
     fetch(`/api/v1/modules/${moduleId}`, { method: 'DELETE' })
       .catch(err => console.error('Failed to uninstall:', err));
-  };
-
-  const handleAfterRetry = () => {
-    fetchModule();            // re‐fetch module info
   };
 
   useEffect(() => {
@@ -103,84 +95,86 @@ const ModuleDetails = () => {
   if (!module) return <div className="error">Module not found.</div>;
 
   return (
-    <div className="module-detail-container">
-      <Link to="/admin/modules" className="custom-btn link">
-        <img src="/icons/arrow.png" alt="Back" style={{ width: "16px", marginRight: "8px", marginLeft: "-5px", verticalAlign: "middle" }} />
-        Back to Modules
-      </Link>
+      <div className="module-detail-container">
+        <Link to="/admin/modules" className="custom-btn link">
+          <img src="/icons/arrow.png" alt="Back" style={{ width: "16px", marginRight: "8px", marginLeft: "-5px", verticalAlign: "middle" }} />
+          Back to Modules
+        </Link>
 
-      <div className="module-header">
-        <AppIcon app={{ icon_url: module.icon_url, name: module.name }} fallback="/icons/modules.png" />
-        <h2>{module.name}</h2>
-        <ModuleStatusBadge status={module.status} />
-      </div>
-
-      {/* Version Info */}
-      {showWarning && (
-        <ModuleWarningSection
-          sshKey={module.ssh_public_key}
-          moduleID={module.id}
-          onRetrySuccess={() => {
-            setShowWarning(false);
-            fetchModule();
-          }}
-          onRetry={handleAfterRetry}
-        />
-      )}
-
-      {/* Running Info */}
-      <div className="module-running-section">
-        <div className="tabs">
-          <Button
-            label="Logs"
-            className={`custom-btn ${activeTab === 'logs' ? 'blue' : 'gray'}`}
-            onClick={() => {
-              setActiveTab('logs'); // or 'docker', 'settings'
-              setSearchParams({ tab: 'logs' }); // or the corresponding value
-              triggerAttention();
-            }}
-          />
-          <Button
-            label="Docker"
-            color={`${activeTab === 'docker' ? 'blue' : 'gray'}`}
-            onClick={() => {
-              setActiveTab('docker'); // or 'docker', 'settings'
-              setSearchParams({ tab: 'docker' }); // or the corresponding value
-            }}
-            disabled={false}
-            disabledMessage={"You must resolve git issues first"}
-          />
-          <Button
-            ref={btnRef}
-            label="Settings"
-            color={`${activeTab === 'settings' ? 'blue' : 'gray'}`}
-            onClick={() => {
-              setActiveTab('settings'); // or 'docker', 'settings'
-              setSearchParams({ tab: 'settings' }); // or the corresponding value
-            }}
-          />
+        <div className="module-header">
+          <AppIcon app={{ icon_url: module.icon_url, name: module.name }} fallback="/icons/modules.png" />
+          <h2>{module.name}</h2>
+          <ModuleStatusBadge status={module.status} />
         </div>
 
-        <div className="tab-content">
-          {activeTab === 'logs' && <LogViewer logType="module" moduleId={module.id}/>}
-          {activeTab === 'settings' && <ModuleSettings
-              module={module}
-              statusUpdating={statusUpdating}
-              onToggleStatus={toggleModuleStatus}
-              onUninstall={handleUninstall}
-            />}
-          {activeTab === 'docker' &&
-            <ModuleDockerSection
-              moduleId={module.id}
-              dockerTab={activeSubTab}
-              setDockerTab={(newTab) => {
-                setActiveSubTab(newTab);
-                setSearchParams({ tab: 'docker', subtab: newTab });
+        {/* Version Info */}
+        {showWarning && (
+          <ModuleWarningSection
+            ref={retryButtonRef}
+            sshKey={module.ssh_public_key}
+            moduleID={module.id}
+            onRetrySuccess={() => {
+              setShowWarning(false);
+              fetchModule();
+            }}
+          />
+        )}
+
+        {/* Running Info */}
+        <div className="module-running-section">
+          <div className="tabs">
+            <Button
+              label="Logs"
+              className={`custom-btn ${activeTab === 'logs' ? 'blue' : 'gray'}`}
+              onClick={() => {
+                setActiveTab('logs'); // or 'docker', 'settings'
+                setSearchParams({ tab: 'logs' }); // or the corresponding value
+                triggerAttention();
               }}
-            />}
+            />
+            <Button
+              label="Docker"
+              color={`${activeTab === 'docker' ? 'blue' : 'gray'}`}
+              onClick={() => {
+                setActiveTab('docker'); // or 'docker', 'settings'
+                setSearchParams({ tab: 'docker' }); // or the corresponding value
+              }}
+              disabled={showWarning}
+              disabledMessage={"You must resolve git issues first"}
+              onClickDisabled={() => {
+                retryButtonRef.current?.callToAction();
+              }}
+            />
+            <Button
+              label="Settings"
+              color={`${activeTab === 'settings' ? 'blue' : 'gray'}`}
+              onClick={() => {
+                setActiveTab('settings'); // or 'docker', 'settings'
+                setSearchParams({ tab: 'settings' }); // or the corresponding value
+              }}
+            />
+          </div>
+
+          <div className="tab-content">
+            {activeTab === 'logs' && <LogViewer logType="module" moduleId={module.id}/>}
+            {activeTab === 'settings' && <ModuleSettings
+                module={module}
+                statusUpdating={statusUpdating}
+                onToggleStatus={toggleModuleStatus}
+                onUninstall={handleUninstall}
+              />}
+            {activeTab === 'docker' &&
+              <ModuleDockerSection
+                moduleId={module.id}
+                dockerTab={activeSubTab}
+                setDockerTab={(newTab) => {
+                  setActiveSubTab(newTab);
+                  setSearchParams({ tab: 'docker', subtab: newTab });
+                }}
+              />}
+          </div>
         </div>
       </div>
-    </div>
   );
 };
 

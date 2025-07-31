@@ -4,6 +4,7 @@
   border: 1px solid var(--red-border);
   color: var(--red-text);
   padding: 1rem;
+  overflow: visible;
   border-radius: 8px;
 }
 

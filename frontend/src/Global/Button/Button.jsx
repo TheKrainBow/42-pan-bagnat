@@ -20,24 +20,38 @@ const Button = forwardRef(({
   const isIcon = Boolean(icon);
 
   useImperativeHandle(ref, () => ({
-    animateHighlight() {
-      setAttention(true);
+    callToAction() {
       setRipple(false);
+      setAttention(false);
+      setHighlight(false);
+      setAttention(true);
       setTimeout(() => {
         setAttention(false);
         setRipple(true);
-        setTimeout(() => setRipple(false), 700); // cleanup ripple
+        setTimeout(() => {
+          setRipple(false);
+          setHighlight(true);
+          setTimeout(() => {
+            setHighlight(false);
+          }, 1500)
+        }, 700); // cleanup ripple
       }, 500); // after grow+fall is done
-    }
+    },
+    triggerShake() {
+      setShake(true);
+      setTimeout(() => setShake(false), 300);
+    },
   }));
 
   const handleClick = async (e) => {
   if (disabled) {
-    setShake(true);
-    setTimeout(() => setShake(false), 300);
     if (onClickDisabled) {
       onClickDisabled(e);
-    } else if (disabledMessage) {
+    } else {
+      setShake(true);
+      setTimeout(() => setShake(false), 300);
+    }
+    if (disabledMessage) {
       toast.error(disabledMessage);
     }
     return;
@@ -54,7 +68,7 @@ return (
   <div className="button-wrapper">
     <button
       type="button"
-      className={`custom-btn ${color} ${isIcon ? 'icon-btn' : ''} ${disabled ? 'disabled' : ''} ${shake ? 'shake' : ''} ${attention ? 'attention' : ''} ${ripple ? 'ripple' : ''}`}
+      className={`custom-btn ${color} ${isIcon ? 'icon-btn' : ''} ${disabled ? 'disabled' : ''} ${shake ? 'shake' : ''} ${highlight ? 'highlighted' : ''} ${attention ? 'attention' : ''} ${ripple ? 'ripple' : ''}`}
       onClick={handleClick}
       aria-disabled={disabled}
       tabIndex={disabled ? -1 : 0}

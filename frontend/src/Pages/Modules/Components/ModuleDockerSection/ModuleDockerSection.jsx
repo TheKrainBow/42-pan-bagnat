@@ -18,15 +18,15 @@ export default function ModuleDockerSection({ moduleId, dockerTab, setDockerTab 
           label="Containers"
           color={`${dockerTab === 'containers' ? 'blue' : 'gray'}`}
           onClick={() => setDockerTab('containers')}
-		  disabled={true}
-		  disabledMessage={"You must compose your module first"}
+          disabled={false}
+          disabledMessage={"You must compose your module first"}
         />
         <Button
           label="Pages"
           color={`${dockerTab === 'pages' ? 'blue' : 'gray'}`}
           onClick={() => setDockerTab('pages')}
-		  disabled={true}
-		  disabledMessage={"You must compose your module first"}
+          disabled={false}
+          disabledMessage={"You must compose your module first"}
         />
       </div>
 

@@ -1,11 +1,16 @@
-import { useState } from "react";
+import { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import './ModuleWarningSection.css';
+import Button from "Global/Button/Button";
 
-const ModuleWarningSection = ({ sshKey, moduleID, onRetrySuccess, onRetry }) => {
+const ModuleWarningSection = forwardRef(({ sshKey, moduleID, onRetrySuccess, onRetry }, ref) => {
   const [copied, setCopied] = useState(false);
-  const [retrying, setRetrying] = useState(false);
-  const [retrySuccess, setRetrySuccess] = useState(null);
-  const [retry, setRetry] = useState(null);
+  const retryButton = useRef();
+
+  useImperativeHandle(ref, () => ({
+    callToAction() {
+      retryButton.current?.callToAction();
+    }
+  }));
 
   const handleCopy = () => {
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -23,23 +28,17 @@ const ModuleWarningSection = ({ sshKey, moduleID, onRetrySuccess, onRetry }) => 
   };
 
   const handleRetryClone = async () => {
-    setRetrying(true);
-    setRetrySuccess(null);
     try {
       const res = await fetch(`/api/v1/modules/${moduleID}/git/clone`, {
         method: 'POST'
       });
-      setRetrySuccess(res.ok);
-      setRetry(true);
       if (res.ok && onRetrySuccess) {
         onRetrySuccess();
+      } else {
+        retryButton.current?.triggerShake();
       }
     } catch (err) {
-      setRetrySuccess(false);
-      setRetry(true);
-    } finally {
-      onRetry();
-      setRetrying(false);
+      retryButton.current?.triggerShake();
     }
   };
 
@@ -54,23 +53,24 @@ const ModuleWarningSection = ({ sshKey, moduleID, onRetrySuccess, onRetry }) => 
       <div className="public-key-wrapper">
         <pre className="public-key-display">{sshKey}</pre>
         <div className="copy-container">
-          <button className="copy-button" onClick={handleCopy}>📋 Copy</button>
+          <Button
+            label="📋 Copy"
+            color="warning"
+            onClick={() => handleCopy()}
+          />
           {copied && <div className="copy-tooltip">Copied!</div>}
         </div>
         <div className="retry-clone-container">
-          <button
-            className="copy-button"
-            onClick={handleRetryClone}
-            disabled={retrying}
-          >
-            🔁 Retry Clone
-          </button>
+          <Button
+            ref={retryButton}
+            label="🔁 Retry Clone"
+            color="warning"
+            onClick={() => handleRetryClone()}
+          />
         </div>
-        {retrySuccess === true && <div className="retry-status success">✅ Clone triggered</div>}
-        {retrySuccess === false && <div className="retry-status error">❌ Clone failed</div>}
       </div>
     </div>
   );
-};
+});
 
 export default ModuleWarningSection;
