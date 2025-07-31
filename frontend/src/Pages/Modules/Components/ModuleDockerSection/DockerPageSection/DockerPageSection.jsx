@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import Button from 'Global/Button';
-import './ModulePageSettings.css';
+import Button from 'Global/Button/Button';
+import './DockerPageSection.css';
 
-export default function ModulePageSettings({ moduleId }) {
+export default function ModulePageSection({ moduleId }) {
   const [pages, setPages] = useState([]);            // holds both existing & new rows
   const [edits, setEdits] = useState({});            // keyed by row.id
   const [isSaving, setIsSaving] = useState(false);

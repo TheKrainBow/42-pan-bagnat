@@ -6,10 +6,10 @@ import './App.css';
 import Users from './Pages/Users/Users';
 import Roles from './Pages/Roles/Roles';
 import Modules from './Pages/Modules/Modules';
-import ModuleDetails from './Pages/Modules/ModuleDetails';
-import ModulePage from './Pages/Modules/ModulePage';
-import Sidebar from 'Global/Sidebar';
-import { socketService } from 'Global/SocketService';
+import ModuleDetails from './Pages/Modules/ModuleDetails/ModuleDetails';
+import ModulePage from './Pages/Modules/ModulePage/ModulePage';
+import Sidebar from 'Global/Sidebar/Sidebar';
+import { socketService } from 'Global/SocketService/SocketService';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "./Notifications.css"

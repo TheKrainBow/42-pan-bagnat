@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'
 import CodeMirror from '@uiw/react-codemirror'
 import { yaml } from '@codemirror/lang-yaml'
 import './DockerComposeSection.css' // Keep CSS if styles are shared
-import Button from 'Global/Button'
+import Button from 'Global/Button/Button'
 
 export default function DockerComposeSection({ moduleId }) {
   const [configYaml, setConfigYaml]     = useState('')
