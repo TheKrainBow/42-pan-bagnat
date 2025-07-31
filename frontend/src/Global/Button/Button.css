@@ -32,6 +32,7 @@
 /* GRAY */
 .custom-btn.gray {
   background-color: var(--button-gray);
+  --ripple-border-color: var(--button-gray-active);
 }
 .custom-btn.gray:hover {
   background-color: var(--button-gray-hover);
@@ -43,6 +44,7 @@
 /* BLUE */
 .custom-btn.blue {
   background-color: var(--button-blue);
+  --ripple-border-color: var(--button-blue-active);
 }
 .custom-btn.blue:hover {
   background-color: var(--button-blue-hover);
@@ -55,6 +57,7 @@
 /* RED */
 .custom-btn.red {
   background-color: var(--button-red);
+  --ripple-border-color: var(--button-red-active);
 }
 .custom-btn.red:hover {
   background-color: var(--button-red-hover);
@@ -67,6 +70,7 @@
 /* GREEN */
 .custom-btn.green {
   background-color: var(--button-green);
+  --ripple-border-color: var(--button-green-active);
 }
 .custom-btn.green:hover {
   background-color: var(--button-green-hover);
@@ -79,6 +83,7 @@
 /* YELLOW */
 .custom-btn.yellow {
   background-color: var(--button-yellow);
+  --ripple-border-color: var(--button-yellow-active);
   color: black;
 }
 .custom-btn.yellow:hover {
@@ -91,6 +96,7 @@
 /* PURPLE */
 .custom-btn.purple {
   background-color: var(--button-purple);
+  --ripple-border-color: var(--button-purple-active);
 }
 .custom-btn.purple:hover {
   background-color: var(--button-purple-hover);
@@ -102,6 +108,7 @@
 /* BLACK */
 .custom-btn.black {
   background-color: var(--button-black);
+  --ripple-border-color: var(--button-black-active);
 }
 .custom-btn.black:hover {
   background-color: var(--button-black-hover);
@@ -113,6 +120,7 @@
 /* DARK GRAY */
 .custom-btn.dark-gray {
   background-color: var(--button-dark-gray);
+  --ripple-border-color: var(--button-dark-gray-active);
 }
 .custom-btn.dark-gray:hover {
   background-color: var(--button-dark-gray-hover);
@@ -121,9 +129,27 @@
   background-color: var(--button-dark-gray-active);
 }
 
+
+.custom-btn.warning {
+  background-color: var(--light-red-background);
+  border: 1px solid var(--red-border);
+  --ripple-border-color: var(--red-border);
+  color: var(--red-text);
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background-color 0.2s;
+}
+
+.custom-btn.warning:hover {
+  background-color: var(--light-red-background-hover);
+}
+
 /* LINK */
 .custom-btn.link {
   background-color: var(--button-link);
+  --ripple-border-color: var(--button-link-active);
   text-decoration: none;
 }
 .custom-btn.link:hover {
@@ -140,6 +166,7 @@
   border-radius: 0.5rem;
   border: 1px solid var(--button-icon-border);
   background-color: var(--button-icon-bg);
+  --ripple-border-color: var(--button-icon-bg-active);
 }
 
 .btn-icon-image {
@@ -210,7 +237,6 @@
   }
 }
 
-
 .button-content {
   display: inline-block;
   transition: transform 0.3s ease;
@@ -237,7 +263,7 @@
   left: -5px;
   right: -5px;
   bottom: -5px;
-  border: 2px solid rgba(0, 150, 255, 0.5);
+  border: 2px solid var(--ripple-border-color, rgba(0, 150, 255, 0.5));
   border-radius: 10px;
   opacity: 1;
   animation: ripple-fade 800ms ease-out forwards;
