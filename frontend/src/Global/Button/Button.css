@@ -29,6 +29,17 @@
   overflow: visible;
 }
 
+.custom-btn.square {
+  width: 42px;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  line-height: 1;
+  font-size: 20px;
+}
+
 /* GRAY */
 .custom-btn.gray {
   background-color: var(--button-gray);
@@ -130,22 +141,6 @@
 }
 
 
-.custom-btn.warning {
-  background-color: var(--light-red-background);
-  border: 1px solid var(--red-border);
-  --ripple-border-color: var(--red-border);
-  color: var(--red-text);
-  padding: 0.4rem 0.75rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85rem;
-  transition: background-color 0.2s;
-}
-
-.custom-btn.warning:hover {
-  background-color: var(--light-red-background-hover);
-}
-
 /* LINK */
 .custom-btn.link {
   background-color: var(--button-link);
@@ -173,7 +168,6 @@
   width: 1.3rem;
   height: 1.3rem;
   object-fit: contain;
-  filter: invert(60%);
 }
 
 .custom-btn.icon-btn:hover {
@@ -281,4 +275,19 @@
     transform: scale(1.8);
     opacity: 0;
   }
+}
+
+.custom-btn.warning {
+  background-color: var(--light-red-background);
+  border: 1px solid var(--red-border);
+  --ripple-border-color: var(--red-border);
+  color: var(--red-text);
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.custom-btn.warning:hover {
+  background-color: var(--light-red-background-hover);
 }
