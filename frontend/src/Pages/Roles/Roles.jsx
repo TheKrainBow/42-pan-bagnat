@@ -6,10 +6,10 @@ import {
   flexRender,
 } from '@tanstack/react-table';
 import './Roles.css';
-import AppIcon from 'Global/AppIcon';
-import Header from 'Global/Header';
-import RoleBadge from 'Global/RoleBadge';
-import ArrayHeader from 'Global/ArrayHeader';
+import AppIcon from 'Global/AppIcon/AppIcon';
+import Header from 'Global/Header/Header';
+import RoleBadge from 'Global/RoleBadge/RoleBadge';
+import ArrayHeader from 'Global/ArrayHeader/ArrayHeader';
 
 const Roles = () => {
   const [filterQuery, setFilterQuery] = useState('');

@@ -1,7 +1,7 @@
 import React from 'react';
-import RoleBadge from 'Global/RoleBadge';
-import Button from 'Global/Button';
-import ModuleAboutSection from './ModuleAboutSection';
+import RoleBadge from 'Global/RoleBadge/RoleBadge';
+import Button from 'Global/Button/Button';
+import ModuleAboutSection from '../ModuleAboutSection/ModuleAboutSection';
 import './ModuleSettings.css';
 
 const ModuleSettings = ({

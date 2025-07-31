@@ -6,7 +6,7 @@ import React, {
   useImperativeHandle,
   forwardRef,
 } from 'react';
-import { socketService } from 'Global/SocketService';
+import { socketService } from 'Global/SocketService/SocketService';
 import './LogViewer.css';
 
 const LogViewer = forwardRef(({ logType = 'module', moduleId = "", containerName = "" }, ref) => {

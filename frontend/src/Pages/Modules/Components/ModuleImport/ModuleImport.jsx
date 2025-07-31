@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import './ModuleImport.css';
-import Button from 'Global/Button';
-import Field from 'Global/Field';
+import Button from 'Global/Button/Button';
+import Field from 'Global/Field/Field';
 import { useNavigate } from 'react-router-dom';
 
 const ModuleImport = ({ onClose }) => {

@@ -1,3 +1,10 @@
+.button-wrapper {
+  position: relative;
+  display: inline-block;
+  z-index: 0;
+  overflow: visible; /* allow ::after ripple to escape */
+}
+
 /* BASE BUTTON STYLES */
 .custom-btn {
   padding: 8px 16px;
@@ -10,6 +17,16 @@
   display: inline-block;
   transition: background-color 0.1s ease;
   color: white;
+  position: relative;
+
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform;
+
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow: visible;
 }
 
 /* GRAY */
@@ -137,8 +154,8 @@
 }
 
 .custom-btn.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
 }
 
 .custom-btn.disabled:hover {
@@ -160,4 +177,82 @@
   50%  { transform: translateX(3px); }
   75%  { transform: translateX(-3px); }
   100% { transform: translateX(0); }
+}
+
+.custom-btn.highlighted {
+  position: relative;
+  overflow: hidden;
+}
+
+.custom-btn.highlighted::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -75%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    120deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  transform: skewX(-20deg);
+  animation: shine 1.5s ease-in-out;
+}
+
+@keyframes shine {
+  0% {
+    left: -75%;
+  }
+  100% {
+    left: 125%;
+  }
+}
+
+
+.button-content {
+  display: inline-block;
+  transition: transform 0.3s ease;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+.custom-btn.attention {
+  animation: grow-hold-fall 500ms ease-out forwards;
+  position: relative;
+}
+
+@keyframes grow-hold-fall {
+  0%   { transform: scale(1); }
+  60%  { transform: scale(1.15); } /* slow up over 300ms */
+  80%  { transform: scale(1.15); } /* hold at peak 100ms */
+  100% { transform: scale(1); }    /* quick fall 100ms */
+}
+
+.custom-btn.ripple::after {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  right: -5px;
+  bottom: -5px;
+  border: 2px solid rgba(0, 150, 255, 0.5);
+  border-radius: 10px;
+  opacity: 1;
+  animation: ripple-fade 800ms ease-out forwards;
+  pointer-events: none;
+
+  z-index: 1;
+}
+
+@keyframes ripple-fade {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
 }

@@ -1,24 +1,35 @@
 // ModuleDetails.jsx
-import React, { useContext, useEffect, useState, useRef } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom';
 import './ModuleDetails.css';
-import AppIcon from 'Global/AppIcon';
-import Button from 'Global/Button';
-import LogViewer from 'Pages/Modules/components/LogViewer';
-import ModuleSettings from 'Modules/components/ModuleSettings';
-import ModuleWarningSection from 'Modules/components/ModuleWarningSection';
-import ModuleStatusBadge from 'Modules/components/ModuleStatusBadge';
-import ModuleDockerSection from './components/Docker/ModuleDockerSection';
-import { setModuleStatusUpdater } from 'Global/SocketService';
+import AppIcon from 'Global/AppIcon/AppIcon';
+import Button from 'Global/Button/Button';
+import LogViewer from 'Global/LogViewer/LogViewer';
+import ModuleSettings from 'Pages/Modules/Components/ModuleSettings/ModuleSettings';
+import ModuleWarningSection from 'Pages/Modules/Components/ModuleWarningSection/ModuleWarningSection';
+import ModuleStatusBadge from 'Pages/Modules/Components/ModuleStatusBadge/ModuleStatusBadge';
+import ModuleDockerSection from '../Components/ModuleDockerSection/ModuleDockerSection';
+import { setModuleStatusUpdater } from 'Global/SocketService/SocketService';
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();
   const [module, setModule] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statusUpdating, setStatusUpdating] = useState(false);
-  const [activeTab, setActiveTab] = useState('logs');
   const [showWarning, setShowWarning] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') || 'logs';
+  const subtab = searchParams.get('subtab') || 'compose';
+
+  const [activeTab, setActiveTab] = useState(tab);
+  const [activeSubTab, setActiveSubTab] = useState(subtab);
   const fetchedRef = useRef(false);
+
+  const btnRef = useRef();
+
+  const triggerAttention = () => {
+    btnRef.current?.animateHighlight();
+  };
 
   useEffect(() => {
     // Register live update handler
@@ -82,6 +93,12 @@ const ModuleDetails = () => {
     }
   }, [module]);
 
+  // useEffect(() => {
+  //   if (!module) {
+  //     useNavigate('/admin/modules');
+  //   }
+  // }, [module]);
+
   if (loading) return <div className="loading">Loading...</div>;
   if (!module) return <div className="error">Module not found.</div>;
 
@@ -115,19 +132,32 @@ const ModuleDetails = () => {
       <div className="module-running-section">
         <div className="tabs">
           <Button
-            label="Docker"
-            className={`custom-btn ${activeTab === 'docker' ? 'blue' : 'gray'}`}
-            onClick={() => setActiveTab('docker')}
-          />
-          <Button
             label="Logs"
             className={`custom-btn ${activeTab === 'logs' ? 'blue' : 'gray'}`}
-            onClick={() => setActiveTab('logs')}
+            onClick={() => {
+              setActiveTab('logs'); // or 'docker', 'settings'
+              setSearchParams({ tab: 'logs' }); // or the corresponding value
+              triggerAttention();
+            }}
           />
           <Button
+            label="Docker"
+            color={`${activeTab === 'docker' ? 'blue' : 'gray'}`}
+            onClick={() => {
+              setActiveTab('docker'); // or 'docker', 'settings'
+              setSearchParams({ tab: 'docker' }); // or the corresponding value
+            }}
+            disabled={false}
+            disabledMessage={"You must resolve git issues first"}
+          />
+          <Button
+            ref={btnRef}
             label="Settings"
-            className={`custom-btn ${activeTab === 'settings' ? 'blue' : 'gray'}`}
-            onClick={() => setActiveTab('settings')}
+            color={`${activeTab === 'settings' ? 'blue' : 'gray'}`}
+            onClick={() => {
+              setActiveTab('settings'); // or 'docker', 'settings'
+              setSearchParams({ tab: 'settings' }); // or the corresponding value
+            }}
           />
         </div>
 
@@ -139,7 +169,15 @@ const ModuleDetails = () => {
               onToggleStatus={toggleModuleStatus}
               onUninstall={handleUninstall}
             />}
-          {activeTab === 'docker' && <ModuleDockerSection moduleId={module.id}/>}
+          {activeTab === 'docker' &&
+            <ModuleDockerSection
+              moduleId={module.id}
+              dockerTab={activeSubTab}
+              setDockerTab={(newTab) => {
+                setActiveSubTab(newTab);
+                setSearchParams({ tab: 'docker', subtab: newTab });
+              }}
+            />}
         </div>
       </div>
     </div>
