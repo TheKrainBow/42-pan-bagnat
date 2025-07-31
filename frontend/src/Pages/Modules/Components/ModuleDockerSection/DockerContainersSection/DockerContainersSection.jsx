@@ -63,13 +63,13 @@ export default function DockerContainers({ moduleId }) {
                 <td>
                   <div className="action-buttons">
                     {c.status === 'exited' && (
-                      <Button label="Start" onClick={(e) => { e.stopPropagation(); handleAction(c.name, 'start'); }} />
+                      <Button icon="/icons/button-play.png" color="warning" onClick={(e) => { e.stopPropagation(); handleAction(c.name, 'start'); }} />
                     )}
                     {c.status === 'running' && (
-                      <Button label="Stop" onClick={(e) => { e.stopPropagation(); handleAction(c.name, 'stop'); }} />
+                      <Button icon="/icons/button-stop.png" color="warning" onClick={(e) => { e.stopPropagation(); handleAction(c.name, 'stop'); }} />
                     )}
-                    <Button label="Restart" onClick={(e) => { e.stopPropagation(); handleAction(c.name, 'restart'); }} />
-                    <Button label="Delete" danger onClick={(e) => { e.stopPropagation(); handleAction(c.name, 'delete'); }} />
+                    <Button icon="/icons/button-refresh.png" color="warning" onClick={(e) => { e.stopPropagation(); handleAction(c.name, 'restart'); }} />
+                    <Button icon="/icons/button-delete.png" color="warning" onClick={(e) => { e.stopPropagation(); handleAction(c.name, 'delete'); }} />
                   </div>
                 </td>
               </tr>
