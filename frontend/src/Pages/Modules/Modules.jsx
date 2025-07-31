@@ -1,12 +1,12 @@
 // Modules.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Modules.css';
-import AppIcon from 'Global/AppIcon';
-import Header from 'Global/Header';
-import ModuleImport from 'Modules/components/ModuleImport';
-import ModuleStatusBadge from 'Modules/components/ModuleStatusBadge';
+import AppIcon from 'Global/AppIcon/AppIcon';
+import Header from 'Global/Header/Header';
+import ModuleImport from 'Pages/Modules/Components/ModuleImport/ModuleImport';
+import ModuleStatusBadge from 'Pages/Modules/Components/ModuleStatusBadge/ModuleStatusBadge';
 import { Link } from 'react-router-dom';
-import { setModuleStatusUpdater } from 'Global/SocketService';
+import { setModuleStatusUpdater } from 'Global/SocketService/SocketService';
 
 const Modules = () => {
   const [modules, setModules] = useState([]);

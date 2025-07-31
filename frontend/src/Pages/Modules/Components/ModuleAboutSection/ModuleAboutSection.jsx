@@ -1,4 +1,4 @@
-import Link from 'Global/Link';
+import Link from 'Global/Link/Link';
 import './ModuleAboutSection.css';
 
 const ModuleAboutSection = ({ module }) => {

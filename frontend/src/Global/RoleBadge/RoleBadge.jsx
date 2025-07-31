@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { getReadableStyles } from '../utils/ColorUtils';
+import { getReadableStyles } from '../../utils/ColorUtils';
 import './RoleBadge.css';
 
 const RoleBadge = ({ hexColor, children }) => {
