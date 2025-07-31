@@ -10,6 +10,7 @@ import ModuleWarningSection from 'Pages/Modules/Components/ModuleWarningSection/
 import ModuleStatusBadge from 'Pages/Modules/Components/ModuleStatusBadge/ModuleStatusBadge';
 import ModuleDockerSection from '../Components/ModuleDockerSection/ModuleDockerSection';
 import { setModuleStatusUpdater } from 'Global/SocketService/SocketService';
+import ModuleUninstallModal from 'Pages/Modules/Components/ModuleUninstallModal/ModuleUninstallModal';
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();
@@ -18,6 +19,8 @@ const ModuleDetails = () => {
   const [statusUpdating, setStatusUpdating] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+  const [showConfirmUninstall, setShowConfirmUninstall] = useState(false);
+
   const tab = searchParams.get('tab') || 'logs';
   const subtab = searchParams.get('subtab') || 'compose';
 
@@ -55,6 +58,8 @@ const ModuleDetails = () => {
   };
 
   const handleUninstall = () => {
+    setShowConfirmUninstall(false);
+    setActiveTab("logs")
     fetch(`/api/v1/modules/${moduleId}`, { method: 'DELETE' })
       .catch(err => console.error('Failed to uninstall:', err));
   };
@@ -161,7 +166,7 @@ const ModuleDetails = () => {
                 module={module}
                 statusUpdating={statusUpdating}
                 onToggleStatus={toggleModuleStatus}
-                onUninstall={handleUninstall}
+                onUninstall={() => setShowConfirmUninstall(true)}
               />}
             {activeTab === 'docker' &&
               <ModuleDockerSection
@@ -172,6 +177,12 @@ const ModuleDetails = () => {
                   setSearchParams({ tab: 'docker', subtab: newTab });
                 }}
               />}
+              {showConfirmUninstall && (
+                <ModuleUninstallModal
+                  onConfirm={handleUninstall}
+                  onCancel={() => setShowConfirmUninstall(false)}
+                />
+              )}
           </div>
         </div>
       </div>
