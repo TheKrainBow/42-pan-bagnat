@@ -29,7 +29,7 @@ const ModuleSettings = ({
           disabled={module.status === 'waiting_for_action'}
         />
         <Button
-          label="Uninstall"
+          label="🗑️ Delete Module"
           color="red"
           onClick={onUninstall}
         />
