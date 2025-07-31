@@ -18,6 +18,15 @@ const Button = forwardRef(({
   const [attention, setAttention] = useState(false);
   const [ripple, setRipple] = useState(false);
   const isIcon = Boolean(icon);
+  const isSquare = isSingleEmoji(label);
+
+  function isSingleEmoji(str) {
+    if (typeof str !== 'string') return false;
+    const trimmed = str.trim();
+    const segmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+    const graphemes = [...segmenter.segment(trimmed)];
+    return graphemes.length === 1 && /\p{Extended_Pictographic}/u.test(graphemes[0].segment);
+  }
 
   useImperativeHandle(ref, () => ({
     callToAction() {
@@ -68,7 +77,7 @@ return (
   <div className="button-wrapper">
     <button
       type="button"
-      className={`custom-btn ${color} ${isIcon ? 'icon-btn' : ''} ${disabled ? 'disabled' : ''} ${shake ? 'shake' : ''} ${highlight ? 'highlighted' : ''} ${attention ? 'attention' : ''} ${ripple ? 'ripple' : ''}`}
+      className={`custom-btn ${color} ${isIcon ? 'icon-btn' : ''} ${isSquare ? 'square' : ''}${disabled ? 'disabled' : ''} ${shake ? 'shake' : ''} ${highlight ? 'highlighted' : ''} ${attention ? 'attention' : ''} ${ripple ? 'ripple' : ''}`}
       onClick={handleClick}
       aria-disabled={disabled}
       tabIndex={disabled ? -1 : 0}
