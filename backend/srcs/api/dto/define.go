@@ -19,7 +19,7 @@ type Role struct {
 // @Description API User model
 type User struct {
 	ID        string    `json:"id" example:"user_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
-	FtID      string    `json:"ft_id" example:"1492"`
+	FtID      int       `json:"ft_id" example:"1492"`
 	FtLogin   string    `json:"ft_login" example:"heinz"`
 	FtIsStaff bool      `json:"ft_is_staff" example:"true"`
 	PhotoURL  string    `json:"ft_photo" example:"https://intra.42.fr/some-login/some-id"`
@@ -70,10 +70,10 @@ type ModuleContainer struct {
 }
 
 const (
-	Enabled          ModuleStatus = "enabled"
-	Disabled         ModuleStatus = "disabled"
-	Downloading      ModuleStatus = "downloading"
-	WaitingForAction ModuleStatus = "waiting_for_action"
+	Cloning       ModuleStatus = "cloning"
+	WaitingDeploy ModuleStatus = "waiting_for_deploy"
+	Disabled      ModuleStatus = "disabled"
+	Enabled       ModuleStatus = "enabled"
 )
 
 type ModuleStatus string

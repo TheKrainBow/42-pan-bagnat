@@ -7,6 +7,7 @@ import ModuleImport from 'Pages/Modules/Components/ModuleImport/ModuleImport';
 import ModuleStatusBadge from 'Pages/Modules/Components/ModuleStatusBadge/ModuleStatusBadge';
 import { Link } from 'react-router-dom';
 import { setModuleStatusUpdater } from 'Global/SocketService/SocketService';
+import { fetchWithAuth } from 'Global/utils/Auth';
 
 const Modules = () => {
   const [modules, setModules] = useState([]);
@@ -49,7 +50,7 @@ const Modules = () => {
         params.set('limit', 20);
       }
 
-      const res = await fetch(`/api/v1/modules?${params.toString()}`);
+      const res = await fetchWithAuth(`/api/v1/modules?${params.toString()}`);
       const data = await res.json();
 
       setModules(prev =>
@@ -109,7 +110,7 @@ const Modules = () => {
 
   const handleSubmit = async ({ gitUrl, sshKey }) => {
     try {
-      const response = await fetch('/api/v1/modules', {
+      const response = await fetchWithAuth('/api/v1/modules', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

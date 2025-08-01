@@ -8,11 +8,13 @@ require (
 	github.com/go-chi/cors v1.2.1
 	github.com/google/go-cmp v0.7.0
 	github.com/jmoiron/sqlx v1.4.0
+	github.com/joho/godotenv v1.5.1
 	github.com/lib/pq v1.10.9
 	github.com/oklog/ulid v1.3.1
 	github.com/oklog/ulid/v2 v2.1.1
 	github.com/swaggo/http-swagger v1.3.4
 	github.com/swaggo/swag v1.16.4
+	golang.org/x/oauth2 v0.30.0
 )
 
 require golang.org/x/sys v0.33.0 // indirect
@@ -30,5 +32,5 @@ require (
 	golang.org/x/crypto v0.39.0
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/tools v0.34.0 // indirect
-	gopkg.in/yaml.v3 v3.0.1
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

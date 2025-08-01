@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 
+	"backend/api/auth"
 	"backend/api/modules"
 	"backend/api/roles"
 	"backend/api/users"
@@ -15,6 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/joho/godotenv"
 	httpSwagger "github.com/swaggo/http-swagger"
 
 	_ "github.com/lib/pq"
@@ -28,6 +30,12 @@ import (
 func main() {
 	port := getPort()
 
+	if os.Getenv("BUILD_MODE") == "" {
+		err := godotenv.Load("../.env")
+		if err != nil {
+			log.Println("No .env file found, and BUILD_MODE not set! (may be fine in production)")
+		}
+	}
 	// Set up the CORS middleware
 	corsMiddleware := cors.New(cors.Options{
 		AllowedOrigins: []string{
@@ -53,10 +61,15 @@ func main() {
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
-	r.Get("/module-page/{pageName}", modules.PageRedirection)
-	r.Get("/module-page/{pageName}/*", modules.PageRedirection)
+	r.Route("/auth", func(r chi.Router) {
+		auth.RegisterRoutes(r)
+	})
+
+	r.With(auth.PageAccessMiddleware).Get("/module-page/{pageName}", modules.PageRedirection)
+	r.With(auth.PageAccessMiddleware).Get("/module-page/{pageName}/*", modules.PageRedirection)
 
 	r.Route("/api/v1", func(r chi.Router) {
+		r.Use(auth.AuthMiddleware)
 		r.Route("/modules", func(r chi.Router) {
 			modules.RegisterRoutes(r)
 		})

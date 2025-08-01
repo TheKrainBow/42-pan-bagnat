@@ -3,6 +3,7 @@ import './ModuleImport.css';
 import Button from 'Global/Button/Button';
 import Field from 'Global/Field/Field';
 import { useNavigate } from 'react-router-dom';
+import { fetchWithAuth } from 'Global/utils/Auth';
 
 const ModuleImport = ({ onClose }) => {
   const gitInputRef = useRef();
@@ -32,7 +33,7 @@ const ModuleImport = ({ onClose }) => {
     setIsSubmitting(true);
     const finalBranch = gitBranch.trim() === '' ? 'main' : gitBranch;
     try {
-      const res = await fetch('/api/v1/modules', {
+      const res = await fetchWithAuth('/api/v1/modules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: moduleName, git_url: gitUrl, git_branch: finalBranch }),

@@ -10,7 +10,7 @@ import (
 type User struct {
 	ID        string    `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X" db:"id"`
 	FtLogin   string    `json:"login" example:"heinz" db:"login"`
-	FtID      string    `json:"ft_id" example:"1492" db:"ft_id"`
+	FtID      int       `json:"ft_id" example:"1492" db:"ft_id"`
 	FtIsStaff bool      `json:"ft_is_staff" example:"true" db:"ft_is_staff"`
 	PhotoURL  string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id" db:"photo_url"`
 	LastSeen  time.Time `json:"last_update" example:"2025-02-18T15:00:00Z" db:"last_update"`
@@ -41,6 +41,20 @@ const (
 type UserOrder struct {
 	Field UserOrderField
 	Order OrderDirection
+}
+
+func GetUserByLogin(login string) (*User, error) {
+	var user User
+	err := mainDB.QueryRow(`
+		SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff
+		FROM users
+		WHERE ft_login = $1
+	`, login).Scan(&user.ID, &user.FtLogin, &user.FtID, &user.FtIsStaff, &user.PhotoURL, &user.LastSeen, &user.IsStaff)
+
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func GetAllUsers(
@@ -188,13 +202,20 @@ func AddUser(user User) error {
 	if user.LastSeen.IsZero() {
 		user.LastSeen = time.Now()
 	}
-	if user.FtLogin == "" && user.FtID == "" {
-		return fmt.Errorf("you must provide ftlogin or ftid")
+	if user.FtLogin == "" || user.FtID == 0 {
+		return fmt.Errorf("you must provide ftlogin and ftid")
 	}
 	_, err := mainDB.Exec(`
 		INSERT INTO users (id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff)
 		VALUES ($1, $2, $3, $4, $5, $6, $7)
 	`, user.ID, user.FtLogin, user.FtID, user.FtIsStaff, user.PhotoURL, user.LastSeen, user.IsStaff)
+	return err
+}
+
+func UpdateUserLastSeen(login string, ts time.Time) error {
+	_, err := mainDB.Exec(`
+        UPDATE users SET last_seen = $1 WHERE ft_login = $2
+    `, ts, login)
 	return err
 }
 

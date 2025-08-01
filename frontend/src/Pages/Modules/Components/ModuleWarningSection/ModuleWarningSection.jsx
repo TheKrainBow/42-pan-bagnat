@@ -1,6 +1,7 @@
 import { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import './ModuleWarningSection.css';
 import Button from "Global/Button/Button";
+import { fetchWithAuth } from 'Global/utils/Auth';
 
 const ModuleWarningSection = forwardRef(({ sshKey, moduleID, onRetrySuccess, onRetry }, ref) => {
   const [copied, setCopied] = useState(false);
@@ -29,7 +30,7 @@ const ModuleWarningSection = forwardRef(({ sshKey, moduleID, onRetrySuccess, onR
 
   const handleRetryClone = async () => {
     try {
-      const res = await fetch(`/api/v1/modules/${moduleID}/git/clone`, {
+      const res = await fetchWithAuth(`/api/v1/modules/${moduleID}/git/clone`, {
         method: 'POST'
       });
       if (res.ok && onRetrySuccess) {

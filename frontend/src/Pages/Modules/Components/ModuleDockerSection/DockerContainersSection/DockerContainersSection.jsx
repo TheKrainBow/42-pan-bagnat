@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import Button from 'Global/Button/Button';
 import LogViewer from '../../../../../Global/LogViewer/LogViewer';
 import './DockerContainersSection.css';
+import { fetchWithAuth } from 'Global/utils/Auth';
 
 export default function DockerContainers({ moduleId }) {
   const [containers, setContainers] = useState([]);
@@ -12,7 +13,7 @@ export default function DockerContainers({ moduleId }) {
   }, [moduleId]);
 
   const fetchContainers = () => {
-    fetch(`/api/v1/modules/${moduleId}/containers`)
+    fetchWithAuth(`/api/v1/modules/${moduleId}/containers`)
       .then(res => res.json())
       .then(setContainers)
       .catch(err => console.error('Failed to fetch containers:', err));
@@ -25,7 +26,7 @@ export default function DockerContainers({ moduleId }) {
   }, [containers, selectedName]);
 
   const handleAction = (name, action) => {
-    fetch(
+    fetchWithAuth(
       `/api/v1/modules/${moduleId}/containers/${name}/${action}`,
       { method: action === 'delete' ? 'DELETE' : 'POST' }
     )

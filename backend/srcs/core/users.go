@@ -2,17 +2,22 @@ package core
 
 import (
 	"backend/database"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"strings"
 	"time"
+
+	"golang.org/x/oauth2"
 )
 
 type User struct {
 	ID        string    `json:"id"`
 	FtLogin   string    `json:"ftLogin"`
-	FtID      string    `json:"ft_id"`
+	FtID      int       `json:"ft_id"`
 	FtIsStaff bool      `json:"ft_is_staff"`
 	PhotoURL  string    `json:"photo_url"`
 	LastSeen  time.Time `json:"last_update"`
@@ -126,4 +131,78 @@ func GetUsers(pagination UserPagination) ([]User, string, error) {
 		return dest, "", fmt.Errorf("couldn't generate next token: %w", err)
 	}
 	return dest, token, nil
+}
+
+type IntraUser struct {
+	ID            int    `json:"id"`
+	Login         string `json:"login"`
+	Email         string `json:"email"`
+	DisplayName   string `json:"displayname"`
+	UsualFullName string `json:"usual_full_name"`
+	IsStaff       bool   `json:"staff?"`
+	Kind          string `json:"kind"`
+	Active        bool   `json:"active?"`
+	Image         struct {
+		Link     string `json:"link"`
+		Versions struct {
+			Small string `json:"small"`
+		} `json:"versions"`
+	} `json:"image"`
+	Campus []struct {
+		Name string `json:"name"`
+	} `json:"campus"`
+}
+
+func HandleUser42Connection(token *oauth2.Token) (string, error) {
+	req, _ := http.NewRequest("GET", "https://api.intra.42.fr/v2/me", nil)
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil || resp.StatusCode != 200 {
+		return "", fmt.Errorf("failed to fetch user")
+	}
+	defer resp.Body.Close()
+
+	var intra IntraUser
+	if err := json.NewDecoder(resp.Body).Decode(&intra); err != nil {
+		return "", fmt.Errorf("couldn't decode user")
+	}
+
+	user, err := database.GetUserByLogin(intra.Login)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			user = &database.User{
+				FtLogin:   intra.Login,
+				FtID:      intra.ID,
+				FtIsStaff: intra.IsStaff,
+				PhotoURL:  intra.Image.Link,
+				IsStaff:   intra.IsStaff || intra.Kind == "admin",
+				LastSeen:  time.Now(),
+			}
+			if err := database.AddUser(*user); err != nil {
+				return "", fmt.Errorf("failed to create user: %w", err)
+			}
+		} else {
+			return "", fmt.Errorf("failed to get user: %w", err)
+		}
+	}
+
+	user.LastSeen = time.Now()
+	_ = database.UpdateUserLastSeen(user.FtLogin, user.LastSeen) // optional
+
+	sessionID, err := GenerateSecureSessionID()
+	if err != nil {
+		return "", fmt.Errorf("failed to create session ID: %w", err)
+	}
+	session := database.Session{
+		SessionID: sessionID,
+		Login:     user.FtLogin,
+		CreatedAt: time.Now(),
+		ExpiresAt: time.Now().Add(24 * time.Hour),
+	}
+	if err := database.AddSession(session); err != nil {
+		return "", fmt.Errorf("failed to store session: %w", err)
+	}
+
+	return sessionID, nil
 }

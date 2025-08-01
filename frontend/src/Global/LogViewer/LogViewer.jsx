@@ -8,6 +8,7 @@ import React, {
 } from 'react';
 import { socketService } from 'Global/SocketService/SocketService';
 import './LogViewer.css';
+import { fetchWithAuth } from 'Global/utils/Auth';
 
 const LogViewer = forwardRef(({ logType = 'module', moduleId = "", containerName = "" }, ref) => {
   const [logs, setLogs]           = useState([]);
@@ -78,7 +79,7 @@ const LogViewer = forwardRef(({ logType = 'module', moduleId = "", containerName
       }
 
       const url = logType === 'module' ? `${source}?${params}` : source;
-      const res = await fetch(url);
+      const res = await fetchWithAuth(url);
       if (!res.ok) throw new Error(res.statusText);
       const data = await res.json();
 

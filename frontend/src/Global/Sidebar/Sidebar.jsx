@@ -1,6 +1,7 @@
 // src/components/Sidebar.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { fetchWithAuth } from 'Global/utils/Auth';
 import './Sidebar.css';
 
 export default function Sidebar({ currentPage, onModuleSelect }) {
@@ -19,7 +20,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
     document.body.classList.remove('theme-light');
 
     if (mode === 'user') {
-      fetch('/api/v1/modules/pages')
+      fetchWithAuth('/api/v1/modules/pages')
         .then((res) => {
           if (!res.ok) throw new Error(res.statusText);
           return res.json();

@@ -11,6 +11,7 @@ import ModuleStatusBadge from 'Pages/Modules/Components/ModuleStatusBadge/Module
 import ModuleDockerSection from '../Components/ModuleDockerSection/ModuleDockerSection';
 import { setModuleStatusUpdater } from 'Global/SocketService/SocketService';
 import ModuleUninstallModal from 'Pages/Modules/Components/ModuleUninstallModal/ModuleUninstallModal';
+import { fetchWithAuth } from 'Global/utils/Auth';
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();
@@ -46,7 +47,7 @@ const ModuleDetails = () => {
 
   const fetchModule = async () => {
     try {
-      const res = await fetch(`/api/v1/modules/${moduleId}`);
+      const res = await fetchWithAuth(`/api/v1/modules/${moduleId}`);
       const data = await res.json();
       setModule(data);
     } catch (err) {
@@ -60,7 +61,7 @@ const ModuleDetails = () => {
   const handleUninstall = () => {
     setShowConfirmUninstall(false);
     setActiveTab("logs")
-    fetch(`/api/v1/modules/${moduleId}`, { method: 'DELETE' })
+    fetchWithAuth(`/api/v1/modules/${moduleId}`, { method: 'DELETE' })
       .catch(err => console.error('Failed to uninstall:', err));
   };
 

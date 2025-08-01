@@ -10,6 +10,7 @@ import AppIcon from 'Global/AppIcon/AppIcon';
 import Header from 'Global/Header/Header';
 import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import ArrayHeader from 'Global/ArrayHeader/ArrayHeader';
+import { fetchWithAuth } from 'Global/utils/Auth';
 
 const Roles = () => {
   const [filterQuery, setFilterQuery] = useState('');
@@ -40,7 +41,7 @@ const Roles = () => {
         params.set('limit', 20);
       }
 
-      const res = await fetch(`/api/v1/roles?${params.toString()}`);
+      const res = await fetchWithAuth(`/api/v1/roles?${params.toString()}`);
       const data = await res.json();
 
       setRoles(prev =>
