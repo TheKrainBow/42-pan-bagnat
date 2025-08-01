@@ -43,7 +43,7 @@ func TestUserPaginationToken_RoundTrip(t *testing.T) {
 			LastUser: &database.User{
 				ID:        "user_01",
 				FtLogin:   "alice",
-				FtID:      "123",
+				FtID:      123,
 				FtIsStaff: true,
 				PhotoURL:  "http://example.com",
 				LastSeen:  time.Date(2025, 5, 19, 12, 0, 0, 0, time.UTC),
@@ -60,7 +60,7 @@ func TestUserPaginationToken_RoundTrip(t *testing.T) {
 			LastUser: &database.User{
 				ID:        "user_42",
 				FtLogin:   "bob",
-				FtID:      "4242",
+				FtID:      4242,
 				FtIsStaff: false,
 				PhotoURL:  "https://example.org/bob",
 				LastSeen:  time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC),

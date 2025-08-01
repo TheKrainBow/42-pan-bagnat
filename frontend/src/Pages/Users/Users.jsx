@@ -9,6 +9,7 @@ import './Users.css';
 import Header from 'Global/Header/Header';
 import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import ArrayHeader from 'Global/ArrayHeader/ArrayHeader';
+import { fetchWithAuth } from 'Global/utils/Auth';
 
 const Users = () => {
   const [filterQuery, setFilterQuery] = useState('');
@@ -37,7 +38,7 @@ const Users = () => {
         params.set('limit', 20); // Keep this for first load
       }
 
-      const response = await fetch(`/api/v1/users?${params.toString()}`);
+      const response = await fetchWithAuth(`/api/v1/users?${params.toString()}`);
       const data = await response.json();
 
       setUsers(prev =>
@@ -119,11 +120,11 @@ const Users = () => {
         accessorKey: 'roles',
         disableSort: true,
         cell: info =>
-          info.getValue().map(role => (
-              <RoleBadge key={role.id} hexColor={role.color}>
-                {role.name}
-              </RoleBadge>
-          )),
+          info.getValue()?.map(role => (
+            <RoleBadge key={role.id} hexColor={role.color}>
+              {role.name}
+            </RoleBadge>
+          )) ?? null,
       },
       {
         header: 'Last Seen',

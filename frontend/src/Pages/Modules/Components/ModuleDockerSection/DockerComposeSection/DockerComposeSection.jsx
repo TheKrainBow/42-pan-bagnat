@@ -3,6 +3,7 @@ import CodeMirror from '@uiw/react-codemirror'
 import { yaml } from '@codemirror/lang-yaml'
 import './DockerComposeSection.css' // Keep CSS if styles are shared
 import Button from 'Global/Button/Button'
+import { fetchWithAuth } from 'Global/utils/Auth';
 
 export default function DockerComposeSection({ moduleId }) {
   const [configYaml, setConfigYaml]     = useState('')
@@ -13,7 +14,7 @@ export default function DockerComposeSection({ moduleId }) {
     if (fetchedRef.current) return
     fetchedRef.current = true
 
-    fetch(`/api/v1/modules/${moduleId}/config`)
+    fetchWithAuth(`/api/v1/modules/${moduleId}/config`)
       .then(r => r.json())
       .then(d => setConfigYaml(d.config))
       .catch(() => setConfigYaml('# Error loading docker-compose-panbagnat.yml'))
@@ -22,7 +23,7 @@ export default function DockerComposeSection({ moduleId }) {
   const handleDeploy = async () => {
     setIsDeploying(true)
     try {
-      await fetch(`/api/v1/modules/${moduleId}/deploy`, {
+      await fetchWithAuth(`/api/v1/modules/${moduleId}/deploy`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ config: configYaml }),
