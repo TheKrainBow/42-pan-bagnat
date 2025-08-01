@@ -8,6 +8,7 @@ import Roles from './Pages/Roles/Roles';
 import Modules from './Pages/Modules/Modules';
 import ModuleDetails from './Pages/Modules/ModuleDetails/ModuleDetails';
 import ModulePage from './Pages/Modules/ModulePage/ModulePage';
+import LoginPage from "./Pages/Login/Login";
 import Sidebar from 'Global/Sidebar/Sidebar';
 import { socketService } from 'Global/SocketService/SocketService';
 import { ToastContainer } from 'react-toastify';
@@ -19,33 +20,37 @@ function Main() {
   const path = location.pathname;
   const [activePage, setActivePage] = useState(null);
 
+  const showSidebar = path !== "/login";
+
+  document.body.classList.add('theme-dark');
   return (
     <div className="app-container">
-      <Sidebar
-        currentPage={path}
-        onModuleSelect={(page) => setActivePage(page)}
-      />
+      {showSidebar && (
+        <Sidebar
+          currentPage={path}
+          onModuleSelect={(page) => setActivePage(page)}
+        />
+      )}
 
       <main className="main-content">
         <Routes>
-          {/* user‐mode home shows the ModulePage */}
           <Route path="/modules" element={<ModulePage page={activePage} />} />
-
-          {/* admin screens */}
           <Route path="/admin/modules" element={<Modules onSort="name" />} />
           <Route path="/admin/modules/:moduleId" element={<ModuleDetails />} />
           <Route path="/admin/roles" element={<Roles onSort="name" />} />
           <Route path="/admin/users" element={<Users onSort="-last_seen" />} />
-
-          {/* catch‐all: redirect unknown to either admin or user home */}
-          <Route path="*" element={
-              path.startsWith('/admin/')
+          <Route path="/login" element={<LoginPage />} />
+          <Route
+            path="*"
+            element={
+              path.startsWith("/admin/")
                 ? <Navigate to="/admin/modules" replace />
                 : <Navigate to="/modules" replace />
             }
           />
         </Routes>
       </main>
+
       <ToastContainer
         position="bottom-right"
         autoClose={2000}

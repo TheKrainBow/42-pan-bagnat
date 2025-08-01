@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Button from 'Global/Button/Button';
 import './DockerPageSection.css';
+import { fetchWithAuth } from 'Global/utils/Auth';
 
 export default function ModulePageSection({ moduleId }) {
   const [pages, setPages] = useState([]);            // holds both existing & new rows
@@ -11,7 +12,7 @@ export default function ModulePageSection({ moduleId }) {
   // load existing pages
   const fetchPages = async () => {
     try {
-      const res = await fetch(`
+      const res = await fetchWithAuth(`
         /api/v1/modules/${moduleId}/pages
       `);
       const data = await res.json();
@@ -78,7 +79,7 @@ export default function ModulePageSection({ moduleId }) {
         is_public: isPublic,
       };
       if (isNew) {
-        await fetch(
+        await fetchWithAuth(
           `/api/v1/modules/${moduleId}/pages`,
           {
             method: 'POST',
@@ -87,7 +88,7 @@ export default function ModulePageSection({ moduleId }) {
           }
         );
       } else {
-        await fetch(
+        await fetchWithAuth(
           `/api/v1/modules/${moduleId}/pages/${encodeURIComponent(id)}`,
           {
             method: 'PATCH',
@@ -114,7 +115,7 @@ export default function ModulePageSection({ moduleId }) {
       setEdits(e => { const copy = { ...e }; delete copy[id]; return copy; });
     } else {
       try {
-        await fetch(
+        await fetchWithAuth(
           `/api/v1/modules/${moduleId}/pages/${encodeURIComponent(id)}`,
           { method: 'DELETE' }
         );

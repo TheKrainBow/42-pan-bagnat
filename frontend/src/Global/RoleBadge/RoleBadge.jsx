@@ -1,4 +1,4 @@
-import { getReadableStyles } from '../../utils/ColorUtils';
+import { getReadableStyles } from 'Global/utils/ColorUtils';
 import './RoleBadge.css';
 
 const RoleBadge = ({ hexColor, children }) => {

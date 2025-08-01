@@ -1,10 +1,12 @@
--- PRIMARY TABLES --
+-- ROLES --
 
 CREATE TABLE roles (
   id TEXT PRIMARY KEY, -- role_ULID
   name TEXT NOT NULL,
   color TEXT NOT NULL
 );
+
+-- MODULES --
 
 CREATE TABLE modules (
   id TEXT PRIMARY KEY, -- module_ULID
@@ -22,14 +24,23 @@ CREATE TABLE modules (
   last_update TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
+-- USERS --
+
 CREATE TABLE users (
   id TEXT PRIMARY KEY, -- user_ULID
-  ft_login TEXT NOT NULL,
-  ft_id INTEGER NOT NULL,
+  ft_login TEXT NOT NULL UNIQUE,
+  ft_id BIGINT NOT NULL,
   ft_is_staff BOOLEAN NOT NULL,
   photo_url TEXT NOT NULL,
   last_seen TIMESTAMP WITH TIME ZONE NOT NULL,
   is_staff BOOLEAN NOT NULL
+);
+
+CREATE TABLE sessions (
+  session_id TEXT PRIMARY KEY,
+  ft_login   TEXT REFERENCES users(ft_login),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  expires_at TIMESTAMP NOT NULL
 );
 
 -- LOGS --
