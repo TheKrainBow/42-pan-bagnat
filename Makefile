@@ -26,7 +26,7 @@ help:																					## Help | I am pretty sure you know what this one is d
 #########################################################################################
 .PHONY: local-front local-back
 local-front:																			## Local | Stop frontend docker container, and run front locally (dev mode)
-	$(DOCKER_COMPOSE) stop frontend
+# 	$(DOCKER_COMPOSE) stop frontend  ## Not needed since local frontend hit on a different port
 	cd frontend && BROWSER=none pnpm dev
 
 local-back:																				## Local | Stop backend docker container, and run back locally (dev mode)
