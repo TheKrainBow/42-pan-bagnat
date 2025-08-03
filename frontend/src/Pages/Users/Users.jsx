@@ -164,17 +164,23 @@ const Users = () => {
             getSortDirection={getSortDirection}
           />
           <tbody>
-            {table.getRowModel().rows.map(row => (
-              <tr key={row.id} className="user-row">
-                {row.getVisibleCells().map(cell => {
-                  return (
+            {table.getRowModel().rows.map(row => {
+              const login = row.original.ft_login;
+              return (
+                <tr
+                  key={row.id}
+                  className="user-row"
+                  onClick={() => window.location.href = `/admin/users/${login}`}
+                  style={{ cursor: 'pointer' }}
+                >
+                  {row.getVisibleCells().map(cell => (
                     <td key={cell.id} className={cell.column.columnDef.header === 'Picture' ? 'user-small-column' : ''}>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </td>
-                  );
-                })}
-              </tr>
-            ))}
+                  ))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
         {nextPage && (

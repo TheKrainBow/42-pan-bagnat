@@ -1,6 +1,7 @@
 package users
 
 import (
+	"backend/api/auth"
 	api "backend/api/dto"
 	"backend/core"
 	"encoding/json"
@@ -70,34 +71,57 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(destJSON))
 }
 
+func GetUserMe(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	user := r.Context().Value(auth.UserCtxKey)
+	if user == nil {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	coreUser, ok := user.(core.User)
+	if !ok {
+		http.Error(w, "Invalid user context", http.StatusInternalServerError)
+		return
+	}
+
+	apiUser := api.UserToAPIUser(coreUser)
+	destJSON, err := json.Marshal(apiUser)
+	if err != nil {
+		http.Error(w, "Failed to convert user to JSON", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, string(destJSON))
+}
+
 // @Summary      Get User List
 // @Description  Returns all the available users for your campus
 // @Tags         users
 // @Accept       json
 // @Produce      json
 // @Success      200 {object} User
-// @Router       /users/{userID} [get]
+// @Router       /users/{identifier} [get]
 func GetUser(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	identifier := chi.URLParam(r, "identifier")
+	log.Printf("Received identifier: '%s'", identifier)
 
-	id := chi.URLParam(r, "userID")
-	log.Printf("Received ID: '%s'", id) // This should print the ID
-
-	if id == "" {
-		http.Error(w, "ID not found", http.StatusBadRequest)
+	if identifier == "" {
+		http.Error(w, "Identifier is required", http.StatusBadRequest)
 		return
 	}
-	// for _, param := range chi.RouteContext(r.Context()).URLParams.Values {
-	// 	log.Printf("Param key: %s, value: %s", param, param)
-	// }
-	// log.Printf("Backend id: %+v", chi.RouteContext(r.Context()).URLParams)
 
-	dest := api.User{
-		ID: id,
+	user, err := core.GetUser(identifier)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("User not found: %s", err.Error()), http.StatusNotFound)
+		return
 	}
 
-	// Marshal the dest struct into JSON
-	destJSON, err := json.Marshal(dest)
+	apiUser := api.UserToAPIUser(user)
+
+	destJSON, err := json.Marshal(apiUser)
 	if err != nil {
 		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
 		return

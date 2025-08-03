@@ -10,7 +10,7 @@ type Role struct {
 	ID         string   `json:"id" example:"role_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
 	Name       string   `json:"name" example:"IT"`
 	Color      string   `json:"color" example:"0xFF00FF"`
-	UsersCount int      `json:"usersCount" example:"42"`
+	UsersCount int      `json:"usersCount,omitempty" example:"42"`
 	Users      []User   `json:"users,omitempty"`
 	Modules    []Module `json:"modules,omitempty"`
 }

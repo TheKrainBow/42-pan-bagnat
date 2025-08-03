@@ -7,9 +7,10 @@ import (
 )
 
 type Role struct {
-	ID    string `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X" db:"id"`
-	Name  string `json:"name" example:"captain-hook" db:"name"`
-	Color string `json:"color" example:"0xFF00FF" db:"color"`
+	ID                string `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X" db:"id"`
+	Name              string `json:"name" example:"captain-hook" db:"name"`
+	Color             string `json:"color" example:"0xFF00FF" db:"color"`
+	AssignedByDefault bool   `json:"assigned_by_default" example:"true" db:"assigned_by_default"`
 }
 
 type RolePatch struct {
@@ -301,4 +302,64 @@ func GetRoleModules(roleID string) ([]Module, error) {
 		modules = append(modules, module)
 	}
 	return modules, nil
+}
+
+func AssignRoleToUser(roleID, userIdentifier string) error {
+	var userID string
+
+	err := mainDB.QueryRow(`
+		SELECT id FROM users
+		WHERE id = $1 OR ft_login = $1
+	`, userIdentifier).Scan(&userID)
+
+	if err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+
+	_, err = mainDB.Exec(`
+		INSERT INTO user_roles (user_id, role_id)
+		VALUES ($1, $2)
+		ON CONFLICT DO NOTHING
+	`, userID, roleID)
+
+	return err
+}
+
+func RemoveRoleFromUser(roleID, userIdentifier string) error {
+	var userID string
+
+	err := mainDB.QueryRow(`
+		SELECT id FROM users
+		WHERE id = $1 OR ft_login = $1
+	`, userIdentifier).Scan(&userID)
+
+	if err != nil {
+		return fmt.Errorf("user not found: %w", err)
+	}
+
+	_, err = mainDB.Exec(`
+		DELETE FROM user_roles
+		WHERE user_id = $1 AND role_id = $2
+	`, userID, roleID)
+
+	return err
+}
+
+func AssignRoleToModule(roleID, moduleID string) error {
+	_, err := mainDB.Exec(`
+		INSERT INTO module_roles (module_id, role_id)
+		VALUES ($1, $2)
+		ON CONFLICT DO NOTHING
+	`, moduleID, roleID)
+
+	return err
+}
+
+func RemoveRoleFromModule(roleID, moduleID string) error {
+	_, err := mainDB.Exec(`
+		DELETE FROM module_roles
+		WHERE module_id = $1 AND role_id = $2
+	`, moduleID, roleID)
+
+	return err
 }

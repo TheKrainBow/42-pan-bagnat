@@ -28,8 +28,8 @@ func GenerateRoleOrderBy(order string) (dest []database.RoleOrder) {
 	if order == "" {
 		return nil
 	}
-	args := strings.Split(order, ",")
-	for _, arg := range args {
+	args := strings.SplitSeq(order, ",")
+	for arg := range args {
 		var direction database.OrderDirection
 		if arg[0] == '-' {
 			direction = database.Desc
@@ -76,6 +76,22 @@ func DecodeRolePaginationToken(encoded string) (RolePagination, error) {
 	return token, err
 }
 
+func GetRole(roleID string) (Role, error) {
+	dbRole, err := database.GetRole(roleID)
+	if err != nil {
+		return Role{}, fmt.Errorf("could not find role '%s': %w", roleID, err)
+	}
+
+	dto := DatabaseRoleToRole(*dbRole)
+
+	modules, err := database.GetRoleModules(roleID)
+	if err == nil {
+		dto.Modules = DatabaseModulesToModules(modules)
+	}
+
+	return dto, nil
+}
+
 func GetRoles(pagination RolePagination) ([]Role, string, error) {
 	var dest []Role
 	realLimit := pagination.Limit + 1
@@ -119,4 +135,12 @@ func GetRoles(pagination RolePagination) ([]Role, string, error) {
 		return dest, "", fmt.Errorf("couldn't generate next token: %w", err)
 	}
 	return dest, token, nil
+}
+
+func AddRoleToUser(roleID, userIdentifier string) error {
+	return database.AssignRoleToUser(roleID, userIdentifier)
+}
+
+func DeleteRoleFromUser(roleID, userIdentifier string) error {
+	return database.RemoveRoleFromUser(roleID, userIdentifier)
 }
