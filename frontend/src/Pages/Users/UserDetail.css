@@ -1,0 +1,237 @@
+.user-detail-wrapper {
+  color: #f0f0f0;
+  display: flex;
+  flex-direction: column;
+  padding: 2rem 2rem;
+  gap: 2rem;
+}
+
+/* Top header/banner section */
+.user-profile-header {
+  display: flex;
+  align-items: center;
+  background: linear-gradient(90deg, #2a2a2a, #1e1e1e);
+  padding: 2rem;
+  border-radius: 16px;
+  gap: 2rem;
+  box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+}
+
+.avatar {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  border: 3px solid #555;
+  object-fit: cover;
+  background-color: #222;
+}
+
+.user-profile-header-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.user-profile-header-info h1 {
+  font-size: 2rem;
+  margin: 0;
+}
+
+.user-id {
+  font-size: 0.95rem;
+  color: #aaa;
+}
+
+.user-role-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.add-role-select {
+  margin-top: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  border-radius: 6px;
+  background: #2a2a2a;
+  border: 1px solid #555;
+  color: #f0f0f0;
+  font-size: 0.95rem;
+  max-width: 200px;
+}
+
+/* Bottom two-column section */
+.user-profile-body {
+  display: flex;
+  gap: 3rem;
+  justify-content: space-between;
+}
+
+/* Left column: info */
+.user-info-panel {
+  flex: 1;
+  background: #1e1e1e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.user-field label {
+  font-weight: bold;
+  display: block;
+  margin-bottom: 0.3rem;
+  font-size: 1rem;
+}
+
+.user-field input,
+.user-field select {
+  padding: 0.6rem;
+  background: #2c2c2c;
+  color: #f0f0f0;
+  border: 1px solid #444;
+  border-radius: 6px;
+  width: 100%;
+  font-size: 0.95rem;
+}
+
+.user-field input[type="checkbox"] {
+  width: auto;
+  transform: scale(1.3);
+  margin-right: 0.5rem;
+}
+
+/* Right column: modules */
+.user-modules-panel {
+  flex: 1;
+  background: #1e1e1e;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(90deg, #222222, #1e1e1e);
+}
+
+.user-modules-panel label {
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-bottom: 0.5rem;
+  display: block;
+}
+
+.module-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0;
+}
+
+.module-list li {
+  padding: 0.4rem 0.6rem;
+  margin-bottom: 0.4rem;
+  background: #2a2a2a;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  border: 1px solid #444;
+}
+
+.user-meta-grid {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  row-gap: 0.5rem;
+  column-gap: 1rem;
+  margin-top: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.user-meta-grid .label {
+  font-weight: 600;
+  color: #ccc;
+  text-align: left;
+}
+
+.user-meta-grid .value {
+  color: #f0f0f0;
+}
+
+.role-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.8rem;
+}
+
+.add-role-btn {
+  font-size: 0.85rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #2a2a2a;
+  color: #f0f0f0;
+  cursor: pointer;
+}
+
+.role-search-dropdown {
+  background: #2a2a2a;
+  border: 1px solid #555;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+}
+
+.role-search-dropdown input {
+  width: 99%;
+  padding: 0.4rem;
+  margin-bottom: 0.4rem;
+  border-radius: 4px;
+  border: 1px solid #444;
+  background: #1e1e1e;
+  color: #f0f0f0;
+}
+
+.role-search-dropdown ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.role-search-dropdown li {
+  padding: 0.3rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.role-search-dropdown li:hover {
+  background-color: #444;
+}
+.role-search-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.role-search-list li {
+  cursor: pointer;
+  width: 98%;
+}
+
+.role-search-list li {
+  cursor: pointer;
+  padding: 0.3rem 0.2rem;
+  border-radius: 6px;
+  transition: background 0.2s;
+}
+
+.role-search-list li:hover {
+  background: #333;
+}
+
+.role-line {
+  display: flex;
+  align-items: center;
+}

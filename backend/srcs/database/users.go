@@ -20,7 +20,7 @@ type User struct {
 type UserPatch struct {
 	ID        string     `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
 	FtLogin   *string    `json:"login" example:"heinz"`
-	FtID      *string    `json:"ft_id" example:"1492"`
+	FtID      *int       `json:"ft_id" example:"1492"`
 	FtIsStaff *bool      `json:"ft_is_staff" example:"true"`
 	PhotoURL  *string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id"`
 	LastSeen  *time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
@@ -41,6 +41,27 @@ const (
 type UserOrder struct {
 	Field UserOrderField
 	Order OrderDirection
+}
+
+func GetUser(identifier string) (*User, error) {
+	if strings.HasPrefix(identifier, "user_") {
+		return GetUserByID(identifier)
+	}
+	return GetUserByLogin(identifier)
+}
+
+func GetUserByID(id string) (*User, error) {
+	var user User
+	err := mainDB.QueryRow(`
+		SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff
+		FROM users
+		WHERE id = $1
+	`, id).Scan(&user.ID, &user.FtLogin, &user.FtID, &user.FtIsStaff, &user.PhotoURL, &user.LastSeen, &user.IsStaff)
+
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
 }
 
 func GetUserByLogin(login string) (*User, error) {
@@ -245,4 +266,72 @@ func GetUserRoles(userID string) ([]Role, error) {
 		roles = append(roles, role)
 	}
 	return roles, nil
+}
+
+func PatchUser(patch UserPatch) error {
+	if patch.ID == "" {
+		return fmt.Errorf("user ID is required")
+	}
+
+	var sets []string
+	var args []any
+	argPos := 1
+
+	if patch.FtLogin != nil {
+		sets = append(sets, fmt.Sprintf("ft_login = $%d", argPos))
+		args = append(args, *patch.FtLogin)
+		argPos++
+	}
+	if patch.FtID != nil {
+		sets = append(sets, fmt.Sprintf("ft_id = $%d", argPos))
+		args = append(args, *patch.FtID)
+		argPos++
+	}
+	if patch.FtIsStaff != nil {
+		sets = append(sets, fmt.Sprintf("ft_is_staff = $%d", argPos))
+		args = append(args, *patch.FtIsStaff)
+		argPos++
+	}
+	if patch.PhotoURL != nil {
+		sets = append(sets, fmt.Sprintf("photo_url = $%d", argPos))
+		args = append(args, *patch.PhotoURL)
+		argPos++
+	}
+	if patch.LastSeen != nil {
+		sets = append(sets, fmt.Sprintf("last_seen = $%d", argPos))
+		args = append(args, *patch.LastSeen)
+		argPos++
+	}
+	if patch.IsStaff != nil {
+		sets = append(sets, fmt.Sprintf("is_staff = $%d", argPos))
+		args = append(args, *patch.IsStaff)
+		argPos++
+	}
+
+	if len(sets) == 0 {
+		return nil
+	}
+
+	query := fmt.Sprintf(`UPDATE users SET %s WHERE id = $%d`,
+		strings.Join(sets, ", "),
+		argPos,
+	)
+	args = append(args, patch.ID)
+
+	_, err := mainDB.Exec(query, args...)
+	return err
+}
+
+func GetRole(id string) (*Role, error) {
+	var role Role
+	err := mainDB.QueryRow(`
+		SELECT id, name, color, assigned_by_default
+		FROM roles
+		WHERE id = $1
+	`, id).Scan(&role.ID, &role.Name, &role.Color, &role.AssignedByDefault)
+
+	if err != nil {
+		return nil, err
+	}
+	return &role, nil
 }

@@ -70,36 +70,35 @@ func GetRoles(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(destJSON))
 }
 
-// @Summary      Get Role List
-// @Description  Returns all the available roles for your campus
+// @Summary      Get Role
+// @Description  Returns details about a specific role and its linked modules
 // @Tags         roles
 // @Accept       json
 // @Produce      json
-// @Success      200 {object} Role
+// @Param        roleID path string true "Role ID"
+// @Success      200 {object} api.Role
+// @Failure      400 {object} api.ErrorResponse
+// @Failure      404 {object} api.ErrorResponse
 // @Router       /roles/{roleID} [get]
 func GetRole(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
+	roleID := chi.URLParam(r, "roleID")
+	log.Printf("Received roleID: '%s'", roleID)
 
-	id := chi.URLParam(r, "roleID")
-	log.Printf("Received ID: '%s'", id) // This should print the ID
-
-	if id == "" {
-		http.Error(w, "ID not found", http.StatusBadRequest)
+	if roleID == "" {
+		http.Error(w, "Role ID is required", http.StatusBadRequest)
 		return
 	}
-	// for _, param := range chi.RouteContext(r.Context()).URLParams.Values {
-	// 	log.Printf("Param key: %s, value: %s", param, param)
-	// }
-	// log.Printf("Backend id: %+v", chi.RouteContext(r.Context()).URLParams)
 
-	dest := api.Role{
-		ID:    "01HZ0MMK4S6VQW4WPHB6NZ7R7X",
-		Name:  "Test",
-		Color: "0xFF00FF",
+	role, err := core.GetRole(roleID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Role not found: %s", err.Error()), http.StatusNotFound)
+		return
 	}
 
-	// Marshal the dest struct into JSON
-	destJSON, err := json.Marshal(dest)
+	apiRole := api.RoleToAPIRole(role)
+
+	destJSON, err := json.Marshal(apiRole)
 	if err != nil {
 		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
 		return

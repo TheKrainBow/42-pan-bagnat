@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"backend/core"
 	"backend/database"
 	"context"
 	"log"
@@ -10,7 +11,7 @@ import (
 
 type contextKey string
 
-const userCtxKey contextKey = "user"
+const UserCtxKey contextKey = "user"
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -29,7 +30,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		user, err := database.GetUserByLogin(session.Login)
+		user, err := core.GetUser(session.Login)
 		if err != nil {
 			log.Println("[auth] user not found for session:", err)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
@@ -37,7 +38,11 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 		log.Printf("[auth] user %s authenticated via session", user.FtLogin)
 
-		ctx := context.WithValue(r.Context(), userCtxKey, user)
+		if time.Since(user.LastSeen) > time.Minute {
+			go core.TouchUserLastSeen(user.ID)
+		}
+
+		ctx := context.WithValue(r.Context(), UserCtxKey, user)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

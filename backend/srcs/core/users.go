@@ -25,6 +25,16 @@ type User struct {
 	Roles     []Role    `json:"roles"`
 }
 
+type UserPatch struct {
+	ID        string     `json:"id"`
+	FtLogin   *string    `json:"ftLogin"`
+	FtID      *int       `json:"ft_id"`
+	FtIsStaff *bool      `json:"ft_is_staff"`
+	PhotoURL  *string    `json:"photo_url"`
+	LastSeen  *time.Time `json:"last_update"`
+	IsStaff   *bool      `json:"is_staff"`
+}
+
 type UserPagination struct {
 	OrderBy  []database.UserOrder
 	Filter   string
@@ -88,6 +98,22 @@ func DecodeUserPaginationToken(encoded string) (UserPagination, error) {
 	}
 	err = json.Unmarshal(data, &token)
 	return token, err
+}
+
+func GetUser(identifier string) (User, error) {
+	dbUser, err := database.GetUser(identifier)
+	if err != nil {
+		return User{}, fmt.Errorf("could not find user '%s': %w", identifier, err)
+	}
+
+	apiUser := DatabaseUserToUser(*dbUser)
+
+	roles, err := database.GetUserRoles(apiUser.ID)
+	if err == nil {
+		apiUser.Roles = DatabaseRolesToRoles(roles)
+	}
+
+	return apiUser, nil
 }
 
 func GetUsers(pagination UserPagination) ([]User, string, error) {
@@ -205,4 +231,45 @@ func HandleUser42Connection(token *oauth2.Token) (string, error) {
 	}
 
 	return sessionID, nil
+}
+
+func ResolveUserIdentifier(identifier string) (string, error) {
+	user, err := database.GetUser(identifier)
+	if err != nil {
+		return "", fmt.Errorf("failed to resolve user identifier %q: %w", identifier, err)
+	}
+	return user.ID, nil
+}
+
+func PatchUser(patch UserPatch) (*database.User, error) {
+	if patch.ID == "" {
+		return nil, fmt.Errorf("missing user identifier")
+	}
+
+	userID, err := ResolveUserIdentifier(patch.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	dbPatch := database.UserPatch{
+		ID:        userID,
+		FtLogin:   patch.FtLogin,
+		FtID:      patch.FtID,
+		FtIsStaff: patch.FtIsStaff,
+		PhotoURL:  patch.PhotoURL,
+		LastSeen:  patch.LastSeen,
+		IsStaff:   patch.IsStaff,
+	}
+
+	err = database.PatchUser(dbPatch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to patch user: %w", err)
+	}
+
+	return database.GetUserByID(userID)
+}
+
+func TouchUserLastSeen(userID string) {
+	now := time.Now().UTC()
+	_ = database.UpdateUserLastSeen(userID, now) // ignore error
 }
