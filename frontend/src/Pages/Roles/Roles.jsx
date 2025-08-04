@@ -190,7 +190,7 @@ const Roles = () => {
             getSortDirection={getSortDirection}
             headerRight={
               <Button
-                label={'Import Role'}
+                label={'Add Role'}
                 color="blue"
                 onClick={() => setShowRoleImport(true)}
              />
