@@ -186,3 +186,7 @@
   font-style: italic;
   text-align: center;
 }
+
+.button-wrapper {
+  padding: 3px;
+}
