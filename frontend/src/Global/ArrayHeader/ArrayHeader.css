@@ -29,3 +29,14 @@
   font-size: 0.75rem;
   line-height: 0.8;
 }
+
+.header-with-button {
+  position: sticky;
+  right: 0;
+  z-index: 2;
+  background-color: var(--border); /* match your header */
+  /* shrink to fit the button but don’t push the table wider */
+  width: auto;
+  padding-left: 12px;
+  text-align: right;
+}

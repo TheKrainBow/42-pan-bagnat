@@ -35,8 +35,12 @@
 
 .role-table th:nth-child(3),
 .role-table td:nth-child(3) {
-  width: 100%;
   text-align: left;
+}
+
+.role-table th:nth-child(4),
+.role-table td:nth-child(4) {
+  width: 105px;
 }
 
 .role-array-header {
@@ -119,4 +123,39 @@
 
 .members-count {
   text-align: center;
+}
+.roles-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 16px 0;
+}
+
+.btn {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--button-gray);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.95rem;
+  transition: background 0.2s ease;
+}
+
+.btn:hover {
+  background: var(--button-gray-hover);
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.btn-primary {
+  background: var(--button-green);
+  border-color: var(--button-green);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: var(--button-green-hover);
 }

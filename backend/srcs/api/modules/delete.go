@@ -62,3 +62,28 @@ func DeleteModulePage(w http.ResponseWriter, r *http.Request) {
 	core.LogModule(moduleID, "INFO", fmt.Sprintf("Deleted page '%s'", pageID), nil, nil)
 	fmt.Fprint(w, "OK")
 }
+
+// @Summary      Remove role from module
+// @Description  Revokes a specific role from a module (by login or ID)
+// @Tags         modules
+// @Accept       json
+// @Produce      json
+// @Param        moduleID path string true "User moduleID (ID or login)"
+// @Param        roleID path string true "Role ID"
+// @Success      204 "Role successfully removed"
+// @Failure      500 {object} api.ErrorResponse "Server error or module not found"
+// @Router       /modules/{moduleID}/roles/{roleID} [delete]
+func DeleteModuleRole(w http.ResponseWriter, r *http.Request) {
+	moduleID := chi.URLParam(r, "moduleID")
+	roleID := chi.URLParam(r, "roleID")
+
+	err := core.DeleteRoleFromModule(roleID, moduleID)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Failed to delete role: %v", err), http.StatusInternalServerError)
+		fmt.Printf("Error delete role %s from module %s: %v\n", roleID, moduleID, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+	fmt.Fprintf(w, "Role %s successfully deleted role from module %s\n", roleID, moduleID)
+}

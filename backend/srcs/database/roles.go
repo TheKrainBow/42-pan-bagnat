@@ -346,6 +346,7 @@ func RemoveRoleFromUser(roleID, userIdentifier string) error {
 }
 
 func AssignRoleToModule(roleID, moduleID string) error {
+	fmt.Printf("Adding module_roles for module (%s) and role (%s)\n", moduleID, roleID)
 	_, err := mainDB.Exec(`
 		INSERT INTO module_roles (module_id, role_id)
 		VALUES ($1, $2)

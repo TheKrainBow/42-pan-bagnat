@@ -144,3 +144,11 @@ func AddRoleToUser(roleID, userIdentifier string) error {
 func DeleteRoleFromUser(roleID, userIdentifier string) error {
 	return database.RemoveRoleFromUser(roleID, userIdentifier)
 }
+
+func AddRoleToModule(roleID, moduleID string) error {
+	return database.AssignRoleToModule(roleID, moduleID)
+}
+
+func DeleteRoleFromModule(roleID, moduleID string) error {
+	return database.RemoveRoleFromModule(roleID, moduleID)
+}

@@ -47,13 +47,13 @@ func PostUser(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        identifier path string true "User identifier"
-// @Param        role_id path string true "Role ID"
+// @Param        roleID path string true "Role ID"
 // @Success      204
 // @Failure      400 {object} api.ErrorResponse
-// @Router       /users/{identifier}/roles/{role_id} [post]
+// @Router       /users/{identifier}/roles/{roleID} [post]
 func PostUserRole(w http.ResponseWriter, r *http.Request) {
 	identifier := chi.URLParam(r, "identifier")
-	roleID := chi.URLParam(r, "role_id")
+	roleID := chi.URLParam(r, "roleID")
 
 	err := core.AddRoleToUser(roleID, identifier)
 	if err != nil {

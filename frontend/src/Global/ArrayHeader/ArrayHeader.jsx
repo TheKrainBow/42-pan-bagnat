@@ -1,8 +1,8 @@
 import React from 'react';
-import { flexRender } from '@tanstack/react-table'; // adjust if you import it elsewhere
-import './ArrayHeader.css'
+import { flexRender } from '@tanstack/react-table';
+import './ArrayHeader.css';
 
-const ArrayHeader = ({ table, handleSort, getSortDirection }) => {
+const ArrayHeader = ({ table, handleSort, getSortDirection, headerRight }) => {
   return (
     <thead className="array-header">
       {table.getHeaderGroups().map(headerGroup => (
@@ -21,7 +21,7 @@ const ArrayHeader = ({ table, handleSort, getSortDirection }) => {
                   {flexRender(header.column.columnDef.header, header.getContext())}
                   {isSortable && (
                     <span className="sort-arrows">
-                      <span style={{ opacity: sortDir === 'asc' ? 1 : 0.5 }}>▲</span>
+                      <span style={{ opacity: sortDir === 'asc'  ? 1 : 0.5 }}>▲</span>
                       <span style={{ opacity: sortDir === 'desc' ? 1 : 0.5 }}>▼</span>
                     </span>
                   )}
@@ -29,6 +29,16 @@ const ArrayHeader = ({ table, handleSort, getSortDirection }) => {
               </th>
             );
           })}
+
+          {/*
+            This extra <th> will sit at the end of the header row,
+            right-aligned, containing whatever you pass as headerRight
+          */}
+          {headerRight && (
+            <th className="array-header-cell header-with-button">
+              {headerRight}
+            </th>
+          )}
         </tr>
       ))}
     </thead>
