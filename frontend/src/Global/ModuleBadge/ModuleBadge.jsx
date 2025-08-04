@@ -6,7 +6,7 @@ import './ModuleBadge.css';
 
 export default function ModuleBadge({ mod }) {
   return (
-    <Link to={`/admin/modules/${mod.id}`} className={`module-card ${mod.status}`}>
+    <Link to={`/admin/modules/${mod.id}?tab=settings`} className={`module-card ${mod.status}`}>
       <div className="module-icon">
         <AppIcon app={{ icon_url: mod.icon_url, name: mod.name }} fallback="/icons/modules.png" />
       </div>

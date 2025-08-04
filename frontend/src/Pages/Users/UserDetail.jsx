@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { fetchWithAuth } from "Global/utils/Auth";
 import RoleBadge from "Global/RoleBadge/RoleBadge";
 import ModuleBadge from "Global/ModuleBadge/ModuleBadge";
@@ -15,6 +15,7 @@ export default function UserDetail() {
   const [showRoleSearch, setShowRoleSearch] = useState(false);
   const [searchRoleTerm, setSearchRoleTerm] = useState("");
   const dropdownRef = useRef();
+  const navigate = useNavigate();
 
 
   const reloadModules = async (roles) => {
@@ -184,10 +185,11 @@ export default function UserDetail() {
               user.roles.map((role) => (
                 <RoleBadge
                   key={role.id}
-                  hexColor={role.color}
+                  role={role}
+                  onClick={() => navigate(`/admin/roles/${role.id}`)}
                   onDelete={() => handleRoleRemove(role)}
                 >
-                  {role.name}
+                {role.name}
                 </RoleBadge>
               ))
             )}
@@ -208,7 +210,7 @@ export default function UserDetail() {
                       className="role-line role-line-clickable"
                       onClick={() => handleAddRole(role)}
                     >
-                      <RoleBadge hexColor={role.color}>{role.name}</RoleBadge>
+                      <RoleBadge role={role}>{role.name}</RoleBadge>
                     </div>
                   </li>
                 ))}

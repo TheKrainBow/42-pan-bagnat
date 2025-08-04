@@ -59,5 +59,9 @@ export function getReadableStyles(rawHex) {
     }
   }
 
-  return { backgroundColor: `#${hex}`, color: textColor };
+  return {
+    backgroundColor: `#${hex}`,
+    color: textColor,
+    border: `1px solid #${hex}`,    // ← add this
+  };
 }

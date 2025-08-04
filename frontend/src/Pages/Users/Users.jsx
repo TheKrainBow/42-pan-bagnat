@@ -121,7 +121,7 @@ const Users = () => {
         disableSort: true,
         cell: info =>
           info.getValue()?.map(role => (
-            <RoleBadge key={role.id} hexColor={role.color}>
+            <RoleBadge key={role.id} role={role}>
               {role.name}
             </RoleBadge>
           )) ?? null,

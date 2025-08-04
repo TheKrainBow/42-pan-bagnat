@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import './Field.css';
+import { getReadableStyles } from 'Global/utils/ColorUtils';  
 
 const Field = forwardRef(({
   label,
@@ -12,6 +13,7 @@ const Field = forwardRef(({
   multiline = false,
   rows = 3,
   alwaysShowError = false,
+  backgroundColor,
 }, ref) => {
   const [errors, setErrors] = useState([]);
   const [isTouched, setIsTouched] = useState(alwaysShowError);
@@ -62,6 +64,10 @@ const Field = forwardRef(({
     shake ? 'shake' : '',
   ].join(' ').trim();
 
+  const inputStyle = backgroundColor
+    ? getReadableStyles(backgroundColor)
+    : undefined;
+
   return (
     <div className="field-wrapper">
       <label className="field-label">
@@ -72,6 +78,7 @@ const Field = forwardRef(({
       {multiline ? (
         <textarea
           className={classNames}
+          style={inputStyle}
           rows={rows}
           placeholder={placeholder}
           value={value}
@@ -81,6 +88,7 @@ const Field = forwardRef(({
       ) : (
         <input
           className={classNames}
+          style={inputStyle}
           type={type}
           placeholder={placeholder}
           value={value}

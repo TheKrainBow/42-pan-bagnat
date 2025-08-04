@@ -5,6 +5,7 @@ import {
   getSortedRowModel,
   flexRender,
 } from '@tanstack/react-table';
+import { useNavigate } from 'react-router-dom'
 import './Roles.css';
 import AppIcon from 'Global/AppIcon/AppIcon';
 import Header from 'Global/Header/Header';
@@ -25,6 +26,7 @@ const Roles = () => {
   const scrollContainerRef = useRef(null);
   const isFirst = useRef(true);
   const [showRoleImport, setShowRoleImport] = useState(false);
+  const navigate = useNavigate();
 
   const handleCreateSuccess = () => {
     setRoles([]);
@@ -133,7 +135,7 @@ const Roles = () => {
       header: 'Role',
       accessorKey: 'name',
       cell: info => (
-        <RoleBadge hexColor={info.row.original.color}>
+        <RoleBadge role={info.row.original} onClick={() => navigate(`/admin/roles/${info.row.original.id}`)}>
           {info.getValue()}
         </RoleBadge>
       ),
@@ -198,12 +200,16 @@ const Roles = () => {
           />
           <tbody>
             {table.getRowModel().rows.map(row => (
-              <tr key={row.id} className="role-row">
+              <tr
+                key={row.id}
+                className="role-row clickable-row"
+                onClick={() => navigate(`/admin/roles/${row.original.id}`)}
+              >
                 {row.getVisibleCells().map(cell => {
                   return (
-                    <td key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
+                  <td key={cell.id}>
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
                   );
                 })}
               </tr>

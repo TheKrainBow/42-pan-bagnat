@@ -6,14 +6,14 @@ import api "backend/api/dto"
 // @Description API Role model
 type RolePostInput struct {
 	Name  string `json:"name" example:"IT"`
-	Color string `json:"color" example:"0xFF00FF"`
+	Color string `json:"color" example:"#FF00FF"`
 }
 
 // Define the model for the API Role input
 // @Description API Role model
 type RolePatchInput struct {
 	Name  string `json:"name" example:"IT"`
-	Color string `json:"color" example:"0xFF00FF"`
+	Color string `json:"color" example:"#FF00FF"`
 }
 
 // Define the model for the API GET User response

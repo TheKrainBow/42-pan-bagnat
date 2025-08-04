@@ -10,13 +10,13 @@ VALUES
 -- BASE ROLES
 INSERT INTO roles (id, name, color)
 VALUES
-  ('role_01HZXYZDE0420','Student',     '0x000000'),
-  ('role_01HZXYZDE0430','ADM',         '0x00FF00'),
-  ('role_01HZXYZDE0440','Pedago',      '0xFF0000'),
-  ('role_01HZXYZDE0450','IT',          '0xFF00FF'),
-  ('role_01HZXYZDE0460','Reviewer',    '0xAAAAAA'),
-  ('role_01HZXYZDE0461','Editor',      '0xBBBBBB'),
-  ('role_01HZXYZDE0462','Manager',     '0xCCCCCC');
+  ('role_01HZXYZDE0420','Student',     '#000000'),
+  ('role_01HZXYZDE0430','ADM',         '#00FF00'),
+  ('role_01HZXYZDE0440','Pedago',      '#FF0000'),
+  ('role_01HZXYZDE0450','IT',          '#FF00FF'),
+  ('role_01HZXYZDE0460','Reviewer',    '#AAAAAA'),
+  ('role_01HZXYZDE0461','Editor',      '#BBBBBB'),
+  ('role_01HZXYZDE0462','Manager',     '#CCCCCC');
 
 -- MODULES: initial 4
 INSERT INTO modules (id, name, slug, version, status, git_url, icon_url, latest_version, late_commits, last_update)

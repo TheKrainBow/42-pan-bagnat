@@ -4,10 +4,11 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 
 import './App.css';
 import Users from './Pages/Users/Users';
-import UserDetail from './Pages/Users/UserDetail';
 import Roles from './Pages/Roles/Roles';
 import Modules from './Pages/Modules/Modules';
 import ModuleDetails from './Pages/Modules/ModuleDetails/ModuleDetails';
+import RoleDetail from 'Pages/Roles/RoleDetail/RoleDetail';
+import UserDetail from './Pages/Users/UserDetail';
 import ModulePage from './Pages/Modules/ModulePage/ModulePage';
 import LoginPage from "./Pages/Login/Login";
 import Sidebar from 'Global/Sidebar/Sidebar';
@@ -39,6 +40,7 @@ function Main() {
           <Route path="/admin/modules" element={<Modules onSort="name" />} />
           <Route path="/admin/modules/:moduleId" element={<ModuleDetails />} />
           <Route path="/admin/roles" element={<Roles onSort="name" />} />
+          <Route path="/admin/roles/:roleId" element={<RoleDetail />} />
           <Route path="/admin/users" element={<Users onSort="-last_seen" />} />
           <Route path="/admin/users/:identifier" element={<UserDetail />} />
           <Route path="/login" element={<LoginPage />} />

@@ -15,9 +15,12 @@
   background: none;
   border: none;
   color: inherit;
-  cursor: pointer;
   font-size: 0.9rem;
   padding: 0;
   margin: 0;
   line-height: 1;
+}
+
+.role-badge.with-hover:hover {
+  cursor: pointer;
 }

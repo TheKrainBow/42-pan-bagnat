@@ -9,14 +9,14 @@ import (
 type Role struct {
 	ID                string `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X" db:"id"`
 	Name              string `json:"name" example:"captain-hook" db:"name"`
-	Color             string `json:"color" example:"0xFF00FF" db:"color"`
+	Color             string `json:"color" example:"#FF00FF" db:"color"`
 	AssignedByDefault bool   `json:"assigned_by_default" example:"true" db:"assigned_by_default"`
 }
 
 type RolePatch struct {
 	ID    string  `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
 	Name  *string `json:"name" example:"captain-hook"`
-	Color *string `json:"color" example:"0xFF00FF"`
+	Color *string `json:"color" example:"#FF00FF"`
 }
 
 type RoleOrderField string

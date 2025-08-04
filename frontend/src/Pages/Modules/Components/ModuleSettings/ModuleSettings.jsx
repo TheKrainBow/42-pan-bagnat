@@ -4,6 +4,7 @@ import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import Button from 'Global/Button/Button';
 import { fetchWithAuth } from "Global/utils/Auth";
 import ModuleAboutSection from '../ModuleAboutSection/ModuleAboutSection';
+import { useNavigate } from 'react-router-dom'
 import './ModuleSettings.css';
 
 export default function ModuleSettings({
@@ -24,6 +25,7 @@ export default function ModuleSettings({
   const [showRoleSearch, setShowRoleSearch] = useState(false);
   const [searchRoleTerm, setSearchRoleTerm] = useState("");
   const dropdownRef = useRef();
+  const navigate = useNavigate();
 
   // Load available roles once (or whenever module changes)
   useEffect(() => {
@@ -138,7 +140,8 @@ export default function ModuleSettings({
             : moduleRoles.map(role => (
                 <RoleBadge
                   key={role.id}
-                  hexColor={role.color}
+                  role={role}
+                  onClick={() => navigate(`/admin/roles/${role.id}`)}
                   onDelete={() => handleRoleRemove(role)}
                 >
                   {role.name}
@@ -163,7 +166,7 @@ export default function ModuleSettings({
                     className="role-line role-line-clickable"
                     onClick={() => handleAddRole(role)}
                   >
-                    <RoleBadge hexColor={role.color}>
+                    <RoleBadge role={role}>
                       {role.name}
                     </RoleBadge>
                   </div>

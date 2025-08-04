@@ -15,10 +15,10 @@ VALUES
 
 INSERT INTO roles (id, name, color)
 VALUES
-  ('role_01HZXYZDE0420', 'Student', '0x000000'),
-  ('role_01HZXYZDE0430', 'ADM', '0x00FF00'),
-  ('role_01HZXYZDE0440', 'Pedago', '0xFF0000'),
-  ('role_01HZXYZDE0450', 'IT', '0xFF00FF');
+  ('role_01HZXYZDE0420', 'Student', '#000000'),
+  ('role_01HZXYZDE0430', 'ADM', '#00FF00'),
+  ('role_01HZXYZDE0440', 'Pedago', '#FF0000'),
+  ('role_01HZXYZDE0450', 'IT', '#FF00FF');
 
 INSERT INTO user_roles (user_id, role_id)
 VALUES

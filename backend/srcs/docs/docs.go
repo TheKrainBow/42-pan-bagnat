@@ -502,7 +502,7 @@ const docTemplate = `{
             "properties": {
                 "color": {
                     "type": "string",
-                    "example": "0xFF00FF"
+                    "example": "#FF00FF"
                 },
                 "id": {
                     "type": "string",
@@ -520,7 +520,7 @@ const docTemplate = `{
             "properties": {
                 "color": {
                     "type": "string",
-                    "example": "0xFF00FF"
+                    "example": "#FF00FF"
                 },
                 "name": {
                     "type": "string",

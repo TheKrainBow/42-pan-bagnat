@@ -56,7 +56,7 @@ definitions:
     description: API Role model
     properties:
       color:
-        example: "0xFF00FF"
+        example: "#FF00FF"
         type: string
       id:
         example: role_01HZ0MMK4S6VQW4WPHB6NZ7R7X
@@ -69,7 +69,7 @@ definitions:
     description: API Role model
     properties:
       color:
-        example: "0xFF00FF"
+        example: "#FF00FF"
         type: string
       name:
         example: IT

@@ -1,0 +1,41 @@
+.module-simple-badge {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  background-color: var(--border);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin: 4px;
+  transition: background 0.2s;
+  font-size: 1rem;
+  cursor: pointer;
+  height: 48px;             /* match module badge height */
+}
+
+.module-simple-badge-avatar {
+  width: 48px;              /* match module icon size */
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.module-simple-badge-name {
+  color: var(--text-primary);
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.module-simple-badge.with-hover:hover {
+  background: var(--light-red-background-hover);
+  cursor: pointer;
+}
+
+.module-simple-badge-delete {
+  background: transparent;
+  border: none;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--text-muted);
+}
