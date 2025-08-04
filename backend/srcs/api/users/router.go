@@ -9,6 +9,6 @@ func RegisterRoutes(r chi.Router) {
 	r.Get("/me", GetUserMe)
 	r.Patch("/{identifier}", PatchUser)
 	r.Delete("/{identifier}", DeleteUser)
-	r.Post("/{identifier}/roles/{role_id}", PostUserRole)
-	r.Delete("/{identifier}/roles/{role_id}", DeleteUserRole)
+	r.Post("/{identifier}/roles/{roleID}", PostUserRole)
+	r.Delete("/{identifier}/roles/{roleID}", DeleteUserRole)
 }

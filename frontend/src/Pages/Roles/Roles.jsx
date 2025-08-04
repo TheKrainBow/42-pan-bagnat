@@ -10,6 +10,8 @@ import AppIcon from 'Global/AppIcon/AppIcon';
 import Header from 'Global/Header/Header';
 import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import ArrayHeader from 'Global/ArrayHeader/ArrayHeader';
+import Button from 'Global/Button/Button';
+import RoleImport from './RoleImport/RoleImport';
 import { fetchWithAuth } from 'Global/utils/Auth';
 
 const Roles = () => {
@@ -22,7 +24,13 @@ const Roles = () => {
   const loadingRef = useRef(false);
   const scrollContainerRef = useRef(null);
   const isFirst = useRef(true);
+  const [showRoleImport, setShowRoleImport] = useState(false);
 
+  const handleCreateSuccess = () => {
+    setRoles([]);
+    setNextPage('');
+    fetchRoles(false, '');
+  };
   // fetch roles (with optional append for infinite‐scroll)
   const fetchRoles = useCallback(async (append = false, token = '') => {
     if (loadingRef.current) return;
@@ -180,6 +188,13 @@ const Roles = () => {
             table={table}
             handleSort={handleSort}
             getSortDirection={getSortDirection}
+            headerRight={
+              <Button
+                label={'Import Role'}
+                color="blue"
+                onClick={() => setShowRoleImport(true)}
+             />
+            }
           />
           <tbody>
             {table.getRowModel().rows.map(row => (
@@ -201,6 +216,11 @@ const Roles = () => {
           </div>
         )}
       </div>
+      <RoleImport
+        show={showRoleImport}
+        onClose={() => setShowRoleImport(false)}
+        onCreateSuccess={handleCreateSuccess}
+      />
     </div>
   );
 };

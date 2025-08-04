@@ -113,7 +113,6 @@ export default function UserDetail() {
       setSearchRoleTerm("");
     } catch (err) {
       console.error(err);
-      // Optional: show a toast or error message
     }
   }
 
@@ -135,7 +134,6 @@ export default function UserDetail() {
       });
     } catch (err) {
       console.error(err);
-      // Optional: show a toast or error message
     }
   }
 
