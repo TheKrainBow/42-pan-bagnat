@@ -42,7 +42,7 @@ func TestRolePaginationToken_RoundTrip(t *testing.T) {
 			LastRole: &database.Role{
 				ID:    "user_01",
 				Name:  "alice",
-				Color: "0xFFFFFF",
+				Color: "#FFFFFF",
 			},
 			Limit: 0,
 		},
@@ -55,7 +55,7 @@ func TestRolePaginationToken_RoundTrip(t *testing.T) {
 			LastRole: &database.Role{
 				ID:    "user_01",
 				Name:  "alice",
-				Color: "0xFFFFFF",
+				Color: "#FFFFFF",
 			},
 			Limit: 7,
 		},

@@ -15,10 +15,10 @@ VALUES
 
 INSERT INTO roles (id, name, color)
 VALUES
-  ('role_01HZXYZDE0420', 'Student', '0x000000'),
-  ('role_01HZXYZDE0430', 'ADM', '0x00FF00'),
-  ('role_01HZXYZDE0440', 'Pedago', '0xFF0000'),
-  ('role_01HZXYZDE0450', 'IT', '0xFF00FF');
+  ('role_01HZXYZDE0420', 'Student', '#000000'),
+  ('role_01HZXYZDE0430', 'ADM', '#00FF00'),
+  ('role_01HZXYZDE0440', 'Pedago', '#FF0000'),
+  ('role_01HZXYZDE0450', 'IT', '#FF00FF');
 
 INSERT INTO user_roles (user_id, role_id)
 VALUES
@@ -53,26 +53,26 @@ INSERT INTO users (id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_st
 
 -- 2) Add a bunch of roles (we now have 24 total, enough to test pagination)
 INSERT INTO roles (id, name, color) VALUES
-  ('role_01HZXYZDE0460', 'Reviewer',    '0xAAAAAA'),
-  ('role_01HZXYZDE0461', 'Editor',      '0xBBBBBB'),
-  ('role_01HZXYZDE0462', 'Manager',     '0xCCCCCC'),
-  ('role_01HZXYZDE0463', 'Support',     '0xDDDDDD'),
-  ('role_01HZXYZDE0464', 'Operator',    '0xEEEEEE'),
-  ('role_01HZXYZDE0465', 'Guest',       '0x111111'),
-  ('role_01HZXYZDE0466', 'Developer',   '0x222222'),
-  ('role_01HZXYZDE0467', 'Analyst',     '0x333333'),
-  ('role_01HZXYZDE0468', 'Designer',    '0x444444'),
-  ('role_01HZXYZDE0469', 'Tester',      '0x555555'),
-  ('role_01HZXYZDE0470', 'Maintainer',  '0x666666'),
-  ('role_01HZXYZDE0471', 'Contributor', '0x777777'),
-  ('role_01HZXYZDE0472', 'Owner',       '0x888888'),
-  ('role_01HZXYZDE0473', 'SuperAdmin',  '0x999999'),
-  ('role_01HZXYZDE0474', 'Moderator',   '0x123456'),
-  ('role_01HZXYZDE0475', 'Auditor',     '0x654321'),
-  ('role_01HZXYZDE0476', 'Architect',   '0xABCDEF'),
-  ('role_01HZXYZDE0477', 'Coordinator', '0xFEDCBA'),
-  ('role_01HZXYZDE0478', 'Planner',     '0x0F0F0F'),
-  ('role_01HZXYZDE0479', 'Strategist',  '0xF0F0F0');
+  ('role_01HZXYZDE0460', 'Reviewer',    '#AAAAAA'),
+  ('role_01HZXYZDE0461', 'Editor',      '#BBBBBB'),
+  ('role_01HZXYZDE0462', 'Manager',     '#CCCCCC'),
+  ('role_01HZXYZDE0463', 'Support',     '#DDDDDD'),
+  ('role_01HZXYZDE0464', 'Operator',    '#EEEEEE'),
+  ('role_01HZXYZDE0465', 'Guest',       '#111111'),
+  ('role_01HZXYZDE0466', 'Developer',   '#222222'),
+  ('role_01HZXYZDE0467', 'Analyst',     '#333333'),
+  ('role_01HZXYZDE0468', 'Designer',    '#444444'),
+  ('role_01HZXYZDE0469', 'Tester',      '#555555'),
+  ('role_01HZXYZDE0470', 'Maintainer',  '#666666'),
+  ('role_01HZXYZDE0471', 'Contributor', '#777777'),
+  ('role_01HZXYZDE0472', 'Owner',       '#888888'),
+  ('role_01HZXYZDE0473', 'SuperAdmin',  '#999999'),
+  ('role_01HZXYZDE0474', 'Moderator',   '#123456'),
+  ('role_01HZXYZDE0475', 'Auditor',     '#654321'),
+  ('role_01HZXYZDE0476', 'Architect',   '#ABCDEF'),
+  ('role_01HZXYZDE0477', 'Coordinator', '#FEDCBA'),
+  ('role_01HZXYZDE0478', 'Planner',     '#0F0F0F'),
+  ('role_01HZXYZDE0479', 'Strategist',  '#F0F0F0');
 
 -- 3) Add some new modules (applications) for testing
 INSERT INTO modules (id, name, slug, version, status, git_url, latest_version, late_commits, last_update) VALUES

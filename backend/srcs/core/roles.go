@@ -89,6 +89,12 @@ func GetRole(roleID string) (Role, error) {
 		dto.Modules = DatabaseModulesToModules(modules)
 	}
 
+	users, err := database.GetRoleUsers(roleID)
+	if err == nil {
+		dto.Users = DatabaseUsersToUsers(users)
+		dto.UsersCount = len(dto.Users)
+	}
+
 	return dto, nil
 }
 

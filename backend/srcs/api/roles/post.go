@@ -28,7 +28,7 @@ func PostRole(w http.ResponseWriter, r *http.Request) {
 	dest := api.Role{
 		ID:    id.String(),
 		Name:  "Test",
-		Color: "0xFF00FF",
+		Color: "#FF00FF",
 	}
 
 	// Marshal the dest struct into JSON
