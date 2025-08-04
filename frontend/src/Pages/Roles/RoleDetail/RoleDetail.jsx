@@ -163,14 +163,23 @@ export default function RoleDetail() {
               {name}
             </RoleBadge>
           </h2>
+          <div className="button-wrapper">
+            <Button
+              label={loading ? 'Saving…' : 'Save Changes'}
+              color="blue"
+              onClick={handleSave}
+              disabled={true}
+              disabledMessage={"Not implemented (sorry)"}
+            />
 
-          <Button
-            label={loading ? 'Saving…' : 'Save Changes'}
-            color="gray"
-            onClick={handleSave}
-            disabled={true}
-            disabledMessage={"Nothing to save"}
-          />
+            <Button
+              label={'🗑️ Delete Role'}
+              color="red"
+              onClick={handleSave}
+              disabled={true}
+              disabledMessage={"Not implemented (sorry)"}
+            />
+          </div>
         </div>
         <div className="role-form">
           <Field ref={nameRef} label="Name" value={name} onChange={e=>setName(e.target.value)} required />
