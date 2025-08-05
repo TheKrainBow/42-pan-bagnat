@@ -63,12 +63,12 @@ type ModulePatch struct {
 }
 
 type ModuleLog struct {
-	ID        int64                  `json:"id" db:"id"`
-	ModuleID  string                 `json:"module_id" db:"module_id"`
-	Level     string                 `json:"level" db:"level"`
-	Message   string                 `json:"message" db:"message"`
-	Meta      map[string]interface{} `json:"meta" db:"meta"`
-	CreatedAt time.Time              `json:"created_at" db:"created_at"`
+	ID        int64          `json:"id" db:"id"`
+	ModuleID  string         `json:"module_id" db:"module_id"`
+	Level     string         `json:"level" db:"level"`
+	Message   string         `json:"message" db:"message"`
+	Meta      map[string]any `json:"meta" db:"meta"`
+	CreatedAt time.Time      `json:"created_at" db:"created_at"`
 }
 
 type ModuleOrder struct {
@@ -499,7 +499,7 @@ func PatchModule(patch ModulePatch) (Module, error) {
 
 	var (
 		setClauses []string
-		args       []interface{}
+		args       []any
 		argPos     = 1
 	)
 

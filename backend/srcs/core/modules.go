@@ -59,12 +59,12 @@ type ModulePagination struct {
 }
 
 type ModuleLog struct {
-	ID        int64                  `json:"id"`
-	ModuleID  string                 `json:"module_id"`
-	Level     string                 `json:"level"`
-	Message   string                 `json:"message"`
-	Meta      map[string]interface{} `json:"meta"`
-	CreatedAt time.Time              `json:"created_at"`
+	ID        int64          `json:"id"`
+	ModuleID  string         `json:"module_id"`
+	Level     string         `json:"level"`
+	Message   string         `json:"message"`
+	Meta      map[string]any `json:"meta"`
+	CreatedAt time.Time      `json:"created_at"`
 }
 
 type ModuleLogsPagination struct {

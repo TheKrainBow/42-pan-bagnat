@@ -1,140 +1,499 @@
 basePath: /api/v1
 definitions:
-  modules.Module:
-    description: API Module model
+  api.Module:
     properties:
+      git_branch:
+        description: GitBranch is the branch currently tracked for deployments
+        example: main
+        type: string
+      git_url:
+        description: GitURL is the repository URL where the module’s source lives
+        example: https://github.com/some-user/some-repo
+        type: string
+      icon_url:
+        description: IconURL is the link to the module’s icon or logo
+        example: https://someURL/image.png
+        type: string
       id:
+        description: ID is the unique identifier of the module
         example: module_01HZ0MMK4S6VQW4WPHB6NZ7R7X
         type: string
       last_update:
+        description: LastUpdate is the UTC timestamp of the module’s last update check
         example: "2025-02-18T15:00:00Z"
         type: string
       late_commits:
+        description: LateCommits is the number of commits behind the latest version
         example: 2
         type: integer
       latest_version:
+        description: LatestVersion is the most recent version available upstream
         example: "1.7"
         type: string
       name:
-        example: captain-hook
+        description: Name is the human-readable title of the module
+        example: Captain Hook
+        type: string
+      roles:
+        description: Roles lists the roles that have access to this module
+        items:
+          $ref: '#/definitions/api.Role'
+        type: array
+      slug:
+        description: Slug is the URL-friendly identifier for the module
+        example: captain-hook-main
+        type: string
+      ssh_public_key:
+        description: SSHPublicKey is the RSA public key used for module deployments
+        example: ssh-rsa AAAA...
         type: string
       status:
         allOf:
-        - $ref: '#/definitions/modules.ModuleStatus'
+        - $ref: '#/definitions/api.ModuleStatus'
+        description: Status indicates whether the module is enabled or disabled
         example: enabled
-      url:
-        example: https://github.com/some-user/some-repo
-        type: string
       version:
+        description: Version is the currently deployed version of the module
         example: "1.2"
         type: string
+    type: object
+  api.ModuleLog:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      level:
+        type: string
+      message:
+        type: string
+      meta:
+        additionalProperties: {}
+        type: object
+      module_id:
+        type: string
+    type: object
+  api.ModulePage:
+    properties:
+      id:
+        example: page_01HZ0MMK4S6VQW4WPHB6NZ7R7X
+        type: string
+      is_public:
+        type: boolean
+      module_id:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+      url:
+        type: string
+    type: object
+  api.ModuleStatus:
+    enum:
+    - cloning
+    - waiting_for_deploy
+    - disabled
+    - enabled
+    type: string
+    x-enum-varnames:
+    - Cloning
+    - WaitingDeploy
+    - Disabled
+    - Enabled
+  api.Role:
+    properties:
+      color:
+        description: Color is the hex color code associated with the role in the UI
+        example: '#FF00FF'
+        type: string
+      id:
+        description: ID is the unique identifier of the role
+        example: role_01HZ0MMK4S6VQW4WPHB6NZ7R7X
+        type: string
+      is_default:
+        description: IsDefault indicates whether this role is assigned by default
+          to new users
+        example: true
+        type: boolean
+      modules:
+        description: Modules lists the Module objects this role grants access to
+        items:
+          $ref: '#/definitions/api.Module'
+        type: array
+      name:
+        description: Name is the human‐readable name of the role (e.g. "IT", "Admin")
+        example: IT
+        type: string
+      users:
+        description: Users lists the User objects that have this role
+        items:
+          $ref: '#/definitions/api.User'
+        type: array
+      usersCount:
+        description: UsersCount is the total number of users assigned to this role
+        example: 42
+        type: integer
+    type: object
+  api.User:
+    properties:
+      ft_id:
+        description: FtID is the numeric 42-intranet ID of the user
+        example: 1492
+        type: integer
+      ft_is_staff:
+        description: FtIsStaff indicates whether the user is a 42-intranet staff member
+        example: true
+        type: boolean
+      ft_login:
+        description: FtLogin is the 42-intranet login handle (e.g. "heinz")
+        example: heinz
+        type: string
+      ft_photo:
+        description: PhotoURL is the URL to the user’s 42-intranet profile picture
+        example: https://intra.42.fr/some-login/some-id
+        type: string
+      id:
+        description: ID is the unique identifier of the user
+        example: user_01HZ0MMK4S6VQW4WPHB6NZ7R7X
+        type: string
+      is_staff:
+        description: IsStaff indicates whether the user has staff privileges within
+          Pan Bagnat
+        example: true
+        type: boolean
+      last_seen:
+        description: LastSeen is the UTC timestamp of the user’s last activity
+        example: "2025-02-18T15:00:00Z"
+        type: string
+      roles:
+        description: Roles lists the roles assigned to the user
+        items:
+          $ref: '#/definitions/api.Role'
+        type: array
+    type: object
+  core.ContainerStatus:
+    enum:
+    - running
+    - exited
+    - paused
+    - created
+    - restarting
+    - dead
+    - unknown
+    type: string
+    x-enum-varnames:
+    - ContainerRunning
+    - ContainerExited
+    - ContainerPaused
+    - ContainerCreated
+    - ContainerRestarting
+    - ContainerDead
+    - ContainerUnknown
+  core.ModuleContainer:
+    properties:
+      name:
+        type: string
+      reason:
+        type: string
+      since:
+        type: string
+      status:
+        $ref: '#/definitions/core.ContainerStatus'
+    type: object
+  modules.ComposeRequest:
+    properties:
+      config:
+        description: Config is the full module.yml content to deploy (newlines preserved)
+        example: |
+          version: '3'
+          services:
+            app:
+              image: my-app:latest
+        type: string
+    type: object
+  modules.ConfigResponse:
+    properties:
+      config:
+        description: Config is the raw module.yml content, with newlines preserved
+        example: |
+          foo: bar
+          baz: qux
+        type: string
+    type: object
+  modules.ModuleGetResponse:
+    properties:
+      modules:
+        description: Modules is the list of modules on this page.
+        items:
+          $ref: '#/definitions/api.Module'
+        type: array
+      next_page_token:
+        description: NextPageToken is the token to retrieve the next page of results.
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+        type: string
+    type: object
+  modules.ModuleGitInput:
+    properties:
+      git_branch:
+        description: GitBranch is the branch to check out. Defaults to "main" if omitted.
+        example: main
+        type: string
+      git_url:
+        description: GitURL is the repository URL to clone the module from.
+        example: https://github.com/some-user/some-repo
+        type: string
+      name:
+        description: Name is the human-readable title you want for this module.
+        example: Captain Hook
+        type: string
+    type: object
+  modules.ModuleLogsGetResponse:
+    properties:
+      logs:
+        description: ModuleLogs is the list of log entries for the module.
+        items:
+          $ref: '#/definitions/api.ModuleLog'
+        type: array
+      next_page_token:
+        description: NextPageToken is the token to retrieve the next page of logs.
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
+        type: string
+    type: object
+  modules.ModulePageInput:
+    properties:
+      is_public:
+        description: IsPublic controls whether the page is publicly accessible
+        example: true
+        type: boolean
+      name:
+        description: Name is the slug/identifier for this page (e.g. "home")
+        example: home
+        type: string
+      url:
+        description: URL is the target URL to proxy or redirect for this page
+        example: https://example.com/home
+        type: string
+    type: object
+  modules.ModulePageUpdateInput:
+    properties:
+      is_public:
+        description: IsPublic toggles whether the page is public.
+        example: true
+        type: boolean
+      name:
+        description: Name is the new name for the page.
+        example: Home
+        type: string
+      url:
+        description: URL is the new URL for the page.
+        example: https://example.com/home
+        type: string
+    type: object
+  modules.ModulePagesGetResponse:
+    description: API User model
+    properties:
+      next_page_token:
+        example: BAD87as
+        type: string
+      pages:
+        items:
+          $ref: '#/definitions/api.ModulePage'
+        type: array
     type: object
   modules.ModulePatchInput:
     description: API Module model
     properties:
+      git_url:
+        example: https://github.com/some-user/some-repo
+        type: string
       gitBranch:
         example: main
         type: string
       name:
         example: captain-hook
         type: string
-      url:
-        example: https://github.com/some-user/some-repo
+    type: object
+  modules.ModuleRemoteUpdateInput:
+    properties:
+      git_url:
+        description: GitURL is the new Git repository URL
+        example: https://github.com/some-user/some-repo.git
         type: string
     type: object
-  modules.ModuleStatus:
-    enum:
-    - enabled
-    - disabled
-    - downloading
-    type: string
-    x-enum-varnames:
-    - Enabled
-    - Disabled
-    - Downloading
-  roles.Role:
-    description: API Role model
+  roles.RoleCreateInput:
     properties:
       color:
-        example: "#FF00FF"
+        description: Color is the hex color code for the role.
+        example: '#00FF00'
         type: string
-      id:
-        example: role_01HZ0MMK4S6VQW4WPHB6NZ7R7X
-        type: string
+      is_default:
+        description: IsDefault indicates whether this role is the default for new
+          users.
+        example: false
+        type: boolean
+      modules:
+        description: Modules lists the IDs of modules this role should have access
+          to.
+        example:
+        - '["module_01"'
+        - '"module_02"]'
+        items:
+          type: string
+        type: array
       name:
-        example: IT
+        description: Name is the human-readable name of the role.
+        example: Support
         type: string
+    type: object
+  roles.RoleGetResponse:
+    properties:
+      next_page_token:
+        description: NextPageToken is the token to retrieve the next page of results.
+        example: eyJhbGciOi...
+        type: string
+      roles:
+        description: Roles is the list of roles on this page.
+        items:
+          $ref: '#/definitions/api.Role'
+        type: array
     type: object
   roles.RolePatchInput:
     description: API Role model
     properties:
       color:
-        example: "#FF00FF"
+        description: Color is the new hex color code for the role.
+        example: '#00FF00'
         type: string
+      is_default:
+        description: IsDefault toggles whether this role is the default for new users.
+        example: false
+        type: boolean
       name:
-        example: IT
+        description: Name is the new name for the role.
+        example: Support
         type: string
     type: object
-  users.User:
-    description: API User model
+  users.UserGetResponse:
     properties:
-      ft_id:
-        example: "1492"
+      next_page_token:
+        description: NextPageToken is the token to retrieve the next page of results.
+        example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9
         type: string
-      ft_is_staff:
-        example: true
-        type: boolean
-      ft_login:
-        example: heinz
-        type: string
-      ft_photo:
-        example: https://intra.42.fr/some-login/some-id
-        type: string
-      id:
-        example: user_01HZ0MMK4S6VQW4WPHB6NZ7R7X
-        type: string
-      is_staff:
-        example: true
-        type: boolean
-      last_seen:
-        example: "2025-02-18T15:00:00Z"
-        type: string
-      roles:
+      users:
+        description: Users is the list of users on this page.
         items:
-          $ref: '#/definitions/roles.Role'
+          $ref: '#/definitions/api.User'
+        type: array
+    type: object
+  users.UserPatchInput:
+    properties:
+      is_staff:
+        description: IsStaff toggles whether the user has staff privileges.
+        example: true
+        type: boolean
+      roles:
+        description: Roles is an optional list of role IDs to assign to the user.
+        example:
+        - '["role_01"'
+        - '"role_02"]'
+        items:
+          type: string
         type: array
     type: object
   users.UserPostInput:
-    description: API User model
     properties:
-      gitBranch:
-        example: main
-        type: string
-      id:
-        example: user_01HZ0MMK4S6VQW4WPHB6NZ7R7X
-        type: string
-      login:
+      ft_id:
+        description: FtID is the 42-intranet numeric ID of the user.
+        example: 1492
+        type: integer
+      ft_login:
+        description: FtLogin is the 42-intranet login handle.
         example: heinz
         type: string
-      url:
+      ft_photo:
+        description: FtPhoto is the URL to the user’s 42-intranet avatar.
         example: https://intra.42.fr/some-login/some-id
         type: string
+      is_staff:
+        description: IsStaff indicates whether the user has staff privileges in Pan
+          Bagnat.
+        example: false
+        type: boolean
+      roles:
+        description: Roles lists the role IDs to assign to this user upon creation.
+        example:
+        - '["role_01"'
+        - '"role_02"]'
+        items:
+          type: string
+        type: array
     type: object
-  version.VersionResponse:
-    description: API version response model
-    properties:
-      version:
-        example: "1.1"
-        type: string
-    type: object
-host: heinz.42nice.fr:8080
+host: localhost:8080
 info:
   contact: {}
   description: API REST du projet Pan Bagnat.
   title: Pan Bagnat API
   version: "1.1"
 paths:
-  /modules:
+  /admin/module-page/{pageName}:
+    get:
+      description: Reverse-proxies /module-page/{pageName} to the module’s configured
+        URL.
+      parameters:
+      - description: Name of the module page
+        in: path
+        name: pageName
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Proxied content
+          schema:
+            type: string
+        "400":
+          description: Module page name not provided
+          schema:
+            type: string
+        "500":
+          description: Error looking up or proxying the module page
+          schema:
+            type: string
+      summary: Proxy Module Page (root)
+      tags:
+      - Pages
+  /admin/module-page/{pageName}/{path}:
+    get:
+      description: Reverse-proxies /module-page/{pageName}/{path}/* to the module’s
+        configured URL, stripping the prefix.
+      parameters:
+      - description: Name of the module page
+        in: path
+        name: pageName
+        required: true
+        type: string
+      - description: Sub-path under the module page (may include slashes)
+        in: path
+        name: path
+        required: true
+        type: string
+      responses:
+        "200":
+          description: Proxied content
+          schema:
+            type: string
+        "400":
+          description: Module page name or path not provided
+          schema:
+            type: string
+        "500":
+          description: Error looking up or proxying the module page
+          schema:
+            type: string
+      summary: Proxy Module Page (sub-paths)
+      tags:
+      - Pages
+  /admin/modules:
     delete:
       consumes:
       - application/json
@@ -151,65 +510,696 @@ paths:
       responses:
         "200":
           description: OK
+      security:
+      - SessionAuth: []
       summary: Delete Module
       tags:
-      - modules
+      - Modules
     get:
       consumes:
       - application/json
-      description: Returns all the available modules for your campus
+      description: Returns all available modules for your campus, with optional filtering,
+        sorting, and pagination.
+      parameters:
+      - description: Filter expression (e.g. \
+        in: query
+        name: filter
+        type: string
+      - description: Pagination token for the next page
+        in: query
+        name: next_page_token
+        type: string
+      - default: desc
+        description: 'Sort order: asc or desc'
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - default: 50
+        description: Maximum number of items per page
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/modules.Module'
-            type: array
+            $ref: '#/definitions/modules.ModuleGetResponse'
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - SessionAuth: []
       summary: Get Module List
       tags:
-      - modules
+      - Modules
     post:
       consumes:
       - application/json
-      description: Download a new module for your campus
+      description: Downloads and registers a new module for your campus by cloning
+        from the provided Git URL.
       parameters:
-      - description: Module input
+      - description: Git URL, branch, and module name
         in: body
         name: input
         required: true
         schema:
-          $ref: '#/definitions/modules.ModulePatchInput'
+          $ref: '#/definitions/modules.ModuleGitInput'
       produces:
       - application/json
       responses:
         "200":
-          description: OK
+          description: The newly imported module
           schema:
-            $ref: '#/definitions/modules.Module'
-      summary: Post Module List
+            $ref: '#/definitions/api.Module'
+        "400":
+          description: Invalid or missing fields
+          schema:
+            type: string
+        "500":
+          description: Failed to import module
+          schema:
+            type: string
+      summary: Post Module
       tags:
-      - modules
-  /modules/{moduleID}:
+      - Modules
+  /admin/modules/{moduleID}:
     get:
       consumes:
       - application/json
-      description: Returns all the available modules for your campus
+      description: Returns all information about a module given its ID.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/modules.Module'
-      summary: Get Module List
+            $ref: '#/definitions/api.Module'
+        "400":
+          description: ID not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - SessionAuth: []
+      summary: Get Module
       tags:
-      - modules
+      - Modules
     patch:
       consumes:
       - application/json
-      description: Download a new module for your campus
+      description: Updates the specified fields of a module (e.g. name, Git URL/branch,
+        status).
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/modules.ModulePatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The updated module
+          schema:
+            $ref: '#/definitions/api.Module'
+        "400":
+          description: Invalid module ID or JSON body
+          schema:
+            type: string
+        "404":
+          description: Module not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Patch Module
+      tags:
+      - Modules
+  /admin/modules/{moduleID}/docker/{containerName}:
+    delete:
+      consumes:
+      - application/json
+      description: Stops and removes the specified container for the given module.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Container name
+        in: path
+        name: containerName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "404":
+          description: Module not found
+          schema:
+            type: string
+        "500":
+          description: Failed to delete container
+          schema:
+            type: string
+      summary: Delete Module Container
+      tags:
+      - Modules
+      - Docker
+  /admin/modules/{moduleID}/docker/{containerName}/logs:
+    get:
+      consumes:
+      - application/json
+      description: Returns the log lines for the specified container within a module.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Container name
+        in: path
+        name: containerName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: An array of log lines
+          schema:
+            items:
+              type: string
+            type: array
+        "400":
+          description: ID not found or container name not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get Container Logs
+      tags:
+      - Modules
+      - Docker
+      - Logs
+  /admin/modules/{moduleID}/docker/{containerName}/restart:
+    post:
+      consumes:
+      - application/json
+      description: Restarts the specified container for the given module.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Container name
+        in: path
+        name: containerName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "404":
+          description: Module not found
+          schema:
+            type: string
+        "500":
+          description: Failed to restart container
+          schema:
+            type: string
+      summary: Restart Module Container
+      tags:
+      - Modules
+      - Docker
+  /admin/modules/{moduleID}/docker/{containerName}/start:
+    post:
+      consumes:
+      - application/json
+      description: Initiates the start of the specified container for the given module.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Container name
+        in: path
+        name: containerName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "404":
+          description: Module not found
+          schema:
+            type: string
+        "500":
+          description: Failed to start container
+          schema:
+            type: string
+      summary: Start Module Container
+      tags:
+      - Modules
+      - Docker
+  /admin/modules/{moduleID}/docker/{containerName}/stop:
+    post:
+      consumes:
+      - application/json
+      description: Stops the specified container for the given module.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Container name
+        in: path
+        name: containerName
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "404":
+          description: Module not found
+          schema:
+            type: string
+        "500":
+          description: Failed to stop container
+          schema:
+            type: string
+      summary: Stop Module Container
+      tags:
+      - Modules
+      - Docker
+  /admin/modules/{moduleID}/docker/config:
+    get:
+      consumes:
+      - application/json
+      description: Returns the module’s config.yml as a YAML string under the `config`
+        field.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/modules.ConfigResponse'
+        "400":
+          description: ID not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - SessionAuth: []
+      summary: Get Module Configuration
+      tags:
+      - Modules
+      - Docker
+  /admin/modules/{moduleID}/docker/deploy:
+    post:
+      consumes:
+      - application/json
+      description: Saves the provided YAML config and triggers a deployment for the
+        specified module.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: YAML configuration payload
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/modules.ComposeRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Deployment started for module {moduleID}
+          schema:
+            type: string
+        "400":
+          description: Invalid request payload or missing moduleID
+          schema:
+            type: string
+        "404":
+          description: module {moduleID} doesn't exist
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Deploy Module Configuration
+      tags:
+      - Modules
+      - Docker
+  /admin/modules/{moduleID}/docker/ls:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all container names and metadata for the specified module.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: List of containers
+          schema:
+            items:
+              $ref: '#/definitions/core.ModuleContainer'
+            type: array
+        "400":
+          description: ID not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get Module Containers
+      tags:
+      - Modules
+      - Docker
+  /admin/modules/{moduleID}/git/clone:
+    post:
+      consumes:
+      - application/json
+      description: Starts an asynchronous clone of the Git repository for the specified
+        module. Only allowed if the module isn’t already cloned.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: 'Cloning module: {moduleID}'
+          schema:
+            type: string
+        "404":
+          description: module {moduleID} doesn't exist
+          schema:
+            type: string
+        "409":
+          description: module {moduleID} is already cloned
+          schema:
+            type: string
+        "500":
+          description: error while cloning module {moduleID}
+          schema:
+            type: string
+      summary: Clone Module Repository
+      tags:
+      - Modules
+      - Git
+  /admin/modules/{moduleID}/git/pull:
+    post:
+      consumes:
+      - application/json
+      description: Pulls the latest commits for a previously cloned module.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Pulling latest changes for module {moduleID}
+          schema:
+            type: string
+        "404":
+          description: module {moduleID} doesn't exist
+          schema:
+            type: string
+        "409":
+          description: module {moduleID} is not cloned yet
+          schema:
+            type: string
+        "500":
+          description: error while pulling module {moduleID}
+          schema:
+            type: string
+      summary: Pull Module Repository
+      tags:
+      - Modules
+      - Git
+  /admin/modules/{moduleID}/git/update-remote:
+    post:
+      consumes:
+      - application/json
+      description: Changes the Git remote URL for a previously imported module.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: New Git URL
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/modules.ModuleRemoteUpdateInput'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Updating remote for module {moduleID}
+          schema:
+            type: string
+        "400":
+          description: Invalid or missing 'git_url'
+          schema:
+            type: string
+        "404":
+          description: module {moduleID} doesn't exist
+          schema:
+            type: string
+        "500":
+          description: Error updating remote for module {moduleID}
+          schema:
+            type: string
+      summary: Update Module Git Remote
+      tags:
+      - Modules
+      - Git
+  /admin/modules/{moduleID}/logs:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves logs for the specified module, with optional filtering,
+        ordering, and pagination.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Filter expression (e.g. \
+        in: query
+        name: filter
+        type: string
+      - description: Pagination token for the next page
+        in: query
+        name: next_page_token
+        type: string
+      - default: desc
+        description: 'Sort order: asc or desc'
+        in: query
+        name: order
+        type: string
+      - default: 50
+        description: Maximum number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/modules.ModuleLogsGetResponse'
+        "400":
+          description: ID not found or bad query parameter
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - SessionAuth: []
+      summary: Get Module Logs
+      tags:
+      - Modules
+      - Logs
+  /admin/modules/{moduleID}/pages:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all pages for the specified module, with optional filtering,
+        sorting, and pagination.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Filter expression (e.g. \
+        in: query
+        name: filter
+        type: string
+      - description: Pagination token for the next page
+        in: query
+        name: next_page_token
+        type: string
+      - default: desc
+        description: 'Sort order: asc or desc'
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - default: 50
+        description: Maximum number of items per page
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/modules.ModulePagesGetResponse'
+        "400":
+          description: ID not found or invalid pagination token
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - SessionAuth: []
+      summary: Get Module Pages
+      tags:
+      - Modules
+      - Pages
+    post:
+      consumes:
+      - application/json
+      description: Adds a new page under the specified module.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Page creation input
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/modules.ModulePageInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The created module page
+          schema:
+            $ref: '#/definitions/api.ModulePage'
+        "400":
+          description: Invalid input or missing moduleID
+          schema:
+            type: string
+        "500":
+          description: Failed to create module page
+          schema:
+            type: string
+      summary: Create Module Page
+      tags:
+      - Modules
+      - Pages
+  /admin/modules/{moduleID}/pages/{pageID}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a module page for your campus (All page datas will be lost!)
       parameters:
       - description: Module input
         in: body
@@ -222,89 +1212,264 @@ paths:
       responses:
         "200":
           description: OK
-          schema:
-            $ref: '#/definitions/modules.Module'
-      summary: Post Module List
+      security:
+      - SessionAuth: []
+      summary: Delete Module page
       tags:
-      - modules
-  /roles:
-    delete:
+      - Modules
+      - Pages
+    patch:
       consumes:
       - application/json
-      description: Delete a role for your campus (All role datas will be lost!)
+      description: Updates the metadata of a module’s page (name, URL, visibility).
       parameters:
-      - description: Role input
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Page ID
+        in: path
+        name: pageID
+        required: true
+        type: string
+      - description: Fields to update
         in: body
         name: input
         required: true
         schema:
-          $ref: '#/definitions/roles.RolePatchInput'
+          $ref: '#/definitions/modules.ModulePageUpdateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The updated module page
+          schema:
+            $ref: '#/definitions/api.ModulePage'
+        "400":
+          description: Bad request (missing or invalid parameters)
+          schema:
+            type: string
+        "404":
+          description: Page not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Patch Module Page
+      tags:
+      - Modules
+      - Pages
+  /admin/modules/{moduleID}/roles/{roleID}:
+    delete:
+      consumes:
+      - application/json
+      description: Revokes a specific role from a module (by login or ID)
+      parameters:
+      - description: User moduleID (ID or login)
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Role ID
+        in: path
+        name: roleID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Role successfully removed
+      security:
+      - SessionAuth: []
+      summary: Remove role from module
+      tags:
+      - Modules
+      - Roles
+    post:
+      consumes:
+      - application/json
+      description: Assigns the specified role to the given module.
+      parameters:
+      - description: Module ID
+        in: path
+        name: moduleID
+        required: true
+        type: string
+      - description: Role ID
+        in: path
+        name: roleID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Role successfully assigned to module
+          schema:
+            type: string
+        "400":
+          description: Bad request
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Add Role to Module
+      tags:
+      - Modules
+      - Roles
+  /admin/roles:
+    get:
+      consumes:
+      - application/json
+      description: Returns all available roles for your campus, with optional filtering,
+        sorting, and pagination.
+      parameters:
+      - description: Filter expression (e.g. \
+        in: query
+        name: filter
+        type: string
+      - description: Pagination token for the next page
+        in: query
+        name: next_page_token
+        type: string
+      - default: desc
+        description: 'Sort order: asc or desc'
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - default: 50
+        description: Maximum number of items per page
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
+          schema:
+            $ref: '#/definitions/roles.RoleGetResponse'
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get Role List
+      tags:
+      - Roles
+    post:
+      consumes:
+      - application/json
+      description: Imports a new role with the given name, color, default status,
+        and module assignments.
+      parameters:
+      - description: Role creation payload
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/roles.RoleCreateInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The newly created role
+          schema:
+            $ref: '#/definitions/api.Role'
+        "400":
+          description: Invalid JSON input or missing required fields
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create Role
+      tags:
+      - Roles
+  /admin/roles/{roleID}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes the specified role for your campus (all role data will
+        be lost).
+      parameters:
+      - description: Role ID
+        in: path
+        name: roleID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Invalid role ID
+          schema:
+            type: string
+        "404":
+          description: Role not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
       summary: Delete Role
       tags:
-      - roles
+      - Roles
     get:
       consumes:
       - application/json
-      description: Returns all the available roles for your campus
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/roles.Role'
-            type: array
-      summary: Get Role List
-      tags:
-      - roles
-    post:
-      consumes:
-      - application/json
-      description: Download a new role for your campus
+      description: Returns details about a specific role and its associated modules.
       parameters:
-      - description: Role input
-        in: body
-        name: input
+      - description: Role ID
+        in: path
+        name: roleID
         required: true
-        schema:
-          $ref: '#/definitions/roles.RolePatchInput'
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/roles.Role'
-      summary: Post Role List
-      tags:
-      - roles
-  /roles/{roleID}:
-    get:
-      consumes:
-      - application/json
-      description: Returns all the available roles for your campus
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
+            $ref: '#/definitions/api.Role'
+        "400":
+          description: Role ID is required
           schema:
-            $ref: '#/definitions/roles.Role'
-      summary: Get Role List
+            type: string
+        "404":
+          description: Role not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get Role
       tags:
-      - roles
+      - Roles
     patch:
       consumes:
       - application/json
-      description: Download a new module for your campus
+      description: Updates the name, color, and/or default status of an existing role.
       parameters:
-      - description: Role input
+      - description: Role ID
+        in: path
+        name: roleID
+        required: true
+        type: string
+      - description: Fields to update
         in: body
         name: input
         required: true
@@ -314,47 +1479,75 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: The updated role
           schema:
-            $ref: '#/definitions/roles.Role'
-      summary: Post Role List
+            $ref: '#/definitions/api.Role'
+        "400":
+          description: Invalid role ID or JSON body
+          schema:
+            type: string
+        "404":
+          description: Role not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Patch Role
       tags:
-      - roles
-  /users:
-    delete:
-      consumes:
-      - application/json
-      description: Delete a user for your campus (All user datas will be lost!)
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-      summary: Delete User
-      tags:
-      - users
+      - Roles
+  /admin/users:
     get:
       consumes:
       - application/json
-      description: Returns all the available users for your campus
+      description: Returns all available users for your campus, with optional filtering,
+        sorting, and pagination.
+      parameters:
+      - description: Filter expression (e.g. \
+        in: query
+        name: filter
+        type: string
+      - description: Pagination token for the next page
+        in: query
+        name: next_page_token
+        type: string
+      - default: desc
+        description: 'Sort order: asc or desc'
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - default: 50
+        description: Maximum number of items per page
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            items:
-              $ref: '#/definitions/users.User'
-            type: array
+            $ref: '#/definitions/users.UserGetResponse'
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      security:
+      - AdminAuth: []
       summary: Get User List
       tags:
-      - users
+      - Users
     post:
       consumes:
       - application/json
-      description: Download a new user for your campus
+      description: Imports a new user with the given 42-intranet details and optional
+        role assignments.
       parameters:
-      - description: User input
+      - description: User creation payload
         in: body
         name: input
         required: true
@@ -364,40 +1557,306 @@ paths:
       - application/json
       responses:
         "200":
-          description: OK
+          description: The newly created user
           schema:
-            $ref: '#/definitions/users.User'
-      summary: Post User List
+            $ref: '#/definitions/api.User'
+        "400":
+          description: Invalid JSON input or missing required fields
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Create User
       tags:
-      - users
-  /users/{userID}:
+      - Users
+  /admin/users/{identifier}:
     get:
       consumes:
       - application/json
-      description: Returns all the available users for your campus
+      description: Retrieves a user’s details given their ID or login identifier.
+      parameters:
+      - description: User identifier (ID or login)
+        in: path
+        name: identifier
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The requested user object
+          schema:
+            $ref: '#/definitions/api.User'
+        "400":
+          description: Identifier is required
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get User
+      tags:
+      - Users
+    patch:
+      consumes:
+      - application/json
+      description: Modify specific user fields such as staff status or assigned roles.
+      parameters:
+      - description: User ID or login
+        in: path
+        name: identifier
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/users.UserPatchInput'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The updated user object
+          schema:
+            $ref: '#/definitions/api.User'
+        "400":
+          description: Invalid JSON or bad input
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Patch User (staff only)
+      tags:
+      - Users
+  /admin/users/{identifier}/roles/{roleID}:
+    delete:
+      consumes:
+      - application/json
+      description: Revokes the specified role from the user identified by ID or login.
+      parameters:
+      - description: User identifier (ID or login)
+        in: path
+        name: identifier
+        required: true
+        type: string
+      - description: Role ID
+        in: path
+        name: roleID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Invalid identifier or roleID
+          schema:
+            type: string
+        "404":
+          description: User or role not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Remove Role from User
+      tags:
+      - Users
+      - Roles
+    post:
+      consumes:
+      - application/json
+      description: Assigns the specified role to the user identified by ID or login.
+      parameters:
+      - description: User identifier (ID or login)
+        in: path
+        name: identifier
+        required: true
+        type: string
+      - description: Role ID
+        in: path
+        name: roleID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Role successfully assigned to user
+          schema:
+            type: string
+        "400":
+          description: Invalid identifier or roleID
+          schema:
+            type: string
+        "404":
+          description: User or role not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Add Role to User
+      tags:
+      - Users
+      - Roles
+  /admin/users/{userID}:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes the specified user and all associated data.
+      parameters:
+      - description: User ID
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+          schema:
+            type: string
+        "400":
+          description: Invalid user ID
+          schema:
+            type: string
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Delete User
+      tags:
+      - Users
+  /pages:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all pages across modules, with optional filtering, sorting,
+        and pagination.
+      parameters:
+      - description: Filter expression (e.g. \
+        in: query
+        name: filter
+        type: string
+      - description: Pagination token for the next page
+        in: query
+        name: next_page_token
+        type: string
+      - default: desc
+        description: 'Sort order: asc or desc'
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
+      - default: 50
+        description: Maximum number of items per page
+        in: query
+        name: limit
+        type: integer
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/users.User'
-      summary: Get User List
+            $ref: '#/definitions/modules.ModulePagesGetResponse'
+        "400":
+          description: Invalid pagination token
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get Pages
       tags:
-      - users
-  /version:
+      - Pages
+  /ping:
     get:
       consumes:
       - application/json
-      description: Returns the current version of the API
+      description: Get a response from the API
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/version.VersionResponse'
-      summary: Get API version
+            type: string
+      summary: Ping backend API
       tags:
-      - version
+      - Ping
+  /users/me:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves the user profile for the authenticated session.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: The current user’s profile
+          schema:
+            $ref: '#/definitions/api.User'
+        "401":
+          description: Unauthorized
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get Current User
+      tags:
+      - Users
+securityDefinitions:
+  AdminAuth:
+    in: cookie
+    name: session_id
+    type: apiKey
+  SessionAuth:
+    in: cookie
+    name: session_id
+    type: apiKey
 swagger: "2.0"
+tags:
+- description: Operations for managing user accounts, profiles, and permissions
+  name: Users
+- description: Endpoints for creating, updating, and deleting roles and their assignments
+  name: Roles
+- description: Module front-end page configuration, management, and proxy routing
+  name: Pages
+- description: Module container lifecycle operations (start, stop, restart, logs,
+    delete)
+  name: Docker
+- description: Module source repository operations (clone, pull, update remote)
+  name: Git
+- description: 'Core module lifecycle operations: import, list, update, and delete'
+  name: Modules

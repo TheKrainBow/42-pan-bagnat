@@ -71,3 +71,4 @@ networks:
   pan-bagnat-net:
     name: pan-bagnat-net
     driver: bridge
+    external: true

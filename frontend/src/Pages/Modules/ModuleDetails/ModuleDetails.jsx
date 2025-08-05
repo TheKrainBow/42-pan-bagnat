@@ -47,7 +47,7 @@ const ModuleDetails = () => {
 
   const fetchModule = async () => {
     try {
-      const res = await fetchWithAuth(`/api/v1/modules/${moduleId}`);
+      const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}`);
       const data = await res.json();
       setModule(data);
     } catch (err) {
@@ -61,7 +61,7 @@ const ModuleDetails = () => {
   const handleUninstall = () => {
     setShowConfirmUninstall(false);
     setActiveTab("logs")
-    fetchWithAuth(`/api/v1/modules/${moduleId}`, { method: 'DELETE' })
+    fetchWithAuth(`/api/v1/admin/modules/${moduleId}`, { method: 'DELETE' })
       .catch(err => console.error('Failed to uninstall:', err));
   };
 

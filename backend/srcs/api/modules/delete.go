@@ -8,14 +8,15 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// @Security     SessionAuth
 // @Summary      Delete Module
 // @Description  Delete a module for your campus (All module datas will be lost!)
-// @Tags         modules
+// @Tags         Modules
 // @Accept       json
 // @Produce      json
 // @Param        input body ModulePatchInput true "Module input"
 // @Success      200
-// @Router       /modules [delete]
+// @Router       /admin/modules [delete]
 func DeleteModule(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -35,14 +36,15 @@ func DeleteModule(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "OK")
 }
 
+// @Security     SessionAuth
 // @Summary      Delete Module page
 // @Description  Delete a module page for your campus (All page datas will be lost!)
-// @Tags         pages
+// @Tags         Modules,Pages
 // @Accept       json
 // @Produce      json
 // @Param        input body ModulePatchInput true "Module input"
 // @Success      200
-// @Router       /modules/{moduleID}/pages/{pageID} [delete]
+// @Router       /admin/modules/{moduleID}/pages/{pageID} [delete]
 func DeleteModulePage(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -63,16 +65,16 @@ func DeleteModulePage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "OK")
 }
 
+// @Security     SessionAuth
 // @Summary      Remove role from module
 // @Description  Revokes a specific role from a module (by login or ID)
-// @Tags         modules
+// @Tags         Modules,Roles
 // @Accept       json
 // @Produce      json
 // @Param        moduleID path string true "User moduleID (ID or login)"
 // @Param        roleID path string true "Role ID"
 // @Success      204 "Role successfully removed"
-// @Failure      500 {object} api.ErrorResponse "Server error or module not found"
-// @Router       /modules/{moduleID}/roles/{roleID} [delete]
+// @Router       /admin/modules/{moduleID}/roles/{roleID} [delete]
 func DeleteModuleRole(w http.ResponseWriter, r *http.Request) {
 	moduleID := chi.URLParam(r, "moduleID")
 	roleID := chi.URLParam(r, "roleID")

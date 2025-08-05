@@ -29,7 +29,7 @@ export default function ModuleSettings({
 
   // Load available roles once (or whenever module changes)
   useEffect(() => {
-    fetchWithAuth(`/api/v1/roles`)
+    fetchWithAuth(`/api/v1/admin/roles`)
       .then(res => res.json())
       .then(data => setAvailableRoles(data.roles || []))
       .catch(console.error);
@@ -57,7 +57,7 @@ export default function ModuleSettings({
   const handleAddRole = async role => {
     try {
       const res = await fetchWithAuth(
-        `/api/v1/modules/${module.id}/roles/${role.id}`,
+        `/api/v1/admin/modules/${module.id}/roles/${role.id}`,
         { method: "POST" }
       );
       if (!res.ok) throw new Error("Failed to add role");
@@ -74,7 +74,7 @@ export default function ModuleSettings({
   const handleRoleRemove = async role => {
     try {
       const res = await fetchWithAuth(
-        `/api/v1/modules/${module.id}/roles/${role.id}`,
+        `/api/v1/admin/modules/${module.id}/roles/${role.id}`,
         { method: "DELETE" }
       );
       if (!res.ok) throw new Error("Failed to remove role");

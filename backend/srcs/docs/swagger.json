@@ -6,12 +6,100 @@
         "contact": {},
         "version": "1.1"
     },
-    "host": "heinz.42nice.fr:8080",
+    "host": "localhost:8080",
     "basePath": "/api/v1",
     "paths": {
-        "/modules": {
+        "/admin/module-page/{pageName}": {
             "get": {
-                "description": "Returns all the available modules for your campus",
+                "description": "Reverse-proxies /module-page/{pageName} to the module’s configured URL.",
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Proxy Module Page (root)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the module page",
+                        "name": "pageName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Proxied content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Module page name not provided",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error looking up or proxying the module page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/module-page/{pageName}/{path}": {
+            "get": {
+                "description": "Reverse-proxies /module-page/{pageName}/{path}/* to the module’s configured URL, stripping the prefix.",
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Proxy Module Page (sub-paths)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Name of the module page",
+                        "name": "pageName",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Sub-path under the module page (may include slashes)",
+                        "name": "path",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Proxied content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Module page name or path not provided",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error looking up or proxying the module page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules": {
+            "get": {
+                "security": [
+                    {
+                        "SessionAuth": []
+                    }
+                ],
+                "description": "Returns all available modules for your campus, with optional filtering, sorting, and pagination.",
                 "consumes": [
                     "application/json"
                 ],
@@ -19,23 +107,64 @@
                     "application/json"
                 ],
                 "tags": [
-                    "modules"
+                    "Modules"
                 ],
                 "summary": "Get Module List",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter expression (e.g. \\",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pagination token for the next page",
+                        "name": "next_page_token",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Sort order: asc or desc",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Maximum number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/modules.Module"
-                            }
+                            "$ref": "#/definitions/modules.ModuleGetResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
             },
             "post": {
-                "description": "Download a new module for your campus",
+                "description": "Downloads and registers a new module for your campus by cloning from the provided Git URL.",
                 "consumes": [
                     "application/json"
                 ],
@@ -43,30 +172,47 @@
                     "application/json"
                 ],
                 "tags": [
-                    "modules"
+                    "Modules"
                 ],
-                "summary": "Post Module List",
+                "summary": "Post Module",
                 "parameters": [
                     {
-                        "description": "Module input",
+                        "description": "Git URL, branch, and module name",
                         "name": "input",
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/modules.ModulePatchInput"
+                            "$ref": "#/definitions/modules.ModuleGitInput"
                         }
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "The newly imported module",
                         "schema": {
-                            "$ref": "#/definitions/modules.Module"
+                            "$ref": "#/definitions/api.Module"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid or missing fields",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to import module",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "SessionAuth": []
+                    }
+                ],
                 "description": "Delete a module for your campus (All module datas will be lost!)",
                 "consumes": [
                     "application/json"
@@ -75,7 +221,7 @@
                     "application/json"
                 ],
                 "tags": [
-                    "modules"
+                    "Modules"
                 ],
                 "summary": "Delete Module",
                 "parameters": [
@@ -96,9 +242,14 @@
                 }
             }
         },
-        "/modules/{moduleID}": {
+        "/admin/modules/{moduleID}": {
             "get": {
-                "description": "Returns all the available modules for your campus",
+                "security": [
+                    {
+                        "SessionAuth": []
+                    }
+                ],
+                "description": "Returns all information about a module given its ID.",
                 "consumes": [
                     "application/json"
                 ],
@@ -106,20 +257,41 @@
                     "application/json"
                 ],
                 "tags": [
-                    "modules"
+                    "Modules"
                 ],
-                "summary": "Get Module List",
+                "summary": "Get Module",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/modules.Module"
+                            "$ref": "#/definitions/api.Module"
+                        }
+                    },
+                    "400": {
+                        "description": "ID not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
             },
             "patch": {
-                "description": "Download a new module for your campus",
+                "description": "Updates the specified fields of a module (e.g. name, Git URL/branch, status).",
                 "consumes": [
                     "application/json"
                 ],
@@ -127,9 +299,866 @@
                     "application/json"
                 ],
                 "tags": [
-                    "modules"
+                    "Modules"
                 ],
-                "summary": "Post Module List",
+                "summary": "Patch Module",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/modules.ModulePatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated module",
+                        "schema": {
+                            "$ref": "#/definitions/api.Module"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid module ID or JSON body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Module not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/docker/config": {
+            "get": {
+                "security": [
+                    {
+                        "SessionAuth": []
+                    }
+                ],
+                "description": "Returns the module’s config.yml as a YAML string under the `config` field.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Docker"
+                ],
+                "summary": "Get Module Configuration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/modules.ConfigResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/docker/deploy": {
+            "post": {
+                "description": "Saves the provided YAML config and triggers a deployment for the specified module.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Docker"
+                ],
+                "summary": "Deploy Module Configuration",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "YAML configuration payload",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/modules.ComposeRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Deployment started for module {moduleID}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request payload or missing moduleID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "module {moduleID} doesn't exist",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/docker/ls": {
+            "get": {
+                "description": "Retrieves all container names and metadata for the specified module.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Docker"
+                ],
+                "summary": "Get Module Containers",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "List of containers",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/core.ModuleContainer"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ID not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/docker/{containerName}": {
+            "delete": {
+                "description": "Stops and removes the specified container for the given module.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Docker"
+                ],
+                "summary": "Delete Module Container",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Container name",
+                        "name": "containerName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Module not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to delete container",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/docker/{containerName}/logs": {
+            "get": {
+                "description": "Returns the log lines for the specified container within a module.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Docker",
+                    "Logs"
+                ],
+                "summary": "Get Container Logs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Container name",
+                        "name": "containerName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "An array of log lines",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ID not found or container name not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/docker/{containerName}/restart": {
+            "post": {
+                "description": "Restarts the specified container for the given module.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Docker"
+                ],
+                "summary": "Restart Module Container",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Container name",
+                        "name": "containerName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Module not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to restart container",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/docker/{containerName}/start": {
+            "post": {
+                "description": "Initiates the start of the specified container for the given module.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Docker"
+                ],
+                "summary": "Start Module Container",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Container name",
+                        "name": "containerName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Module not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to start container",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/docker/{containerName}/stop": {
+            "post": {
+                "description": "Stops the specified container for the given module.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Docker"
+                ],
+                "summary": "Stop Module Container",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Container name",
+                        "name": "containerName",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Module not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to stop container",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/git/clone": {
+            "post": {
+                "description": "Starts an asynchronous clone of the Git repository for the specified module. Only allowed if the module isn’t already cloned.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Git"
+                ],
+                "summary": "Clone Module Repository",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Cloning module: {moduleID}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "module {moduleID} doesn't exist",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "module {moduleID} is already cloned",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "error while cloning module {moduleID}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/git/pull": {
+            "post": {
+                "description": "Pulls the latest commits for a previously cloned module.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Git"
+                ],
+                "summary": "Pull Module Repository",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Pulling latest changes for module {moduleID}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "module {moduleID} doesn't exist",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "module {moduleID} is not cloned yet",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "error while pulling module {moduleID}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/git/update-remote": {
+            "post": {
+                "description": "Changes the Git remote URL for a previously imported module.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Git"
+                ],
+                "summary": "Update Module Git Remote",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "New Git URL",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/modules.ModuleRemoteUpdateInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Updating remote for module {moduleID}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid or missing 'git_url'",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "module {moduleID} doesn't exist",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Error updating remote for module {moduleID}",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/logs": {
+            "get": {
+                "security": [
+                    {
+                        "SessionAuth": []
+                    }
+                ],
+                "description": "Retrieves logs for the specified module, with optional filtering, ordering, and pagination.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Logs"
+                ],
+                "summary": "Get Module Logs",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter expression (e.g. \\",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pagination token for the next page",
+                        "name": "next_page_token",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Sort order: asc or desc",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Maximum number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/modules.ModuleLogsGetResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID not found or bad query parameter",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/pages": {
+            "get": {
+                "security": [
+                    {
+                        "SessionAuth": []
+                    }
+                ],
+                "description": "Retrieves all pages for the specified module, with optional filtering, sorting, and pagination.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Pages"
+                ],
+                "summary": "Get Module Pages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Filter expression (e.g. \\",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pagination token for the next page",
+                        "name": "next_page_token",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Sort order: asc or desc",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Maximum number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/modules.ModulePagesGetResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID not found or invalid pagination token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Adds a new page under the specified module.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Pages"
+                ],
+                "summary": "Create Module Page",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Page creation input",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/modules.ModulePageInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The created module page",
+                        "schema": {
+                            "$ref": "#/definitions/api.ModulePage"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input or missing moduleID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Failed to create module page",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/modules/{moduleID}/pages/{pageID}": {
+            "delete": {
+                "security": [
+                    {
+                        "SessionAuth": []
+                    }
+                ],
+                "description": "Delete a module page for your campus (All page datas will be lost!)",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Pages"
+                ],
+                "summary": "Delete Module page",
                 "parameters": [
                     {
                         "description": "Module input",
@@ -143,41 +1172,79 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "OK"
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates the metadata of a module’s page (name, URL, visibility).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Modules",
+                    "Pages"
+                ],
+                "summary": "Patch Module Page",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Page ID",
+                        "name": "pageID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
                         "schema": {
-                            "$ref": "#/definitions/modules.Module"
+                            "$ref": "#/definitions/modules.ModulePageUpdateInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated module page",
+                        "schema": {
+                            "$ref": "#/definitions/api.ModulePage"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request (missing or invalid parameters)",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Page not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
             }
         },
-        "/roles": {
-            "get": {
-                "description": "Returns all the available roles for your campus",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "roles"
-                ],
-                "summary": "Get Role List",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/roles.Role"
-                            }
-                        }
-                    }
-                }
-            },
+        "/admin/modules/{moduleID}/roles/{roleID}": {
             "post": {
-                "description": "Download a new role for your campus",
+                "description": "Assigns the specified role to the given module.",
                 "consumes": [
                     "application/json"
                 ],
@@ -185,31 +1252,54 @@
                     "application/json"
                 ],
                 "tags": [
-                    "roles"
+                    "Modules",
+                    "Roles"
                 ],
-                "summary": "Post Role List",
+                "summary": "Add Role to Module",
                 "parameters": [
                     {
-                        "description": "Role input",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/roles.RolePatchInput"
-                        }
+                        "type": "string",
+                        "description": "Module ID",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "roleID",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "201": {
+                        "description": "Role successfully assigned to module",
                         "schema": {
-                            "$ref": "#/definitions/roles.Role"
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
             },
             "delete": {
-                "description": "Delete a role for your campus (All role datas will be lost!)",
+                "security": [
+                    {
+                        "SessionAuth": []
+                    }
+                ],
+                "description": "Revokes a specific role from a module (by login or ID)",
                 "consumes": [
                     "application/json"
                 ],
@@ -217,30 +1307,36 @@
                     "application/json"
                 ],
                 "tags": [
-                    "roles"
+                    "Modules",
+                    "Roles"
                 ],
-                "summary": "Delete Role",
+                "summary": "Remove role from module",
                 "parameters": [
                     {
-                        "description": "Role input",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/roles.RolePatchInput"
-                        }
+                        "type": "string",
+                        "description": "User moduleID (ID or login)",
+                        "name": "moduleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "roleID",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "OK"
+                    "204": {
+                        "description": "Role successfully removed"
                     }
                 }
             }
         },
-        "/roles/{roleID}": {
+        "/admin/roles": {
             "get": {
-                "description": "Returns all the available roles for your campus",
+                "description": "Returns all available roles for your campus, with optional filtering, sorting, and pagination.",
                 "consumes": [
                     "application/json"
                 ],
@@ -248,78 +1344,58 @@
                     "application/json"
                 ],
                 "tags": [
-                    "roles"
+                    "Roles"
                 ],
                 "summary": "Get Role List",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/roles.Role"
-                        }
-                    }
-                }
-            },
-            "patch": {
-                "description": "Download a new module for your campus",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "roles"
-                ],
-                "summary": "Post Role List",
                 "parameters": [
                     {
-                        "description": "Role input",
-                        "name": "input",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/roles.RolePatchInput"
-                        }
+                        "type": "string",
+                        "description": "Filter expression (e.g. \\",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pagination token for the next page",
+                        "name": "next_page_token",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Sort order: asc or desc",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Maximum number of items per page",
+                        "name": "limit",
+                        "in": "query"
                     }
                 ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/roles.Role"
+                            "$ref": "#/definitions/roles.RoleGetResponse"
                         }
-                    }
-                }
-            }
-        },
-        "/users": {
-            "get": {
-                "description": "Returns all the available users for your campus",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Get User List",
-                "responses": {
-                    "200": {
-                        "description": "OK",
+                    },
+                    "500": {
+                        "description": "Internal server error",
                         "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/users.User"
-                            }
+                            "type": "string"
                         }
                     }
                 }
             },
             "post": {
-                "description": "Download a new user for your campus",
+                "description": "Imports a new role with the given name, color, default status, and module assignments.",
                 "consumes": [
                     "application/json"
                 ],
@@ -327,12 +1403,274 @@
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "Roles"
                 ],
-                "summary": "Post User List",
+                "summary": "Create Role",
                 "parameters": [
                     {
-                        "description": "User input",
+                        "description": "Role creation payload",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/roles.RoleCreateInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The newly created role",
+                        "schema": {
+                            "$ref": "#/definitions/api.Role"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid JSON input or missing required fields",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/roles/{roleID}": {
+            "get": {
+                "description": "Returns details about a specific role and its associated modules.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Get Role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "roleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.Role"
+                        }
+                    },
+                    "400": {
+                        "description": "Role ID is required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Role not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "description": "Deletes the specified role for your campus (all role data will be lost).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Delete Role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "roleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content"
+                    },
+                    "400": {
+                        "description": "Invalid role ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Role not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Updates the name, color, and/or default status of an existing role.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Roles"
+                ],
+                "summary": "Patch Role",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "roleID",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/roles.RolePatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated role",
+                        "schema": {
+                            "$ref": "#/definitions/api.Role"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid role ID or JSON body",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Role not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users": {
+            "get": {
+                "security": [
+                    {
+                        "AdminAuth": []
+                    }
+                ],
+                "description": "Returns all available users for your campus, with optional filtering, sorting, and pagination.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get User List",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter expression (e.g. \\",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pagination token for the next page",
+                        "name": "next_page_token",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Sort order: asc or desc",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Maximum number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/users.UserGetResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Imports a new user with the given 42-intranet details and optional role assignments.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Create User",
+                "parameters": [
+                    {
+                        "description": "User creation payload",
                         "name": "input",
                         "in": "body",
                         "required": true,
@@ -343,15 +1681,192 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK",
+                        "description": "The newly created user",
                         "schema": {
-                            "$ref": "#/definitions/users.User"
+                            "$ref": "#/definitions/api.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid JSON input or missing required fields",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users/{identifier}": {
+            "get": {
+                "description": "Retrieves a user’s details given their ID or login identifier.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User identifier (ID or login)",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The requested user object",
+                        "schema": {
+                            "$ref": "#/definitions/api.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Identifier is required",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "patch": {
+                "description": "Modify specific user fields such as staff status or assigned roles.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Patch User (staff only)",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID or login",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Fields to update",
+                        "name": "input",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/users.UserPatchInput"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The updated user object",
+                        "schema": {
+                            "$ref": "#/definitions/api.User"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid JSON or bad input",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/admin/users/{identifier}/roles/{roleID}": {
+            "post": {
+                "description": "Assigns the specified role to the user identified by ID or login.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users",
+                    "Roles"
+                ],
+                "summary": "Add Role to User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User identifier (ID or login)",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "roleID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Role successfully assigned to user",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid identifier or roleID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User or role not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
             },
             "delete": {
-                "description": "Delete a user for your campus (All user datas will be lost!)",
+                "description": "Revokes the specified role from the user identified by ID or login.",
                 "consumes": [
                     "application/json"
                 ],
@@ -359,42 +1874,57 @@
                     "application/json"
                 ],
                 "tags": [
-                    "users"
+                    "Users",
+                    "Roles"
                 ],
-                "summary": "Delete User",
-                "responses": {
-                    "200": {
-                        "description": "OK"
+                "summary": "Remove Role from User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User identifier (ID or login)",
+                        "name": "identifier",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Role ID",
+                        "name": "roleID",
+                        "in": "path",
+                        "required": true
                     }
-                }
-            }
-        },
-        "/users/{userID}": {
-            "get": {
-                "description": "Returns all the available users for your campus",
-                "consumes": [
-                    "application/json"
                 ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "users"
-                ],
-                "summary": "Get User List",
                 "responses": {
-                    "200": {
-                        "description": "OK",
+                    "204": {
+                        "description": "No Content",
                         "schema": {
-                            "$ref": "#/definitions/users.User"
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid identifier or roleID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User or role not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
             }
         },
-        "/version": {
-            "get": {
-                "description": "Returns the current version of the API",
+        "/admin/users/{userID}": {
+            "delete": {
+                "description": "Deletes the specified user and all associated data.",
                 "consumes": [
                     "application/json"
                 ],
@@ -402,14 +1932,166 @@
                     "application/json"
                 ],
                 "tags": [
-                    "version"
+                    "Users"
                 ],
-                "summary": "Get API version",
+                "summary": "Delete User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No Content",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid user ID",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/pages": {
+            "get": {
+                "description": "Retrieves all pages across modules, with optional filtering, sorting, and pagination.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Get Pages",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Filter expression (e.g. \\",
+                        "name": "filter",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Pagination token for the next page",
+                        "name": "next_page_token",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "asc",
+                            "desc"
+                        ],
+                        "type": "string",
+                        "default": "desc",
+                        "description": "Sort order: asc or desc",
+                        "name": "order",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Maximum number of items per page",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "$ref": "#/definitions/version.VersionResponse"
+                            "$ref": "#/definitions/modules.ModulePagesGetResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid pagination token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/ping": {
+            "get": {
+                "description": "Get a response from the API",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Ping"
+                ],
+                "summary": "Ping backend API",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/me": {
+            "get": {
+                "description": "Retrieves the user profile for the authenticated session.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Users"
+                ],
+                "summary": "Get Current User",
+                "responses": {
+                    "200": {
+                        "description": "The current user’s profile",
+                        "schema": {
+                            "$ref": "#/definitions/api.User"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
                         }
                     }
                 }
@@ -417,45 +2099,401 @@
         }
     },
     "definitions": {
-        "modules.Module": {
-            "description": "API Module model",
+        "api.Module": {
             "type": "object",
             "properties": {
+                "git_branch": {
+                    "description": "GitBranch is the branch currently tracked for deployments",
+                    "type": "string",
+                    "example": "main"
+                },
+                "git_url": {
+                    "description": "GitURL is the repository URL where the module’s source lives",
+                    "type": "string",
+                    "example": "https://github.com/some-user/some-repo"
+                },
+                "icon_url": {
+                    "description": "IconURL is the link to the module’s icon or logo",
+                    "type": "string",
+                    "example": "https://someURL/image.png"
+                },
                 "id": {
+                    "description": "ID is the unique identifier of the module",
                     "type": "string",
                     "example": "module_01HZ0MMK4S6VQW4WPHB6NZ7R7X"
                 },
                 "last_update": {
+                    "description": "LastUpdate is the UTC timestamp of the module’s last update check",
                     "type": "string",
                     "example": "2025-02-18T15:00:00Z"
                 },
                 "late_commits": {
+                    "description": "LateCommits is the number of commits behind the latest version",
                     "type": "integer",
                     "example": 2
                 },
                 "latest_version": {
+                    "description": "LatestVersion is the most recent version available upstream",
                     "type": "string",
                     "example": "1.7"
                 },
                 "name": {
+                    "description": "Name is the human-readable title of the module",
                     "type": "string",
-                    "example": "captain-hook"
+                    "example": "Captain Hook"
+                },
+                "roles": {
+                    "description": "Roles lists the roles that have access to this module",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Role"
+                    }
+                },
+                "slug": {
+                    "description": "Slug is the URL-friendly identifier for the module",
+                    "type": "string",
+                    "example": "captain-hook-main"
+                },
+                "ssh_public_key": {
+                    "description": "SSHPublicKey is the RSA public key used for module deployments",
+                    "type": "string",
+                    "example": "ssh-rsa AAAA..."
                 },
                 "status": {
+                    "description": "Status indicates whether the module is enabled or disabled",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/modules.ModuleStatus"
+                            "$ref": "#/definitions/api.ModuleStatus"
                         }
                     ],
                     "example": "enabled"
                 },
+                "version": {
+                    "description": "Version is the currently deployed version of the module",
+                    "type": "string",
+                    "example": "1.2"
+                }
+            }
+        },
+        "api.ModuleLog": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "level": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
+                },
+                "meta": {
+                    "type": "object",
+                    "additionalProperties": {}
+                },
+                "module_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ModulePage": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "example": "page_01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                },
+                "is_public": {
+                    "type": "boolean"
+                },
+                "module_id": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                }
+            }
+        },
+        "api.ModuleStatus": {
+            "type": "string",
+            "enum": [
+                "cloning",
+                "waiting_for_deploy",
+                "disabled",
+                "enabled"
+            ],
+            "x-enum-varnames": [
+                "Cloning",
+                "WaitingDeploy",
+                "Disabled",
+                "Enabled"
+            ]
+        },
+        "api.Role": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "description": "Color is the hex color code associated with the role in the UI",
+                    "type": "string",
+                    "example": "#FF00FF"
+                },
+                "id": {
+                    "description": "ID is the unique identifier of the role",
+                    "type": "string",
+                    "example": "role_01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                },
+                "is_default": {
+                    "description": "IsDefault indicates whether this role is assigned by default to new users",
+                    "type": "boolean",
+                    "example": true
+                },
+                "modules": {
+                    "description": "Modules lists the Module objects this role grants access to",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Module"
+                    }
+                },
+                "name": {
+                    "description": "Name is the human‐readable name of the role (e.g. \"IT\", \"Admin\")",
+                    "type": "string",
+                    "example": "IT"
+                },
+                "users": {
+                    "description": "Users lists the User objects that have this role",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.User"
+                    }
+                },
+                "usersCount": {
+                    "description": "UsersCount is the total number of users assigned to this role",
+                    "type": "integer",
+                    "example": 42
+                }
+            }
+        },
+        "api.User": {
+            "type": "object",
+            "properties": {
+                "ft_id": {
+                    "description": "FtID is the numeric 42-intranet ID of the user",
+                    "type": "integer",
+                    "example": 1492
+                },
+                "ft_is_staff": {
+                    "description": "FtIsStaff indicates whether the user is a 42-intranet staff member",
+                    "type": "boolean",
+                    "example": true
+                },
+                "ft_login": {
+                    "description": "FtLogin is the 42-intranet login handle (e.g. \"heinz\")",
+                    "type": "string",
+                    "example": "heinz"
+                },
+                "ft_photo": {
+                    "description": "PhotoURL is the URL to the user’s 42-intranet profile picture",
+                    "type": "string",
+                    "example": "https://intra.42.fr/some-login/some-id"
+                },
+                "id": {
+                    "description": "ID is the unique identifier of the user",
+                    "type": "string",
+                    "example": "user_01HZ0MMK4S6VQW4WPHB6NZ7R7X"
+                },
+                "is_staff": {
+                    "description": "IsStaff indicates whether the user has staff privileges within Pan Bagnat",
+                    "type": "boolean",
+                    "example": true
+                },
+                "last_seen": {
+                    "description": "LastSeen is the UTC timestamp of the user’s last activity",
+                    "type": "string",
+                    "example": "2025-02-18T15:00:00Z"
+                },
+                "roles": {
+                    "description": "Roles lists the roles assigned to the user",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Role"
+                    }
+                }
+            }
+        },
+        "core.ContainerStatus": {
+            "type": "string",
+            "enum": [
+                "running",
+                "exited",
+                "paused",
+                "created",
+                "restarting",
+                "dead",
+                "unknown"
+            ],
+            "x-enum-varnames": [
+                "ContainerRunning",
+                "ContainerExited",
+                "ContainerPaused",
+                "ContainerCreated",
+                "ContainerRestarting",
+                "ContainerDead",
+                "ContainerUnknown"
+            ]
+        },
+        "core.ModuleContainer": {
+            "type": "object",
+            "properties": {
+                "name": {
+                    "type": "string"
+                },
+                "reason": {
+                    "type": "string"
+                },
+                "since": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "#/definitions/core.ContainerStatus"
+                }
+            }
+        },
+        "modules.ComposeRequest": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "description": "Config is the full module.yml content to deploy (newlines preserved)",
+                    "type": "string",
+                    "example": "version: '3'\nservices:\n  app:\n    image: my-app:latest\n"
+                }
+            }
+        },
+        "modules.ConfigResponse": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "description": "Config is the raw module.yml content, with newlines preserved",
+                    "type": "string",
+                    "example": "foo: bar\nbaz: qux\n"
+                }
+            }
+        },
+        "modules.ModuleGetResponse": {
+            "type": "object",
+            "properties": {
+                "modules": {
+                    "description": "Modules is the list of modules on this page.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Module"
+                    }
+                },
+                "next_page_token": {
+                    "description": "NextPageToken is the token to retrieve the next page of results.",
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+                }
+            }
+        },
+        "modules.ModuleGitInput": {
+            "type": "object",
+            "properties": {
+                "git_branch": {
+                    "description": "GitBranch is the branch to check out. Defaults to \"main\" if omitted.",
+                    "type": "string",
+                    "example": "main"
+                },
                 "git_url": {
+                    "description": "GitURL is the repository URL to clone the module from.",
                     "type": "string",
                     "example": "https://github.com/some-user/some-repo"
                 },
-                "version": {
+                "name": {
+                    "description": "Name is the human-readable title you want for this module.",
                     "type": "string",
-                    "example": "1.2"
+                    "example": "Captain Hook"
+                }
+            }
+        },
+        "modules.ModuleLogsGetResponse": {
+            "type": "object",
+            "properties": {
+                "logs": {
+                    "description": "ModuleLogs is the list of log entries for the module.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ModuleLog"
+                    }
+                },
+                "next_page_token": {
+                    "description": "NextPageToken is the token to retrieve the next page of logs.",
+                    "type": "string",
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
+                }
+            }
+        },
+        "modules.ModulePageInput": {
+            "type": "object",
+            "properties": {
+                "is_public": {
+                    "description": "IsPublic controls whether the page is publicly accessible",
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "description": "Name is the slug/identifier for this page (e.g. \"home\")",
+                    "type": "string",
+                    "example": "home"
+                },
+                "url": {
+                    "description": "URL is the target URL to proxy or redirect for this page",
+                    "type": "string",
+                    "example": "https://example.com/home"
+                }
+            }
+        },
+        "modules.ModulePageUpdateInput": {
+            "type": "object",
+            "properties": {
+                "is_public": {
+                    "description": "IsPublic toggles whether the page is public.",
+                    "type": "boolean",
+                    "example": true
+                },
+                "name": {
+                    "description": "Name is the new name for the page.",
+                    "type": "string",
+                    "example": "Home"
+                },
+                "url": {
+                    "description": "URL is the new URL for the page.",
+                    "type": "string",
+                    "example": "https://example.com/home"
+                }
+            }
+        },
+        "modules.ModulePagesGetResponse": {
+            "description": "API User model",
+            "type": "object",
+            "properties": {
+                "next_page_token": {
+                    "type": "string",
+                    "example": "BAD87as"
+                },
+                "pages": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.ModulePage"
+                    }
                 }
             }
         },
@@ -467,44 +2505,71 @@
                     "type": "string",
                     "example": "main"
                 },
-                "name": {
-                    "type": "string",
-                    "example": "captain-hook"
-                },
                 "git_url": {
                     "type": "string",
                     "example": "https://github.com/some-user/some-repo"
-                }
-            }
-        },
-        "modules.ModuleStatus": {
-            "type": "string",
-            "enum": [
-                "enabled",
-                "disabled",
-                "downloading"
-            ],
-            "x-enum-varnames": [
-                "Enabled",
-                "Disabled",
-                "Downloading"
-            ]
-        },
-        "roles.Role": {
-            "description": "API Role model",
-            "type": "object",
-            "properties": {
-                "color": {
-                    "type": "string",
-                    "example": "#FF00FF"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "role_01HZ0MMK4S6VQW4WPHB6NZ7R7X"
                 },
                 "name": {
                     "type": "string",
-                    "example": "IT"
+                    "example": "captain-hook"
+                }
+            }
+        },
+        "modules.ModuleRemoteUpdateInput": {
+            "type": "object",
+            "properties": {
+                "git_url": {
+                    "description": "GitURL is the new Git repository URL",
+                    "type": "string",
+                    "example": "https://github.com/some-user/some-repo.git"
+                }
+            }
+        },
+        "roles.RoleCreateInput": {
+            "type": "object",
+            "properties": {
+                "color": {
+                    "description": "Color is the hex color code for the role.",
+                    "type": "string",
+                    "example": "#00FF00"
+                },
+                "is_default": {
+                    "description": "IsDefault indicates whether this role is the default for new users.",
+                    "type": "boolean",
+                    "example": false
+                },
+                "modules": {
+                    "description": "Modules lists the IDs of modules this role should have access to.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[\"module_01\"",
+                        "\"module_02\"]"
+                    ]
+                },
+                "name": {
+                    "description": "Name is the human-readable name of the role.",
+                    "type": "string",
+                    "example": "Support"
+                }
+            }
+        },
+        "roles.RoleGetResponse": {
+            "type": "object",
+            "properties": {
+                "next_page_token": {
+                    "description": "NextPageToken is the token to retrieve the next page of results.",
+                    "type": "string",
+                    "example": "eyJhbGciOi..."
+                },
+                "roles": {
+                    "description": "Roles is the list of roles on this page.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/api.Role"
+                    }
                 }
             }
         },
@@ -513,86 +2578,133 @@
             "type": "object",
             "properties": {
                 "color": {
+                    "description": "Color is the new hex color code for the role.",
                     "type": "string",
-                    "example": "#FF00FF"
+                    "example": "#00FF00"
+                },
+                "is_default": {
+                    "description": "IsDefault toggles whether this role is the default for new users.",
+                    "type": "boolean",
+                    "example": false
                 },
                 "name": {
+                    "description": "Name is the new name for the role.",
                     "type": "string",
-                    "example": "IT"
+                    "example": "Support"
                 }
             }
         },
-        "users.User": {
-            "description": "API User model",
+        "users.UserGetResponse": {
             "type": "object",
             "properties": {
-                "ft_id": {
+                "next_page_token": {
+                    "description": "NextPageToken is the token to retrieve the next page of results.",
                     "type": "string",
-                    "example": "1492"
+                    "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9"
                 },
-                "ft_is_staff": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "ft_login": {
-                    "type": "string",
-                    "example": "heinz"
-                },
-                "ft_photo": {
-                    "type": "string",
-                    "example": "https://intra.42.fr/some-login/some-id"
-                },
-                "id": {
-                    "type": "string",
-                    "example": "user_01HZ0MMK4S6VQW4WPHB6NZ7R7X"
-                },
-                "is_staff": {
-                    "type": "boolean",
-                    "example": true
-                },
-                "last_seen": {
-                    "type": "string",
-                    "example": "2025-02-18T15:00:00Z"
-                },
-                "roles": {
+                "users": {
+                    "description": "Users is the list of users on this page.",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/roles.Role"
+                        "$ref": "#/definitions/api.User"
                     }
                 }
             }
         },
-        "users.UserPostInput": {
-            "description": "API User model",
+        "users.UserPatchInput": {
             "type": "object",
             "properties": {
-                "gitBranch": {
-                    "type": "string",
-                    "example": "main"
+                "is_staff": {
+                    "description": "IsStaff toggles whether the user has staff privileges.",
+                    "type": "boolean",
+                    "example": true
                 },
-                "id": {
-                    "type": "string",
-                    "example": "user_01HZ0MMK4S6VQW4WPHB6NZ7R7X"
-                },
-                "login": {
-                    "type": "string",
-                    "example": "heinz"
-                },
-                "photo_url": {
-                    "type": "string",
-                    "example": "https://intra.42.fr/some-login/some-id"
+                "roles": {
+                    "description": "Roles is an optional list of role IDs to assign to the user.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[\"role_01\"",
+                        "\"role_02\"]"
+                    ]
                 }
             }
         },
-        "version.VersionResponse": {
-            "description": "API version response model",
+        "users.UserPostInput": {
             "type": "object",
             "properties": {
-                "version": {
+                "ft_id": {
+                    "description": "FtID is the 42-intranet numeric ID of the user.",
+                    "type": "integer",
+                    "example": 1492
+                },
+                "ft_login": {
+                    "description": "FtLogin is the 42-intranet login handle.",
                     "type": "string",
-                    "example": "1.1"
+                    "example": "heinz"
+                },
+                "ft_photo": {
+                    "description": "FtPhoto is the URL to the user’s 42-intranet avatar.",
+                    "type": "string",
+                    "example": "https://intra.42.fr/some-login/some-id"
+                },
+                "is_staff": {
+                    "description": "IsStaff indicates whether the user has staff privileges in Pan Bagnat.",
+                    "type": "boolean",
+                    "example": false
+                },
+                "roles": {
+                    "description": "Roles lists the role IDs to assign to this user upon creation.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "[\"role_01\"",
+                        "\"role_02\"]"
+                    ]
                 }
             }
         }
-    }
+    },
+    "securityDefinitions": {
+        "AdminAuth": {
+            "type": "apiKey",
+            "name": "session_id",
+            "in": "cookie"
+        },
+        "SessionAuth": {
+            "type": "apiKey",
+            "name": "session_id",
+            "in": "cookie"
+        }
+    },
+    "tags": [
+        {
+            "description": "Operations for managing user accounts, profiles, and permissions",
+            "name": "Users"
+        },
+        {
+            "description": "Endpoints for creating, updating, and deleting roles and their assignments",
+            "name": "Roles"
+        },
+        {
+            "description": "Module front-end page configuration, management, and proxy routing",
+            "name": "Pages"
+        },
+        {
+            "description": "Module container lifecycle operations (start, stop, restart, logs, delete)",
+            "name": "Docker"
+        },
+        {
+            "description": "Module source repository operations (clone, pull, update remote)",
+            "name": "Git"
+        },
+        {
+            "description": "Core module lifecycle operations: import, list, update, and delete",
+            "name": "Modules"
+        }
+    ]
 }

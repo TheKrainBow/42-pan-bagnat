@@ -4,10 +4,10 @@
   padding: 16px;
   background-color: var(--background);
   box-sizing: border-box;
-  overflow-y: auto; /* Allow the sidebar to scroll if needed */
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  height: 100vh; /* fill viewport */
+  height: 100vh;
 }
 
 .sidebar ul {
@@ -29,13 +29,13 @@
   margin-bottom: 15px;
   padding: 15px;
   padding-top: 0px;
-  border-bottom: 2px solid var(--border); /* Add a border separating the header */
+  border-bottom: 2px solid var(--border);
 }
 
 .sidebar-logo {
-  width: 30px; /* Adjust logo size */
+  width: 30px;
   height: 30px;
-  border-radius: 50%; /* Optional: to make the icon round */
+  border-radius: 50%;
 }
 
 .sidebar-title {
@@ -47,11 +47,11 @@
   display: flex;
   align-items: center;
   gap: 10px;
+  transition: background-color 0.3s ease;
   padding: 8px 12px;
   margin-bottom: 10px;
   border-radius: 6px;
   cursor: pointer;
-  transition: background-color 0.3s ease, padding-left 0.3s ease;
   position: relative;
   border-left: 2px solid transparent;
 }
@@ -59,12 +59,14 @@
 .sidebar-item.inactive:hover {
   background-color: rgba(255, 255, 255, 0.1); /* Light background on hover */
   padding-left: 16px; /* Shift the item slightly */
+  transition: background-color 0.3s ease, padding-left 0.3s ease;
 }
 
 .sidebar-item.active {
   background-color: rgba(255, 255, 255, 0.1);
   font-weight: bold;
-  border-left: 2px var(--active); /* Solid blue border when active */
+  border-left: 2px var(--active);
+  transition: background-color 0.3s ease, padding-left 0.3s ease;
 }
 
 .sidebar-item::before {
@@ -76,11 +78,11 @@
   width: 2px;
   background-color: var(--active);
   transform: scaleY(0);
-  transition: transform 0.3s ease;
 }
 
 .sidebar-item.active::before {
   transform: scaleY(1); /* Animate the line from top to bottom */
+  transition: transform 0.3s ease;
 }
 
 .sidebar-icon {

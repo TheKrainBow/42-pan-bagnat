@@ -51,7 +51,7 @@ const Modules = () => {
         params.set('limit', 20);
       }
 
-      const res = await fetchWithAuth(`/api/v1/modules?${params.toString()}`);
+      const res = await fetchWithAuth(`/api/v1/admin/modules?${params.toString()}`);
       const data = await res.json();
 
       setModules(prev =>
@@ -111,7 +111,7 @@ const Modules = () => {
 
   const handleSubmit = async ({ gitUrl, sshKey }) => {
     try {
-      const response = await fetchWithAuth('/api/v1/modules', {
+      const response = await fetchWithAuth('/api/v1/admin/modules', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -16,11 +16,8 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
 
   // Fetch your pages list when in user mode
   useEffect(() => {
-    document.body.classList.add('theme-dark');
-    document.body.classList.remove('theme-light');
-
     if (mode === 'user') {
-      fetchWithAuth('/api/v1/modules/pages')
+      fetchWithAuth('/api/v1/users/me/pages')
         .then((res) => {
           if (!res.ok) throw new Error(res.statusText);
           return res.json();

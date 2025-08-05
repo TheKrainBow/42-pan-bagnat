@@ -20,9 +20,9 @@ const LogViewer = forwardRef(({ logType = 'module', moduleId = "", containerName
   const firstLoadRef = useRef(true);
   let source = null;
   if (logType === 'module') {
-    source = `/api/v1/modules/${moduleId}/logs`;
+    source = `/api/v1/admin/modules/${moduleId}/logs`;
   } else if (logType === 'container') {
-    source = `/api/v1/modules/${moduleId}/containers/${containerName}/logs`;
+    source = `/api/v1/admin/modules/${moduleId}/docker/${containerName}/logs`;
   }
 
   useEffect(() => {

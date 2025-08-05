@@ -7,24 +7,26 @@ import (
 )
 
 type Role struct {
-	ID                string `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X" db:"id"`
-	Name              string `json:"name" example:"captain-hook" db:"name"`
-	Color             string `json:"color" example:"#FF00FF" db:"color"`
-	AssignedByDefault bool   `json:"assigned_by_default" example:"true" db:"assigned_by_default"`
+	ID        string `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X" db:"id"`
+	Name      string `json:"name" example:"captain-hook" db:"name"`
+	Color     string `json:"color" example:"#FF00FF" db:"color"`
+	IsDefault bool   `json:"is_default" example:"true" db:"is_default"`
 }
 
 type RolePatch struct {
-	ID    string  `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
-	Name  *string `json:"name" example:"captain-hook"`
-	Color *string `json:"color" example:"#FF00FF"`
+	ID        string  `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	Name      *string `json:"name" example:"captain-hook"`
+	Color     *string `json:"color" example:"#FF00FF"`
+	IsDefault *bool   `json:"is_default" example:"true"`
 }
 
 type RoleOrderField string
 
 const (
-	RoleID    RoleOrderField = "id"
-	RoleName  RoleOrderField = "name"
-	RoleColor RoleOrderField = "color"
+	RoleID        RoleOrderField = "id"
+	RoleName      RoleOrderField = "name"
+	RoleColor     RoleOrderField = "color"
+	RoleIsDefault RoleOrderField = "is_default"
 )
 
 type RoleOrder struct {
@@ -40,9 +42,9 @@ func AddRole(role Role) error {
 		return fmt.Errorf("some fields are missing")
 	}
 	_, err := mainDB.Exec(`
-		INSERT INTO roles (id, name, color)
-		VALUES ($1, $2, $3)
-	`, role.ID, role.Name, role.Color)
+		INSERT INTO roles (id, name, color, is_default)
+		VALUES ($1, $2, $3, $4)
+	`, role.ID, role.Name, role.Color, role.IsDefault)
 	return err
 }
 
@@ -66,6 +68,11 @@ func PatchRole(toPatch RolePatch) error {
 		params = append(params, *toPatch.Color)
 		paramCount++
 	}
+	if toPatch.IsDefault != nil {
+		query += fmt.Sprintf("is_default = $%d, ", paramCount)
+		params = append(params, *toPatch.IsDefault)
+		paramCount++
+	}
 
 	if len(params) == 0 {
 		return nil
@@ -83,9 +90,9 @@ func PatchRole(toPatch RolePatch) error {
 func PutRole(role Role) error {
 	_, err := mainDB.Exec(`
 		UPDATE users
-		SET name = $1, color = $2
-		WHERE id = $3
-	`, role.Name, role.Color, role.ID)
+		SET name = $1, color = $2, is_default = $3
+		WHERE id = $4
+	`, role.Name, role.Color, role.IsDefault, role.ID)
 	return err
 }
 
@@ -142,6 +149,8 @@ func GetAllRoles(
 				args = append(args, lastRole.Name)
 			case RoleColor:
 				args = append(args, lastRole.Color)
+			case RoleIsDefault:
+				args = append(args, lastRole.IsDefault)
 			}
 			argPos++
 		}
@@ -182,7 +191,7 @@ func GetAllRoles(
 	// 4) Assemble SQL
 	var sb strings.Builder
 	sb.WriteString(
-		`SELECT id, name, color
+		`SELECT id, name, color, is_default
 FROM roles`,
 	)
 	if len(whereConds) > 0 {
@@ -212,6 +221,7 @@ FROM roles`,
 			&r.ID,
 			&r.Name,
 			&r.Color,
+			&r.IsDefault,
 		); err != nil {
 			return nil, err
 		}

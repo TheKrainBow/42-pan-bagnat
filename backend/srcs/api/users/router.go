@@ -6,7 +6,6 @@ func RegisterRoutes(r chi.Router) {
 	r.Get("/", GetUsers)
 	r.Post("/", PostUser)
 	r.Get("/{identifier}", GetUser)
-	r.Get("/me", GetUserMe)
 	r.Patch("/{identifier}", PatchUser)
 	r.Delete("/{identifier}", DeleteUser)
 	r.Post("/{identifier}/roles/{roleID}", PostUserRole)
