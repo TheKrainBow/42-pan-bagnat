@@ -42,7 +42,7 @@ export default function RoleDetail() {
   useEffect(() => {
     async function load() {
       try {
-        const res = await fetchWithAuth(`/api/v1/roles/${roleId}`);
+        const res = await fetchWithAuth(`/api/v1/admin/roles/${roleId}`);
         const data = await res.json();
         setRole(data);
         setName(data.name);
@@ -58,11 +58,11 @@ export default function RoleDetail() {
 
   // load all modules & users on mount
   useEffect(() => {
-    fetchWithAuth('/api/v1/modules?limit=1000')
+    fetchWithAuth('/api/v1/admin/modules?limit=1000')
       .then(res => res.json())
       .then(data => setAllModules(data.modules || []))
       .catch(console.error);
-    fetchWithAuth('/api/v1/users?limit=1000')
+    fetchWithAuth('/api/v1/admin/users?limit=1000')
       .then(res => res.json())
       .then(data => setAllUsers(data.users || []))
       .catch(console.error);
@@ -96,7 +96,7 @@ export default function RoleDetail() {
   // add/remove handlers
   const handleAddModule = async mod => {
     try {
-      const res = await fetchWithAuth(`/api/v1/modules/${mod.id}/roles/${roleId}`, { method: 'POST' });
+      const res = await fetchWithAuth(`/api/v1/admin/modules/${mod.id}/roles/${roleId}`, { method: 'POST' });
       if (!res.ok) throw new Error();
       setModules(prev => [...prev, mod]);
       setShowModuleSearch(false);
@@ -105,14 +105,14 @@ export default function RoleDetail() {
   };
   const handleRemoveModule = async mod => {
     try {
-      const res = await fetchWithAuth(`/api/v1/modules/${mod.id}/roles/${roleId}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/api/v1/admin/modules/${mod.id}/roles/${roleId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
       setModules(prev => prev.filter(m => m.id !== mod.id));
     } catch (err) { console.error(err); }
   };
   const handleAddUser = async u => {
     try {
-      const res = await fetchWithAuth(`/api/v1/users/${u.id}/roles/${roleId}`, { method: 'POST' });
+      const res = await fetchWithAuth(`/api/v1/admin/users/${u.id}/roles/${roleId}`, { method: 'POST' });
       if (!res.ok) throw new Error();
       setUsers(prev => [...prev, u]);
       setShowUserSearch(false);
@@ -121,7 +121,7 @@ export default function RoleDetail() {
   };
   const handleRemoveUser = async u => {
     try {
-      const res = await fetchWithAuth(`/api/v1/users/${u.id}/roles/${roleId}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/api/v1/admin/users/${u.id}/roles/${roleId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error();
       setUsers(prev => prev.filter(x => x.id !== u.id));
     } catch (err) { console.error(err); }
@@ -139,7 +139,7 @@ export default function RoleDetail() {
     }
     setLoading(true);
     try {
-      const res = await fetchWithAuth(`/api/v1/roles/${roleId}`, {
+      const res = await fetchWithAuth(`/api/v1/admin/roles/${roleId}`, {
         method: 'PATCH',
         headers: {'Content-Type':'application/json'},
         body: JSON.stringify({ name: name.trim(), color })

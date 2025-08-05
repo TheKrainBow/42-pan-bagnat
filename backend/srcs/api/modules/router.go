@@ -7,7 +7,6 @@ import (
 func RegisterRoutes(r chi.Router) {
 	r.Get("/", GetModules)
 	r.Post("/", PostModule)
-	r.Get("/pages", GetPages)
 
 	r.Get("/{moduleID}", GetModule)
 	r.Delete("/{moduleID}", DeleteModule)
@@ -16,8 +15,6 @@ func RegisterRoutes(r chi.Router) {
 	r.Delete("/{moduleID}/roles/{roleID}", DeleteModuleRole)
 
 	r.Get("/{moduleID}/logs", GetModuleLogs)
-	r.Get("/{moduleID}/config", GetModuleConfig)
-	r.Post("/{moduleID}/deploy", DeployConfig)
 
 	r.Post("/{moduleID}/git/clone", GitClone)
 	r.Post("/{moduleID}/git/pull", GitPull)
@@ -28,10 +25,13 @@ func RegisterRoutes(r chi.Router) {
 	r.Patch("/{moduleID}/pages/{pageID}", PatchModulePage)
 	r.Delete("/{moduleID}/pages/{pageID}", DeleteModulePage)
 
-	r.Get("/{moduleID}/containers", GetModuleContainers)
-	r.Get("/{moduleID}/containers/{containerName}/logs", GetContainerLogs)
-	r.Post("/{moduleID}/containers/{containerName}/start", StartModuleContainer)
-	r.Post("/{moduleID}/containers/{containerName}/stop", StopModuleContainer)
-	r.Post("/{moduleID}/containers/{containerName}/restart", RestartModuleContainer)
-	r.Delete("/{moduleID}/containers/{containerName}/delete", DeleteModuleContainer)
+	r.Get("/{moduleID}/docker/config", GetModuleConfig)
+	r.Post("/{moduleID}/docker/deploy", DeployConfig)
+
+	r.Get("/{moduleID}/docker/ls", GetModuleContainers)
+	r.Get("/{moduleID}/docker/{containerName}/logs", GetContainerLogs)
+	r.Post("/{moduleID}/docker/{containerName}/start", StartModuleContainer)
+	r.Post("/{moduleID}/docker/{containerName}/stop", StopModuleContainer)
+	r.Post("/{moduleID}/docker/{containerName}/restart", RestartModuleContainer)
+	r.Delete("/{moduleID}/docker/{containerName}/delete", DeleteModuleContainer)
 }

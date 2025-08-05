@@ -325,10 +325,10 @@ func PatchUser(patch UserPatch) error {
 func GetRole(id string) (*Role, error) {
 	var role Role
 	err := mainDB.QueryRow(`
-		SELECT id, name, color, assigned_by_default
+		SELECT id, name, color, is_default
 		FROM roles
 		WHERE id = $1
-	`, id).Scan(&role.ID, &role.Name, &role.Color, &role.AssignedByDefault)
+	`, id).Scan(&role.ID, &role.Name, &role.Color, &role.IsDefault)
 
 	if err != nil {
 		return nil, err

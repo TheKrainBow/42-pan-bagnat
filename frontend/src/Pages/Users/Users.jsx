@@ -38,7 +38,7 @@ const Users = () => {
         params.set('limit', 20); // Keep this for first load
       }
 
-      const response = await fetchWithAuth(`/api/v1/users?${params.toString()}`);
+      const response = await fetchWithAuth(`/api/v1/admin/users?${params.toString()}`);
       const data = await response.json();
 
       setUsers(prev =>

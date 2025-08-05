@@ -8,6 +8,11 @@ export async function fetchWithAuth(url, options = {}) {
     window.location.href = "/login";
     return null;
   }
+  if (res.status === 403) {
+    window.location.href = "/login";
+    toast.error("Unauthorized")
+    return null;
+  }
 
   return res;
 }

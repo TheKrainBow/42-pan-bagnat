@@ -51,7 +51,7 @@ const Roles = () => {
         params.set('limit', 20);
       }
 
-      const res = await fetchWithAuth(`/api/v1/roles?${params.toString()}`);
+      const res = await fetchWithAuth(`/api/v1/admin/roles?${params.toString()}`);
       const data = await res.json();
 
       setRoles(prev =>

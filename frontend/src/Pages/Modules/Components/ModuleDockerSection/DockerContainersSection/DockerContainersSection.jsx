@@ -13,7 +13,7 @@ export default function DockerContainers({ moduleId }) {
   }, [moduleId]);
 
   const fetchContainers = () => {
-    fetchWithAuth(`/api/v1/modules/${moduleId}/containers`)
+    fetchWithAuth(`/api/v1/admin/modules/${moduleId}/docker/ls`)
       .then(res => res.json())
       .then(setContainers)
       .catch(err => console.error('Failed to fetch containers:', err));
@@ -27,7 +27,7 @@ export default function DockerContainers({ moduleId }) {
 
   const handleAction = (name, action) => {
     fetchWithAuth(
-      `/api/v1/modules/${moduleId}/containers/${name}/${action}`,
+      `/api/v1/admin/modules/${moduleId}/docker/${name}/${action}`,
       { method: action === 'delete' ? 'DELETE' : 'POST' }
     )
       .then(fetchContainers)

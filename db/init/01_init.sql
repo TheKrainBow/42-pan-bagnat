@@ -4,7 +4,7 @@ CREATE TABLE roles (
   id TEXT PRIMARY KEY, -- role_ULID
   name TEXT NOT NULL,
   color TEXT NOT NULL,
-  assigned_by_default BOOLEAN DEFAULT false
+  is_default BOOLEAN DEFAULT false
 );
 
 -- MODULES --

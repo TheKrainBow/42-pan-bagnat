@@ -22,7 +22,7 @@ export default function UserDetail() {
     const moduleMap = new Map();
     for (const role of roles || []) {
       try {
-        const res = await fetchWithAuth(`/api/v1/roles/${role.id}`);
+        const res = await fetchWithAuth(`/api/v1/admin/roles/${role.id}`);
         const roleData = await res.json();
         (roleData.modules || []).forEach(mod => {
           moduleMap.set(mod.id, mod); // dedup
@@ -59,11 +59,11 @@ export default function UserDetail() {
 
   // Initial fetch
   useEffect(() => {
-    fetchWithAuth(`/api/v1/roles`)
+    fetchWithAuth(`/api/v1/admin/roles`)
       .then(res => res.json())
       .then(data => setAvailableRoles(data.roles || []));
 
-    fetchWithAuth(`/api/v1/users/${identifier}`)
+    fetchWithAuth(`/api/v1/admin/users/${identifier}`)
       .then(res => res.json())
       .then(async data => {
         data.roles ??= [];
@@ -79,7 +79,7 @@ export default function UserDetail() {
     setIsStaff(newValue); // Optimistic update
 
     try {
-      const res = await fetchWithAuth(`/api/v1/users/${identifier}`, {
+      const res = await fetchWithAuth(`/api/v1/admin/users/${identifier}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ is_staff: newValue }),
@@ -95,7 +95,7 @@ export default function UserDetail() {
 
   async function handleAddRole(role) {
     try {
-      const res = await fetchWithAuth(`/api/v1/users/${identifier}/roles/${role.id}`, {
+      const res = await fetchWithAuth(`/api/v1/admin/users/${identifier}/roles/${role.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
@@ -119,7 +119,7 @@ export default function UserDetail() {
 
   async function handleRoleRemove(role) {
     try {
-      const res = await fetchWithAuth(`/api/v1/users/${identifier}/roles/${role.id}`, {
+      const res = await fetchWithAuth(`/api/v1/admin/users/${identifier}/roles/${role.id}`, {
         method: "DELETE",
       });
 

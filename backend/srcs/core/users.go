@@ -33,6 +33,7 @@ type UserPatch struct {
 	PhotoURL  *string    `json:"photo_url"`
 	LastSeen  *time.Time `json:"last_update"`
 	IsStaff   *bool      `json:"is_staff"`
+	Roles     []string   `json:"roles,omitempty"`
 }
 
 type UserPagination struct {
@@ -241,7 +242,7 @@ func ResolveUserIdentifier(identifier string) (string, error) {
 	return user.ID, nil
 }
 
-func PatchUser(patch UserPatch) (*database.User, error) {
+func PatchUser(patch UserPatch) (*User, error) {
 	if patch.ID == "" {
 		return nil, fmt.Errorf("missing user identifier")
 	}
@@ -266,7 +267,13 @@ func PatchUser(patch UserPatch) (*database.User, error) {
 		return nil, fmt.Errorf("failed to patch user: %w", err)
 	}
 
-	return database.GetUserByID(userID)
+	dbUser, err := database.GetUserByID(userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to patch user: %w", err)
+	}
+
+	user := DatabaseUserToUser(*dbUser)
+	return &user, nil
 }
 
 func TouchUserLastSeen(userID string) {

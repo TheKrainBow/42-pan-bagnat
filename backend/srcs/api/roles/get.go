@@ -12,13 +12,19 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+// GetRoles returns a paginated list of roles available for your campus.
 // @Summary      Get Role List
-// @Description  Returns all the available roles for your campus
-// @Tags         roles
+// @Description  Returns all available roles for your campus, with optional filtering, sorting, and pagination.
+// @Tags         Roles
 // @Accept       json
 // @Produce      json
-// @Success      200 {object} []Role
-// @Router       /roles [get]
+// @Param        filter           query   string  false  "Filter expression (e.g. \"name=IT\")"
+// @Param        next_page_token  query   string  false  "Pagination token for the next page"
+// @Param        order            query   string  false  "Sort order: asc or desc"          Enums(asc,desc) default(desc)
+// @Param        limit            query   int     false  "Maximum number of items per page" default(50)
+// @Success      200              {object} RoleGetResponse
+// @Failure      500              {string} string  "Internal server error"
+// @Router       /admin/roles [get]
 func GetRoles(w http.ResponseWriter, r *http.Request) {
 	var err error
 	var roles []core.Role
@@ -30,6 +36,7 @@ func GetRoles(w http.ResponseWriter, r *http.Request) {
 	pageToken := r.URL.Query().Get("next_page_token")
 	order := r.URL.Query().Get("order")
 	limitStr := r.URL.Query().Get("limit")
+	fmt.Printf("%s %s %s %s\n", filter, pageToken, order, limitStr)
 	limit := 0
 	if limitStr != "" {
 		limit, _ = strconv.Atoi(limitStr)
@@ -57,7 +64,7 @@ func GetRoles(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed in core.GetRoles()", http.StatusInternalServerError)
 		return
 	}
-	dest.NextPage = nextToken
+	dest.NextPageToken = nextToken
 	dest.Roles = api.RolesToAPIRoles(roles)
 
 	// Marshal the dest struct into JSON
@@ -70,16 +77,18 @@ func GetRoles(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, string(destJSON))
 }
 
+// GetRole returns details for a specific role, including its linked modules.
 // @Summary      Get Role
-// @Description  Returns details about a specific role and its linked modules
-// @Tags         roles
+// @Description  Returns details about a specific role and its associated modules.
+// @Tags         Roles
 // @Accept       json
 // @Produce      json
-// @Param        roleID path string true "Role ID"
-// @Success      200 {object} api.Role
-// @Failure      400 {object} api.ErrorResponse
-// @Failure      404 {object} api.ErrorResponse
-// @Router       /roles/{roleID} [get]
+// @Param        roleID   path    string  true   "Role ID"
+// @Success      200      {object} api.Role
+// @Failure      400      {string} string  "Role ID is required"
+// @Failure      404      {string} string  "Role not found"
+// @Failure      500      {string} string  "Internal server error"
+// @Router       /admin/roles/{roleID} [get]
 func GetRole(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	roleID := chi.URLParam(r, "roleID")

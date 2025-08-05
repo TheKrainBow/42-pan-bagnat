@@ -248,6 +248,7 @@ func DeleteContainer(module Module, containerName string) error {
 
 func runDockerCommand(module Module, containerName, action string) error {
 	fullName := fmt.Sprintf("%s-%s-1", module.Slug, containerName)
+	fmt.Printf("[Docker] docker %s %s\n", action, fullName)
 	cmd := exec.Command("docker", action, fullName)
 
 	var stderr bytes.Buffer

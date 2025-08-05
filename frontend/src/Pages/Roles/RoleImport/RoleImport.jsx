@@ -37,7 +37,7 @@ export default function RoleImport({ show, onClose, onCreateSuccess }) {
   // fetch modules when modal opens
   useEffect(() => {
     if (!show) return;
-    fetchWithAuth('/api/v1/modules?limit=1000')
+    fetchWithAuth('/api/v1/admin/modules?limit=1000')
       .then(res => res.json())
       .then(body => setModulesList(Array.isArray(body.modules) ? body.modules : []))
       .catch(err => console.error('Failed to load modules', err));
@@ -65,7 +65,7 @@ export default function RoleImport({ show, onClose, onCreateSuccess }) {
 
     setLoading(true);
     try {
-      const res = await fetchWithAuth('/api/v1/roles', {
+      const res = await fetchWithAuth('/api/v1/admin/roles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

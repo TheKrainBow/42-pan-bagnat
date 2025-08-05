@@ -1,8 +1,9 @@
 #########################################################################################
 #                                       CONFIG                                          #
 #########################################################################################
-DOCKER_COMPOSE = docker compose
-DATABASE_URL = postgres://admin:pw_admin@localhost/panbagnat?sslmode=disable
+NETWORK := pan-bagnat-net
+DOCKER_COMPOSE := docker compose
+DATABASE_URL := postgres://admin:pw_admin@localhost/panbagnat?sslmode=disable
 
 #########################################################################################
 #                                                                                       #
@@ -60,35 +61,49 @@ db-test: db-clear-data																	## Database | Set database datas with tes
 #########################################################################################
 .PHONY: up up-dev down build build-back build-front prune fprune
 up:																						## Docker | Up latest built images for all containers. (Doesn't rebuild using your local files)
-	$(DOCKER_COMPOSE) up -d
-
-up-dev:																					## Docker | Up latest built images for all containers except front/back. (Doesn't rebuild using your local files)
+	@echo "⏳ Ensuring network '$(NETWORK)' exists…"
+	@if ! docker network ls --format '{{.Name}}' | grep -q "^$(NETWORK)$$" ; then \
+		echo "✅ Creating network '$(NETWORK)'"; \
+		docker network create --driver bridge $(NETWORK); \
+	else \
+		echo "✅ Network '$(NETWORK)' already exists"; \
+	fi
+	@echo "🚀 Bringing up services…"
 	$(DOCKER_COMPOSE) up -d
 
 down:																					## Docker | Down docker images. (Doesn't delete images)
 	@for dir in repos/*; do \
 		if [ -d $$dir ] && [ -f $$dir/docker-compose.yml ]; then \
 			echo "==> Stopping containers in $$dir"; \
-			(cd $$dir && docker compose down); \
+			(cd $$dir && docker compose stop); \
 		fi \
 	done
 	$(DOCKER_COMPOSE) down
 
 prune:																					## Docker | Delete created images
+	@echo "🛑 Bringing down containers…"
 	$(DOCKER_COMPOSE) down
+	@echo "🗑  Pruning images…"
 	docker image prune -f
+	@echo "🔍 Checking network '$(NETWORK)' usage…"
+	@if [ "$$(docker network inspect $(NETWORK) --format '{{len .Containers}}')" -eq "0" ]; then \
+		echo "🗑  No containers attached—removing network '$(NETWORK)'"; \
+		docker network rm $(NETWORK); \
+	else \
+		echo "ℹ️  Network '$(NETWORK)' still in use—skipping removal"; \
+	fi
 
 build: 																					## Docker | Build all images and replace currently running images
 	$(DOCKER_COMPOSE) build
-	$(DOCKER_COMPOSE) up -d
+	@$(MAKE) -s up
 
 build-back: 																			## Docker | Build backend image and replace currently running backend image
 	$(DOCKER_COMPOSE) build backend
-	$(DOCKER_COMPOSE) up -d
+	@$(MAKE) -s up
 
 build-front: 																			## Docker | Build frontend image and replace currently running frontend image
 	$(DOCKER_COMPOSE) build frontend
-	$(DOCKER_COMPOSE) up -d
+	@$(MAKE) -s up
 
 fprune: prune																			## Docker | Stop all containers, volumes, and networks
 	$(DOCKER_COMPOSE) down --volumes --remove-orphans || true
@@ -124,3 +139,9 @@ test-backend:																			## Tests | Start tests for backend
 test-backend-verbose: 																	## Tests | Start tests for backend with verbose enabled
 	@echo "🧪 Running backend tests…"
 	cd backend/srcs && DATABASE_URL=$(DATABASE_URL) go test -v -timeout 30s ./...
+
+#########################################################################################
+#                                      DATABASE                                         #
+#########################################################################################
+swagger:
+	cd backend/srcs && swag init -g main.go

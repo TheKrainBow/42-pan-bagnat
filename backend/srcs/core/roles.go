@@ -12,6 +12,7 @@ type Role struct {
 	ID         string   `json:"id"`
 	Name       string   `json:"name"`
 	Color      string   `json:"color"`
+	IsDefault  bool     `json:"is_default"`
 	Users      []User   `json:"users"`
 	UsersCount int      `json:"usersCount"`
 	Modules    []Module `json:"modules"`
@@ -141,6 +142,47 @@ func GetRoles(pagination RolePagination) ([]Role, string, error) {
 		return dest, "", fmt.Errorf("couldn't generate next token: %w", err)
 	}
 	return dest, token, nil
+}
+
+func ImportRole(name string, color string, isDefault bool, moduleIDs []string) (Role, error) {
+	var dest Role
+
+	// Generate a ULID for the role
+	roleID, err := GenerateULID(RoleKind)
+	if err != nil {
+		return Role{}, fmt.Errorf("failed to generate module ID: %w", err)
+	}
+
+	// Prepare module struct
+	dest = Role{
+		ID:        roleID,
+		Name:      name,
+		Color:     color,
+		IsDefault: isDefault,
+	}
+
+	// Insert into DB
+	if err := database.AddRole(database.Role{
+		ID:        dest.ID,
+		Name:      dest.Name,
+		Color:     dest.Color,
+		IsDefault: dest.IsDefault,
+	}); err != nil {
+		return Role{}, fmt.Errorf("failed to insert module in DB: %w", err)
+	}
+
+	for _, id := range moduleIDs {
+		_ = database.AssignRoleToModule(roleID, id)
+	}
+
+	modules, err := database.GetRoleModules(roleID)
+	if err != nil {
+		fmt.Printf("Fail to fetch role's module [%s]\n", roleID)
+	} else {
+		dest.Modules = DatabaseModulesToModules(modules)
+	}
+
+	return dest, nil
 }
 
 func AddRoleToUser(roleID, userIdentifier string) error {

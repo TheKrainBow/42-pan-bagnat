@@ -30,7 +30,7 @@ const ModuleWarningSection = forwardRef(({ sshKey, moduleID, onRetrySuccess, onR
 
   const handleRetryClone = async () => {
     try {
-      const res = await fetchWithAuth(`/api/v1/modules/${moduleID}/git/clone`, {
+      const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleID}/git/clone`, {
         method: 'POST'
       });
       if (res.ok && onRetrySuccess) {
