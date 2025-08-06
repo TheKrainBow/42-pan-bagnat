@@ -4,76 +4,41 @@ import { useNavigate } from 'react-router-dom';
 import { fetchWithAuth } from 'Global/utils/Auth';
 import './Sidebar.css';
 
-export default function Sidebar({ currentPage, onModuleSelect }) {
+export default function Sidebar({ currentPage, currentSlug, user, onModuleSelect, pages }) {
   const navigate = useNavigate();
   const mode = currentPage.startsWith('/admin/') ? 'admin' : 'user';
-  const [user, setUser] = useState(null);
 
-  // selectedPage will be one of the page objects (or null)
   const [selectedPage, setSelectedPage] = useState(null);
 
-  // pages is the array of { name, display_name, url, is_public, module_id }
-  const [pages, setPages] = useState([]);
-
-  // Fetch your pages list when in user mode
+  // Sync selected page based on slug or fallback
   useEffect(() => {
-    if (user == null) {
-      fetchWithAuth('/api/v1/users/me')
-        .then((res) => {
-          if (!res.ok) throw new Error(res.statusText);
-          return res.json();
-        })
-        .then((data) => {
-          // pull out the array
-          setUser(data);
-        })
-        .catch(console.error);
-    }
-  }, [user]);
+    if (pages.length === 0) return;
 
-  // Fetch your pages list when in user mode
-  useEffect(() => {
-    if (mode === 'user') {
-      fetchWithAuth('/api/v1/users/me/pages')
-        .then((res) => {
-          if (!res.ok) throw new Error(res.statusText);
-          return res.json();
-        })
-        .then((data) => {
-          // pull out the array
-          setPages(Array.isArray(data) ? data : []);
-        })
-        .catch(console.error);
-    }
-  }, [mode]);
+    const found = pages.find((p) => p.slug === currentSlug);
+    const selected = found || pages[0];
 
-  // On first load, auto-select the very first page
-  useEffect(() => {
-    if (pages.length > 0 && selectedPage === null) {
-      setSelectedPage(pages[0]);
-      onModuleSelect(pages[0]);
-    }
-  }, [pages, selectedPage, onModuleSelect]);
+    setSelectedPage(selected);
+    onModuleSelect(selected);
+    // Do NOT navigate here — redirection happens in App.jsx
+  }, [pages, currentSlug, onModuleSelect]);
 
-  // called when user clicks a page
+  // On click
   const handleSelect = (page) => {
     setSelectedPage(page);
     onModuleSelect(page);
-    navigate(page.url);
+    navigate(`/modules/${page.slug}`);
   };
 
-  // helper for admin nav highlighting
+  // For admin tab highlighting
   const isActive = (path) =>
     currentPage.startsWith(path) ? 'active' : 'inactive';
 
   return (
     <aside className="sidebar">
-      {/* header/logo */}
+      {/* Header / logo */}
       <div
         className="sidebar-header"
-        onClick={() =>
-          navigate(mode === 'admin' ? '/admin/modules' : '/')
-        }
+        onClick={() => navigate(mode === 'admin' ? '/admin/modules' : '/')}
         style={{ cursor: 'pointer' }}
       >
         <img src="/icons/panbagnat.png" alt="Logo" className="sidebar-logo" />
@@ -82,74 +47,45 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
 
       {mode === 'admin' ? (
         <>
-        <div
-          className={`sidebar-item ${isActive('/admin/modules')}`}
-          onClick={() => navigate('/admin/modules')}
-        >
-          <img
-            src="/icons/modules.png"
-            alt="Modules"
-            className="sidebar-icon"
-          />
-          Modules
-        </div>
-        <div
-          className={`sidebar-item ${isActive('/admin/roles')}`}
-          onClick={() => navigate('/admin/roles')}
-        >
-          <img
-            src="/icons/roles.png"
-            alt="Roles"
-            className="sidebar-icon"
-          />
-          Roles
-        </div>
-        <div
-          className={`sidebar-item ${isActive('/admin/users')}`}
-          onClick={() => navigate('/admin/users')}
-        >
-          <img
-            src="/icons/users.png"
-            alt="Users"
-            className="sidebar-icon"
-          />
-          Users
-        </div>
-        <div className="sidebar-footer">
-          <div
-            className="sidebar-item"
-            onClick={() => navigate('/modules')}
-          >
-            🔧 Switch to User
+          <div className={`sidebar-item ${isActive('/admin/modules')}`} onClick={() => navigate('/admin/modules')}>
+            <img src="/icons/modules.png" alt="Modules" className="sidebar-icon" />
+            Modules
           </div>
-        </div>
-      </>
+          <div className={`sidebar-item ${isActive('/admin/roles')}`} onClick={() => navigate('/admin/roles')}>
+            <img src="/icons/roles.png" alt="Roles" className="sidebar-icon" />
+            Roles
+          </div>
+          <div className={`sidebar-item ${isActive('/admin/users')}`} onClick={() => navigate('/admin/users')}>
+            <img src="/icons/users.png" alt="Users" className="sidebar-icon" />
+            Users
+          </div>
+          <div className="sidebar-footer">
+            <div className="sidebar-item" onClick={() => navigate('/modules')}>
+              🔧 Switch to User
+            </div>
+          </div>
+        </>
       ) : (
         <>
-          {/* user pages list */}
           <ul className="sidebar-user-modules">
-            {Array.isArray(pages) && pages.map((page) => (
-              <li
-                key={page.name}
-                className={`sidebar-item ${
-                  selectedPage?.name === page.name ? 'active' : 'inactive'
-                }`}
-                onClick={() => handleSelect(page)}
-              >
-                {page.name}
-              </li>
-            ))}
+            {Array.isArray(pages) &&
+              pages.map((page) => (
+                <li
+                  key={page.name}
+                  className={`sidebar-item ${selectedPage?.name === page.name ? 'active' : 'inactive'}`}
+                  onClick={() => handleSelect(page)}
+                >
+                  {page.name}
+                </li>
+              ))}
           </ul>
 
           {user && user.is_staff && (
-          <div className="sidebar-footer">
-            <div
-              className="sidebar-item"
-              onClick={() => navigate('/admin/modules')}
-            >
-              🔧 Switch to Admin
+            <div className="sidebar-footer">
+              <div className="sidebar-item" onClick={() => navigate('/admin/modules')}>
+                🔧 Switch to Admin
+              </div>
             </div>
-          </div>
           )}
         </>
       )}
