@@ -1,6 +1,15 @@
 // src/App.jsx (or wherever Main lives)
-import React, { useState, useRef, useEffect, createContext } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { fetchWithAuth } from 'Global/utils/Auth';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useParams,
+  useNavigate,
+} from 'react-router-dom';
 
 import './App.css';
 import Users from './Pages/Users/Users';
@@ -19,24 +28,96 @@ import "./Notifications.css"
 
 function Main() {
   const location = useLocation();
+  const { slug } = useParams();
+  const navigate = useNavigate();
   const path = location.pathname;
+  const mode = path.startsWith('/admin/') ? 'admin' : 'user';
+  const [user, setUser] = useState(null);
+  const [userLoaded, setUserLoaded] = useState(false);
+  
   const [activePage, setActivePage] = useState(null);
+  const [pages, setPages] = useState([]);
 
   const showSidebar = path !== "/login";
 
+  useEffect(() => {
+    if (showSidebar) {
+      fetchWithAuth('/api/v1/users/me')
+        .then((res) => {
+          if (!res.ok) throw new Error(res.statusText);
+          return res.json();
+        })
+        .then((data) => {
+          setUser(data);
+        })
+        .catch(() => {
+          setUser(null); // unauthenticated
+        })
+        .finally(() => {
+          setUserLoaded(true);
+        });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!user || mode !== 'user') return;
+
+    fetchWithAuth('/api/v1/users/me/pages')
+      .then((res) => {
+        if (!res.ok) throw new Error(res.statusText);
+        return res.json();
+      })
+      .then((data) => {
+        setPages(Array.isArray(data) ? data : []);
+      })
+      .catch(console.error);
+  }, [mode, slug, user]);
+
+  useEffect(() => {
+    if (!user || mode !== "user") return;
+
+    if (!slug) {
+      if (pages.length > 0) {
+        navigate(`/modules/${pages[0].slug}`, { replace: true });
+      } else {
+        navigate('/modules', { replace: true });
+      }
+      return;
+    }
+
+    const found = pages.find((p) => p.slug === slug);
+    if (!found && pages.length > 0) {
+      navigate(`/modules/${pages[0].slug}`, { replace: true });
+    }
+  }, [pages, slug, navigate, mode, user]);
+
+  if (userLoaded && !user && mode === "user") {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Auto-redirect from /modules → /modules/:firstSlug
+  // if (path === "/modules" && pages.length > 0) {
+  //   return <Navigate to={`/modules/${pages[0].slug}`} replace />;
+  // }
+
   document.body.classList.add('theme-dark');
+
   return (
     <div className="app-container">
       {showSidebar && (
         <Sidebar
           currentPage={path}
-          onModuleSelect={(page) => setActivePage(page)}
+          currentSlug={slug}
+          user={user}
+          onModuleSelect={setActivePage}
+          pages={pages}
         />
       )}
 
       <main className="main-content">
         <Routes>
-          <Route path="/modules" element={<ModulePage page={activePage} />} />
+          <Route path="/modules" element={<ModulePage/>} />
+          <Route path="/modules/:slug" element={<ModulePage page={activePage} />} />
           <Route path="/admin/modules" element={<Modules onSort="name" />} />
           <Route path="/admin/modules/:moduleId" element={<ModuleDetails />} />
           <Route path="/admin/roles" element={<Roles onSort="name" />} />
@@ -65,8 +146,6 @@ function Main() {
     </div>
   );
 }
-
-console.log('SocketService ID:', socketService.id);
 
 export default function App() {
   return (
