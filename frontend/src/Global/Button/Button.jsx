@@ -17,7 +17,8 @@ const Button = forwardRef(({
   const [highlight, setHighlight] = useState(false);
   const [attention, setAttention] = useState(false);
   const [ripple, setRipple] = useState(false);
-  const isIcon = Boolean(icon);
+  const isIcon = Boolean(icon) && !label;
+  const isIconAndText = Boolean(icon) && label;
   const isSquare = isSingleEmoji(label);
 
   function isSingleEmoji(str) {
@@ -77,17 +78,14 @@ return (
   <div className="button-wrapper">
     <button
       type="button"
-      className={`custom-btn ${color} ${isIcon ? 'icon-btn' : ''} ${isSquare ? 'square' : ''}${disabled ? 'disabled' : ''} ${shake ? 'shake' : ''} ${highlight ? 'highlighted' : ''} ${attention ? 'attention' : ''} ${ripple ? 'ripple' : ''}`}
+      className={`custom-btn ${color} ${isIconAndText ? 'icon-txt-btn' : ''} ${isIcon ? 'icon-btn' : ''} ${isSquare ? 'square' : ''}${disabled ? 'disabled' : ''} ${shake ? 'shake' : ''} ${highlight ? 'highlighted' : ''} ${attention ? 'attention' : ''} ${ripple ? 'ripple' : ''}`}
       onClick={handleClick}
       aria-disabled={disabled}
       tabIndex={disabled ? -1 : 0}
       {...props}
     >
-      {isIcon ? (
-        <img src={icon} alt={label || ''} className="btn-icon-image" />
-      ) : (
-        label
-      )}
+      {icon && <img src={icon} alt={label || ''} className="btn-icon-image" />}
+      {label && <span className="btn-label">{label}</span>}
     </button>
   </div>
 );
