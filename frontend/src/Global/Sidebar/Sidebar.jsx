@@ -1,35 +1,31 @@
 // src/components/Sidebar.jsx
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { fetchWithAuth } from 'Global/utils/Auth';
+import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 
-export default function Sidebar({ currentPage, currentSlug, user, onModuleSelect, pages }) {
+export default function Sidebar({ currentPage, user, pages }) {
   const navigate = useNavigate();
   const mode = currentPage.startsWith('/admin/') ? 'admin' : 'user';
 
   const [selectedPage, setSelectedPage] = useState(null);
+  const location = useLocation();
+  const match = location.pathname.match(/(?<!\/admin)\/modules\/([^/]+)/);
+  const currentSlug = match ? match[1] : null;
 
   // Sync selected page based on slug or fallback
   useEffect(() => {
     if (pages.length === 0) return;
 
     const found = pages.find((p) => p.slug === currentSlug);
-    const selected = found || pages[0];
-
-    setSelectedPage(selected);
-    onModuleSelect(selected);
-    // Do NOT navigate here — redirection happens in App.jsx
-  }, [pages, currentSlug, onModuleSelect]);
+    setSelectedPage(found || pages[0]);
+  }, [pages, currentSlug]);
 
   // On click
   const handleSelect = (page) => {
     setSelectedPage(page);
-    onModuleSelect(page);
     navigate(`/modules/${page.slug}`);
   };
 
-  // For admin tab highlighting
   const isActive = (path) =>
     currentPage.startsWith(path) ? 'active' : 'inactive';
 
@@ -68,19 +64,18 @@ export default function Sidebar({ currentPage, currentSlug, user, onModuleSelect
       ) : (
         <>
           <ul className="sidebar-user-modules">
-            {Array.isArray(pages) &&
-              pages.map((page) => (
-                <li
-                  key={page.name}
-                  className={`sidebar-item ${selectedPage?.name === page.name ? 'active' : 'inactive'}`}
-                  onClick={() => handleSelect(page)}
-                >
-                  {page.name}
-                </li>
-              ))}
+            {pages.map((page) => (
+              <li
+                key={page.name}
+                className={`sidebar-item ${currentSlug === page.slug ? 'active' : 'inactive'}`}
+                onClick={() => handleSelect(page)}
+              >
+                {page.name}
+              </li>
+            ))}
           </ul>
 
-          {user && user.is_staff && (
+          {user?.is_staff && (
             <div className="sidebar-footer">
               <div className="sidebar-item" onClick={() => navigate('/admin/modules')}>
                 🔧 Switch to Admin
