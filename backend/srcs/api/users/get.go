@@ -147,3 +147,86 @@ func GetUserMe(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed to encode user to JSON", http.StatusInternalServerError)
 	}
 }
+
+// GetUserPages returns all module pages accessible to a specific user.
+// @Summary      Get Pages for a User
+// @Description  Retrieves all module pages accessible to the specified user by ID or ft_login.
+// @Tags         Pages
+// @Accept       json
+// @Produce      json
+// @Param        userID path string true "User ID or ft_login"
+// @Success      200    {object} ModulePagesGetResponse
+// @Failure      400    {string} string "ID not found"
+// @Failure      500    {string} string "Internal server error"
+// @Router       /users/{userID}/pages [get]
+func GetUserPages(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var pages []core.ModulePage
+
+	w.Header().Set("Content-Type", "application/json")
+
+	userID := chi.URLParam(r, "userID")
+	if userID == "" {
+		http.Error(w, "ID not found", http.StatusBadRequest)
+		return
+	}
+	pages, err = core.GetUserPages(userID)
+	if err != nil {
+		log.Printf("error while getting user pages: %s\n", err.Error())
+		http.Error(w, "Failed in core.GetModules()", http.StatusInternalServerError)
+		return
+	}
+
+	dest := api.ModulePagesToAPIModulePages(pages)
+
+	// Marshal the dest struct into JSON
+	destJSON, err := json.Marshal(dest)
+	if err != nil {
+		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, string(destJSON))
+}
+
+// GetContextUserPages returns all module pages accessible to the current user.
+// @Summary      Get User Pages
+// @Description  Retrieves all module pages accessible to the currently logged-in user.
+// @Tags         Pages
+// @Accept       json
+// @Produce      json
+// @Success      200  {object} ModulePagesGetResponse
+// @Failure      404  {string} string  "User not found"
+// @Failure      500  {string} string  "Internal server error"
+// @Router       /users/me/pages [get]
+func GetContextUserPages(w http.ResponseWriter, r *http.Request) {
+	var err error
+	var pages []core.ModulePage
+
+	w.Header().Set("Content-Type", "application/json")
+
+	u, ok := r.Context().Value(auth.UserCtxKey).(*core.User)
+	if !ok {
+		log.Printf("No user logged with /me request\n")
+		http.Error(w, "Failed in core.GetModules()", http.StatusNotFound)
+		return
+	}
+
+	pages, err = core.GetUserPages(u.ID)
+	if err != nil {
+		log.Printf("error while getting modules: %s\n", err.Error())
+		http.Error(w, "Failed in core.GetModules()", http.StatusInternalServerError)
+		return
+	}
+
+	dest := api.ModulePagesToAPIModulePages(pages)
+
+	// Marshal the dest struct into JSON
+	destJSON, err := json.Marshal(dest)
+	if err != nil {
+		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
+		return
+	}
+
+	fmt.Fprint(w, string(destJSON))
+}

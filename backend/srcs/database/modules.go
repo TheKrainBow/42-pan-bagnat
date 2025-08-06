@@ -803,3 +803,39 @@ SELECT id, name, slug, url, is_public, module_id
 
 	return out, nil
 }
+
+func GetUserPages(identifier string) ([]ModulePage, error) {
+	rows, err := mainDB.Query(`
+		SELECT DISTINCT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id
+		FROM users u
+		JOIN user_roles ur ON u.id = ur.user_id
+		JOIN module_roles mr ON ur.role_id = mr.role_id
+		JOIN module_page mp ON mp.module_id = mr.module_id
+		WHERE u.id = $1 OR u.ft_login = $1
+	`, identifier)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var pages []ModulePage
+	for rows.Next() {
+		var page ModulePage
+		if err := rows.Scan(
+			&page.ID,
+			&page.Name,
+			&page.Slug,
+			&page.URL,
+			&page.IsPublic,
+			&page.ModuleID,
+		); err != nil {
+			return nil, err
+		}
+		pages = append(pages, page)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return pages, nil
+}

@@ -491,14 +491,21 @@ func PageRedirectionSub(w http.ResponseWriter, r *http.Request) {
 func PageRedirection(w http.ResponseWriter, r *http.Request) {
 	pageName := chi.URLParam(r, "pageName")
 
-	// Fetch up to 1 page for this module
-	pages, err := core.GetPage(pageName)
+	page, err := core.GetPage(pageName)
 	if err != nil {
-		http.Error(w, "error looking up module pages: "+err.Error(), http.StatusInternalServerError)
+		http.Error(w, "error looking up module page: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	targetURL, err := url.Parse(pages.URL)
+	// Reject non-public pages if not loaded in iframe
+	isIframe := r.Header.Get("Referer") != ""
+
+	if !page.IsPublic && !isIframe {
+		http.Error(w, "This page is not public", http.StatusForbidden)
+		return
+	}
+
+	targetURL, err := url.Parse(page.URL)
 	if err != nil {
 		http.Error(w, "bad module URL: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -512,6 +519,5 @@ func PageRedirection(w http.ResponseWriter, r *http.Request) {
 	}
 	r.URL.Path = suffix
 
-	fmt.Printf("url: %s\n", r.URL.Path)
 	proxy.ServeHTTP(w, r)
 }

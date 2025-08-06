@@ -13,6 +13,7 @@ import (
 type contextKey string
 
 const UserCtxKey contextKey = "user"
+const PageCtxKey contextKey = "page"
 
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -76,7 +77,29 @@ func AdminMiddleware(next http.Handler) http.Handler {
 
 func PageAccessMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// TODO: later check if the page is public or requires auth
+		pageName, ok := r.Context().Value(PageCtxKey).(string)
+		if !ok || pageName == "" {
+			http.Error(w, "Missing page name", http.StatusBadRequest)
+			return
+		}
+
+		page, err := core.GetPage(pageName)
+		if err != nil {
+			http.Error(w, "Page not found: "+err.Error(), http.StatusNotFound)
+			return
+		}
+
+		if page.IsPublic {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		user, ok := r.Context().Value(UserCtxKey).(*core.User)
+		if !ok || user == nil {
+			http.Error(w, "Unauthorized — this page requires login", http.StatusUnauthorized)
+			return
+		}
+
 		next.ServeHTTP(w, r)
 	})
 }

@@ -314,6 +314,18 @@ func GetModule(moduleID string) (Module, error) {
 	return dest, nil
 }
 
+func GetUserPages(userIdentifier string) ([]ModulePage, error) {
+	var dest []ModulePage
+
+	pages, err := database.GetUserPages(userIdentifier)
+	if err != nil {
+		return nil, fmt.Errorf("couldn't get user's page in db: %w", err)
+	}
+
+	dest = DatabaseModulePagesToModulePages(pages)
+	return dest, nil
+}
+
 func GetPage(pageName string) (ModulePage, error) {
 	var dest ModulePage
 

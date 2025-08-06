@@ -7,12 +7,29 @@ import './Sidebar.css';
 export default function Sidebar({ currentPage, onModuleSelect }) {
   const navigate = useNavigate();
   const mode = currentPage.startsWith('/admin/') ? 'admin' : 'user';
+  const [user, setUser] = useState(null);
 
   // selectedPage will be one of the page objects (or null)
   const [selectedPage, setSelectedPage] = useState(null);
 
   // pages is the array of { name, display_name, url, is_public, module_id }
   const [pages, setPages] = useState([]);
+
+  // Fetch your pages list when in user mode
+  useEffect(() => {
+    if (user == null) {
+      fetchWithAuth('/api/v1/users/me')
+        .then((res) => {
+          if (!res.ok) throw new Error(res.statusText);
+          return res.json();
+        })
+        .then((data) => {
+          // pull out the array
+          setUser(data);
+        })
+        .catch(console.error);
+    }
+  }, [user]);
 
   // Fetch your pages list when in user mode
   useEffect(() => {
@@ -24,7 +41,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
         })
         .then((data) => {
           // pull out the array
-          setPages(data.pages);
+          setPages(Array.isArray(data) ? data : []);
         })
         .catch(console.error);
     }
@@ -111,7 +128,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
         <>
           {/* user pages list */}
           <ul className="sidebar-user-modules">
-            {pages.map((page) => (
+            {Array.isArray(pages) && pages.map((page) => (
               <li
                 key={page.name}
                 className={`sidebar-item ${
@@ -124,6 +141,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
             ))}
           </ul>
 
+          {user && user.is_staff && (
           <div className="sidebar-footer">
             <div
               className="sidebar-item"
@@ -132,6 +150,7 @@ export default function Sidebar({ currentPage, onModuleSelect }) {
               🔧 Switch to Admin
             </div>
           </div>
+          )}
         </>
       )}
     </aside>

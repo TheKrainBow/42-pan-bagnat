@@ -1,18 +1,22 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"backend/api/auth"
 	"backend/api/modules"
 	"backend/api/ping"
 	"backend/api/roles"
 	"backend/api/users"
+	"backend/core"
+	"backend/database"
 	_ "backend/docs"
 	"backend/utils"
 	"backend/websocket"
@@ -56,6 +60,63 @@ import (
 
 // @tag.name      Modules
 // @tag.description Core module lifecycle operations: import, list, update, and delete
+
+func InjectUserInMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie("session_id")
+		sid := ""
+		if err == nil && cookie.Value != "" {
+			sid = cookie.Value
+		} else {
+			if hdr := r.Header.Get("session_id"); hdr != "" {
+				sid = hdr
+			}
+		}
+
+		if sid == "" {
+			log.Println("[auth] no session_id:", err)
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		session, err := database.GetSession(sid)
+		if err != nil {
+			log.Printf("[auth] failed to get session: %v", err)
+			next.ServeHTTP(w, r)
+			return
+		}
+		if session.ExpiresAt.Before(time.Now()) {
+			log.Println("[auth] session expired")
+			go database.PurgeExpiredSessions()
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		user, err := core.GetUser(session.Login)
+		if err != nil {
+			log.Println("[auth] user not found for session:", err)
+			next.ServeHTTP(w, r)
+			return
+		}
+		log.Printf("[auth] user %s authenticated via session", user.FtLogin)
+
+		if time.Since(user.LastSeen) > time.Minute {
+			go core.TouchUserLastSeen(user.ID)
+		}
+
+		ctx := context.WithValue(r.Context(), auth.UserCtxKey, &user)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func InjectPageNameMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pageName := chi.URLParam(r, "pageName")
+		fmt.Printf("pageName: %s\n", pageName)
+		ctx := context.WithValue(r.Context(), auth.PageCtxKey, pageName)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
 
 func main() {
 	port := getPort()
@@ -136,17 +197,16 @@ func main() {
 	r.Route("/auth", func(r chi.Router) {
 		auth.RegisterRoutes(r)
 	})
+	r.With(InjectUserInMiddleware, InjectPageNameMiddleware, auth.PageAccessMiddleware).Get("/module-page/{pageName}", modules.PageRedirection)
+	r.With(InjectUserInMiddleware, InjectPageNameMiddleware, auth.PageAccessMiddleware).Get("/module-page/{pageName}/*", modules.PageRedirection)
 
-	r.With(auth.PageAccessMiddleware).Get("/module-page/{pageName}", modules.PageRedirection)
-	r.With(auth.PageAccessMiddleware).Get("/module-page/{pageName}/*", modules.PageRedirection)
-
-	r.With(auth.AuthMiddleware).Get("/api/v1/users/me", users.GetUserMe)
-	r.With(auth.AuthMiddleware).Get("/api/v1/users/me/pages", modules.GetPages)
-	r.With(auth.AuthMiddleware).Get("/api/v1/ping", ping.Ping)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware).Get("/api/v1/users/me", users.GetUserMe)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware).Get("/api/v1/users/me/pages", users.GetContextUserPages)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware).Get("/api/v1/ping", ping.Ping)
 
 	r.Route("/api/v1/admin", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
-			r.Use(auth.AuthMiddleware, auth.AdminMiddleware)
+			r.Use(InjectUserInMiddleware, auth.AuthMiddleware, auth.AdminMiddleware)
 
 			r.Route("/modules", modules.RegisterRoutes)
 			r.Route("/users", users.RegisterRoutes)
