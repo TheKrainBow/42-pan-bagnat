@@ -291,3 +291,11 @@
 .custom-btn.warning:hover {
   background-color: var(--light-red-background-hover);
 }
+
+.custom-btn.icon-txt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;    /* space between icon and text */
+  padding: 0.5rem 1rem;  /* adjust to taste */
+}

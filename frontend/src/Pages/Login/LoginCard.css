@@ -1,0 +1,112 @@
+/* src/Pages/Login.css or src/Components/LoginCard.css */
+
+.login-card {
+  position: relative;
+  z-index: 1;
+  background-color: rgba(0, 0, 0, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 2rem;
+  width: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  transform: translateY(-25%);
+}
+
+.card-header {
+  display: flex;
+  flex-direction: line;
+  align-items: center;
+  gap: 1.3rem;
+}
+
+.card-logo {
+  width: 60px;
+  height: 60px;
+}
+
+.login-card h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--accent);
+  text-align: center;
+}
+
+.login-42-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: 80%;
+  font-size: 1rem;
+  padding: 0.75rem;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  margin-top: 1rem;
+  margin-bottom: 3rem;
+  transition: background-color 0.2s;
+}
+
+.btn-logo {
+  width: 20px;
+  height: 20px;
+}
+
+.down-link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 0.9rem;
+  padding: 0;
+  align-items: center;
+}
+
+.down-link:hover {
+  color: var(--accent-hover);
+}
+
+.magic-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  align-items: center;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}
+
+.magic-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.magic-input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.magic-btn {
+  width: 80%;
+  padding: 0.75rem;
+  background-color: rgba(75, 75, 75, 0.9);
+  color: #000;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.magic-btn:hover {
+  background-color: rgba(100, 100, 100, 0.9);
+}

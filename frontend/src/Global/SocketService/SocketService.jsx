@@ -25,7 +25,6 @@ class SocketService {
       console.log('⚡ WebSocket connected to', endpoint);
       // flush any queued messages
       this.sendQueue.forEach(msg => {
-        console.log('⚡ flushing queued msg', msg);
         this.socket.send(JSON.stringify(msg));
       });
       this.sendQueue = [];
@@ -35,7 +34,6 @@ class SocketService {
       let msg;
       try { msg = JSON.parse(ev.data) } catch { return }
 
-      console.log(msg)
       if (msg?.eventType === "module_status_changed" && msg?.payload) {
         const { module_id, module_name, new_status } = msg.payload;
 
@@ -74,7 +72,6 @@ class SocketService {
           className: 'toast-simple',
         });
         if (moduleStatusUpdater) {
-          console.log("thing shoulv updated!")
           moduleStatusUpdater(module_id, new_status);
         } else {
           console.log("update function not set!")
@@ -114,10 +111,10 @@ class SocketService {
   send(msg) {
     const data = JSON.stringify(msg);
     if (this.socket.readyState === WebSocket.OPEN) {
-      console.log('⚡ sent msg to WS:', msg);
+      // console.log('⚡ sent msg to WS:', msg);
       this.socket.send(data);
     } else {
-      console.warn('⚡ queueing msg (socket not open yet):', msg);
+      // console.warn('⚡ queueing msg (socket not open yet):', msg);
       this.sendQueue.push(msg);
     }
   }
@@ -128,12 +125,12 @@ class SocketService {
   }
 
   subscribeModule(moduleId) {
-    console.log('⚡ subscribeModule(', moduleId, ')');
+    // console.log('⚡ subscribeModule(', moduleId, ')');
     this.send({ action: 'subscribe', module_id: moduleId });
   }
 
   unsubscribeModule(moduleId) {
-    console.log('⚡ unsubscribeModule(', moduleId, ')');
+    // console.log('⚡ unsubscribeModule(', moduleId, ')');
     this.send({ action: 'unsubscribe', module_id: moduleId });
   }
 }
