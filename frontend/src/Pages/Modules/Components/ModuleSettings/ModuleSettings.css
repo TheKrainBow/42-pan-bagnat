@@ -83,3 +83,9 @@ input:checked + .slider:before {
   cursor: not-allowed;
   opacity: 0.5;
 }
+
+.role-line.no-result {
+  color: #888;
+  font-style: italic;
+  text-align: center;
+}

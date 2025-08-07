@@ -102,16 +102,24 @@ export default function UserDetail() {
 
       if (!res.ok) throw new Error("Failed to add role");
 
-      setUser((prev) => {
-        const updatedRoles = [...prev.roles, role];
-        reloadModules(updatedRoles);
+      setUser(prev => {
+        const updated = [...prev.roles, role];
+        // Recalculate filteredRoles manually
+        const remaining = availableRoles.filter((r) =>
+          r.name.toLowerCase().includes(searchRoleTerm.toLowerCase()) &&
+          !updated.some(existing => existing.id === r.id)
+        );
+
+        if (remaining.length === 0) {
+          setShowRoleSearch(false);
+          setSearchRoleTerm("");
+        }
+        reloadModules(updated);
         return {
           ...prev,
-          roles: updatedRoles,
+          roles: updated,
         };
       });
-      setShowRoleSearch(false);
-      setSearchRoleTerm("");
     } catch (err) {
       console.error(err);
     }
@@ -204,16 +212,20 @@ export default function UserDetail() {
                 onChange={(e) => setSearchRoleTerm(e.target.value)}
               />
               <ul className="role-search-list">
-                {filteredRoles.map((role) => (
-                  <li key={role.id}>
-                    <div
-                      className="role-line role-line-clickable"
-                      onClick={() => handleAddRole(role)}
-                    >
-                      <RoleBadge role={role}>{role.name}</RoleBadge>
-                    </div>
-                  </li>
-                ))}
+                {filteredRoles.length === 0 ? (
+                  <li className="role-line no-result">No more roles available</li>
+                ) : (
+                  filteredRoles.map((role) => (
+                    <li key={role.id}>
+                      <div
+                        className="role-line role-line-clickable"
+                        onClick={() => handleAddRole(role)}
+                      >
+                        <RoleBadge role={role}>{role.name}</RoleBadge>
+                      </div>
+                    </li>
+                  ))
+                )}
               </ul>
             </div>
           )}

@@ -40,6 +40,7 @@ export default function ModuleSettings({
     function onOutside(e) {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setShowRoleSearch(false);
+        setSearchRoleTerm("");
       }
     }
     if (showRoleSearch) document.addEventListener("mousedown", onOutside);
@@ -62,9 +63,22 @@ export default function ModuleSettings({
       );
       if (!res.ok) throw new Error("Failed to add role");
       // Update local state
-      setModuleRoles(prev => [...prev, role]);
-      setShowRoleSearch(false);
-      setSearchRoleTerm("");
+      setModuleRoles(prev => {
+        const updated = [...prev, role];
+
+        // Recalculate filteredRoles manually
+        const remaining = availableRoles.filter(r =>
+          r.name.toLowerCase().includes(searchRoleTerm.toLowerCase()) &&
+          !updated.some(mr => mr.id === r.id)
+        );
+
+        if (remaining.length === 0) {
+          setShowRoleSearch(false);
+          setSearchRoleTerm("");
+        }
+
+        return updated;
+      });
     } catch (err) {
       console.error(err);
     }
@@ -160,18 +174,22 @@ export default function ModuleSettings({
               autoFocus
             />
             <ul className="role-search-list">
-              {filteredRoles.map(role => (
-                <li key={role.id}>
-                  <div
-                    className="role-line role-line-clickable"
-                    onClick={() => handleAddRole(role)}
-                  >
-                    <RoleBadge role={role}>
-                      {role.name}
-                    </RoleBadge>
-                  </div>
-                </li>
-              ))}
+              {filteredRoles.length === 0 ? (
+                <li className="role-line no-result">No more roles available.</li>
+              ) : (
+                filteredRoles.map(role => (
+                  <li key={role.id}>
+                    <div
+                      className="role-line role-line-clickable"
+                      onClick={() => handleAddRole(role)}
+                    >
+                      <RoleBadge role={role}>
+                        {role.name}
+                      </RoleBadge>
+                    </div>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
         )}
