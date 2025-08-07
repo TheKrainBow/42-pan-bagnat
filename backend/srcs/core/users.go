@@ -206,8 +206,11 @@ func HandleUser42Connection(token *oauth2.Token) (string, error) {
 				IsStaff:   intra.IsStaff || intra.Kind == "admin",
 				LastSeen:  time.Now(),
 			}
-			if err := database.AddUser(*user); err != nil {
+			if err := database.AddUser(user); err != nil {
 				return "", fmt.Errorf("failed to create user: %w", err)
+			}
+			if err := database.LinkDefaultRolesToUser(user.ID); err != nil {
+				return "", fmt.Errorf("failed to link default roles: %w", err)
 			}
 		} else {
 			return "", fmt.Errorf("failed to get user: %w", err)

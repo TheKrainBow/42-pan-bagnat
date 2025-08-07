@@ -216,7 +216,7 @@ FROM users`,
 	return out, nil
 }
 
-func AddUser(user User) error {
+func AddUser(user *User) error {
 	if user.ID == "" {
 		user.ID = utils.GenerateULID(utils.User)
 	}
