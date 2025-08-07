@@ -374,3 +374,11 @@ func RemoveRoleFromModule(roleID, moduleID string) error {
 
 	return err
 }
+
+func LinkDefaultRolesToUser(userID string) error {
+	_, err := mainDB.Exec(`
+		INSERT INTO user_roles (user_id, role_id)
+		SELECT $1, id FROM roles WHERE is_default = TRUE;
+	`, userID)
+	return err
+}
