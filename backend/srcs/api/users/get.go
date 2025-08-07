@@ -155,7 +155,7 @@ func GetUserMe(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        userID path string true "User ID or ft_login"
-// @Success      200    {object} ModulePagesGetResponse
+// @Success      200    {object} modules.ModulePagesGetResponse
 // @Failure      400    {string} string "ID not found"
 // @Failure      500    {string} string "Internal server error"
 // @Router       /users/{userID}/pages [get]
@@ -195,7 +195,7 @@ func GetUserPages(w http.ResponseWriter, r *http.Request) {
 // @Tags         Pages
 // @Accept       json
 // @Produce      json
-// @Success      200  {object} ModulePagesGetResponse
+// @Success      200  {object} modules.ModulePagesGetResponse
 // @Failure      404  {string} string  "User not found"
 // @Failure      500  {string} string  "Internal server error"
 // @Router       /users/me/pages [get]

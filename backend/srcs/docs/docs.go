@@ -2102,6 +2102,85 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/users/me/pages": {
+            "get": {
+                "description": "Retrieves all module pages accessible to the currently logged-in user.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Get User Pages",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/modules.ModulePagesGetResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/users/{userID}/pages": {
+            "get": {
+                "description": "Retrieves all module pages accessible to the specified user by ID or ft_login.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Pages"
+                ],
+                "summary": "Get Pages for a User",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID or ft_login",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/modules.ModulePagesGetResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "ID not found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
