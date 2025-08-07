@@ -1813,6 +1813,36 @@ paths:
       summary: Ping backend API
       tags:
       - Ping
+  /users/{userID}/pages:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all module pages accessible to the specified user by
+        ID or ft_login.
+      parameters:
+      - description: User ID or ft_login
+        in: path
+        name: userID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/modules.ModulePagesGetResponse'
+        "400":
+          description: ID not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get Pages for a User
+      tags:
+      - Pages
   /users/me:
     get:
       consumes:
@@ -1836,6 +1866,30 @@ paths:
       summary: Get Current User
       tags:
       - Users
+  /users/me/pages:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves all module pages accessible to the currently logged-in
+        user.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/modules.ModulePagesGetResponse'
+        "404":
+          description: User not found
+          schema:
+            type: string
+        "500":
+          description: Internal server error
+          schema:
+            type: string
+      summary: Get User Pages
+      tags:
+      - Pages
 securityDefinitions:
   AdminAuth:
     in: cookie
