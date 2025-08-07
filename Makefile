@@ -86,11 +86,15 @@ prune:																					## Docker | Delete created images
 	@echo "🗑  Pruning images…"
 	docker image prune -f
 	@echo "🔍 Checking network '$(NETWORK)' usage…"
-	@if [ "$$(docker network inspect $(NETWORK) --format '{{len .Containers}}')" -eq "0" ]; then \
-		echo "🗑  No containers attached—removing network '$(NETWORK)'"; \
-		docker network rm $(NETWORK); \
+	@if docker network inspect $(NETWORK) > /dev/null 2>&1; then \
+		if [ "$$(docker network inspect $(NETWORK) --format '{{len .Containers}}')" -eq "0" ]; then \
+			echo "🗑  No containers attached—removing network '$(NETWORK)'"; \
+			docker network rm $(NETWORK); \
+		else \
+			echo "ℹ️  Network '$(NETWORK)' still in use—skipping removal"; \
+		fi \
 	else \
-		echo "ℹ️  Network '$(NETWORK)' still in use—skipping removal"; \
+		echo "⚠️  Network '$(NETWORK)' does not exist—nothing to do."; \
 	fi
 
 build: 																					## Docker | Build all images and replace currently running images
