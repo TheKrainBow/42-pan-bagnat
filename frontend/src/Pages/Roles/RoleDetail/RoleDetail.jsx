@@ -73,9 +73,11 @@ export default function RoleDetail() {
     function handleClickOutside(e) {
       if (showModuleSearch && moduleDropdownRef.current && !moduleDropdownRef.current.contains(e.target)) {
         setShowModuleSearch(false);
+        setModuleSearchTerm("");
       }
       if (showUserSearch && userDropdownRef.current && !userDropdownRef.current.contains(e.target)) {
         setShowUserSearch(false);
+        setUserSearchTerm("");
       }
     }
     document.addEventListener('mousedown', handleClickOutside);
@@ -98,11 +100,24 @@ export default function RoleDetail() {
     try {
       const res = await fetchWithAuth(`/api/v1/admin/modules/${mod.id}/roles/${roleId}`, { method: 'POST' });
       if (!res.ok) throw new Error();
-      setModules(prev => [...prev, mod]);
-      setShowModuleSearch(false);
-      setModuleSearchTerm("");
+      setModules(prev => {
+        const updated = [...prev, mod];
+        // Recalculate filteredRoles manually
+        const remaining = allModules.filter(m =>
+            m.name.toLowerCase().includes(moduleSearchTerm.toLowerCase()) &&
+            !updated.some(assigned => assigned.id === m.id)
+        );
+
+        if (remaining.length === 0) {
+          setShowModuleSearch(false);
+          setModuleSearchTerm("");
+        }
+
+        return updated;
+      });
     } catch (err) { console.error(err); }
   };
+
   const handleRemoveModule = async mod => {
     try {
       const res = await fetchWithAuth(`/api/v1/admin/modules/${mod.id}/roles/${roleId}`, { method: 'DELETE' });
@@ -114,9 +129,21 @@ export default function RoleDetail() {
     try {
       const res = await fetchWithAuth(`/api/v1/admin/users/${u.id}/roles/${roleId}`, { method: 'POST' });
       if (!res.ok) throw new Error();
-      setUsers(prev => [...prev, u]);
-      setShowUserSearch(false);
-      setUserSearchTerm("");
+      setUsers(prev => {
+        const updated = [...prev, u];
+        // Recalculate filteredRoles manually
+        const remaining = allUsers.filter(u =>
+            u.ft_login.toLowerCase().includes(userSearchTerm.toLowerCase()) &&
+            !updated.some(assigned => assigned.id === u.id)
+        );
+
+        if (remaining.length === 0) {
+          setShowUserSearch(false);
+          setUserSearchTerm("");
+        }
+
+        return updated;
+      });
     } catch (err) { console.error(err); }
   };
   const handleRemoveUser = async u => {
@@ -235,16 +262,20 @@ export default function RoleDetail() {
               onChange={e => setModuleSearchTerm(e.target.value)}
             />
             <ul className="role-search-list">
-              {filteredModules.map(m => (
-                <li key={m.id}>
-                  <div
-                    className="role-line role-line-clickable"
-                    onClick={() => handleAddModule(m)}
-                  >
-                    <ModuleSimpleBadge module={m} />
-                  </div>
-                </li>
-              ))}
+              {filteredModules.length === 0 ? (
+                <li className="role-line no-result">No more modules available</li>
+              ) : (
+                filteredModules.map(m => (
+                  <li key={m.id}>
+                    <div
+                      className="role-line role-line-clickable"
+                      onClick={() => handleAddModule(m)}
+                    >
+                      <ModuleSimpleBadge module={m} />
+                    </div>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
         )}
@@ -282,16 +313,20 @@ export default function RoleDetail() {
               onChange={e => setUserSearchTerm(e.target.value)}
             />
             <ul className="role-search-list">
-              {filteredUsers.map(u => (
-                <li key={u.id}>
-                  <div
-                    className="role-line role-line-clickable"
-                    onClick={() => handleAddUser(u)}
-                  >
-                    <UserBadge user={u} disableClick={true} />
-                  </div>
-                </li>
-              ))}
+              {filteredUsers.length === 0 ? (
+                <li className="role-line no-result">No more users available</li>
+              ) : (
+                filteredUsers.map(u => (
+                  <li key={u.id}>
+                    <div
+                      className="role-line role-line-clickable"
+                      onClick={() => handleAddUser(u)}
+                    >
+                      <UserBadge user={u} disableClick={true} />
+                    </div>
+                  </li>
+                ))
+              )}
             </ul>
           </div>
         )}
