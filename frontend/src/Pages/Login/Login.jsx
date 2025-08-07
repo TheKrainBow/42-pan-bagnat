@@ -7,16 +7,17 @@ export default function LoginPage() {
   const canvasRef = useRef(null);
   const particles = useRef([]);
   const mouse = useRef({ x: null, y: null });
+  const revealAnimation = useRef(null);
+  const revealRadius = 100;
+  const numParticles = 200;
+  const maxDist = 50;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     let width, height;
-    const numParticles = 500;
-    const maxDist = 120;
-    const revealRadius = 200;
-    const restoreFactor = 0.05;
     let offsetX;
+    let topY, bottomY;
 
     function randomBetween(min, max) {
       return min + Math.random() * (max - min);
@@ -33,16 +34,20 @@ export default function LoginPage() {
       height = canvas.height = window.innerHeight;
       offCanvas.width = height;
       offCanvas.height = height;
+      topY = 220;
+      bottomY = height - 220;
       offCtx.clearRect(0, 0, height, height);
       offCtx.drawImage(logoImg, 0, 0, height, height);
       offsetX = (width - height) / 2;
       // init particles in logo square
       particles.current = Array.from({ length: numParticles }).map(() => {
         const x = offsetX + randomBetween(0, height);
-        const y = randomBetween(0, height);
+        const y = randomBetween(bottomY, topY);
         const vx = randomBetween(-0.5, 0.5);
         const vy = randomBetween(-0.5, 0.5);
-        return { x, y, vx, vy, initVx: vx, initVy: vy };
+        const speed = randomBetween(0.5, 1);
+        const size = randomBetween(0, 70);
+        return { x, y, vx, vy, initVx: vx, initVy: vy, speed: speed, size: size};
       });
     }
 
@@ -61,17 +66,14 @@ export default function LoginPage() {
       
       // 2. update particles within square
       particles.current.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
+        p.x += (p.vx) * p.speed;
+        p.y += (p.vy) * p.speed;
         // wrap X in square
         if (p.x < offsetX) p.x = offsetX + height;
         if (p.x > offsetX + height) p.x = offsetX;
         // wrap Y
-        if (p.y < 0) p.y = height;
-        if (p.y > height) p.y = 0;
-        // restore speed
-        p.vx += (p.initVx - p.vx) * restoreFactor;
-        p.vy += (p.initVy - p.vy) * restoreFactor;
+        if (p.y < topY) p.y = bottomY;
+        if (p.y > bottomY) p.y = topY;
       });
 
       // 3. draw links
@@ -80,60 +82,68 @@ export default function LoginPage() {
           const b = particles.current[j];
           let dx = b.x - a.x;
           let dy = b.y - a.y;
-          if (dx > width/2) dx -= width;
-          if (dx < -width/2) dx += width;
-          if (dy > height/2) dy -= height;
-          if (dy < -height/2) dy += height;
           const dist = Math.hypot(dx, dy);
-          if (dist < maxDist) {
-            const alpha = 1 - dist / maxDist;
-            const midX = (a.x + dx/2) - offsetX;
-            const midY = (a.y + dy/2);
-            let col = [0,0,0];
-            if (midX >= 0 && midX < height && midY >= 0 && midY < height) {
-              col = offCtx.getImageData(Math.floor(midX), Math.floor(midY),1,1).data;
-            }
-            ctx.strokeStyle = `rgba(${col[0]},${col[1]},${col[2]},${alpha})`;
+          const localMaxDist = maxDist + a.size + b.size;
+          if (dist < localMaxDist ) {
+            const alpha = (1 - dist / localMaxDist) / 2 + 0.35;
+            const x1 = a.x - offsetX;
+            const y1 = a.y;
+            const x2 = b.x - offsetX;
+            const y2 = b.y;
+
+            let col1 = offCtx.getImageData(Math.floor(x1), Math.floor(y1), 1, 1).data;
+            let col2 = offCtx.getImageData(Math.floor(x2), Math.floor(y2), 1, 1).data;
+
+            if (col1[0] === 0 && col1[1] === 0 && col1[2] === 0) col1 = [72, 60, 60, col1[3]];
+            if (col2[0] === 0 && col2[1] === 0 && col2[2] === 0) col2 = [72, 60, 60, col2[3]];
+        
+            const gradient = ctx.createLinearGradient(a.x, a.y, b.x, b.y);
+            gradient.addColorStop(0, `rgba(${col1[0]}, ${col1[1]}, ${col1[2]}, ${alpha})`);
+            gradient.addColorStop(1, `rgba(${col2[0]}, ${col2[1]}, ${col2[2]}, ${alpha})`);
+
+            ctx.strokeStyle = gradient;
             ctx.lineWidth = alpha;
             ctx.beginPath();
             ctx.moveTo(a.x, a.y);
-            ctx.lineTo((a.x+dx+width)%width, (a.y+dy+height)%height);
+            ctx.lineTo(b.x, b.y);
             ctx.stroke();
           }
         }
       });
 
-      // 4. draw particles
-      particles.current.forEach(p => {
-        const lx = p.x - offsetX;
-        const ly = p.y;
-        let col = [0,0,0];
-        if (lx >= 0 && lx < height && ly >= 0 && ly < height) {
-          col = offCtx.getImageData(Math.floor(lx), Math.floor(ly),1,1).data;
-        }
-        ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},0.9)`;
-        ctx.beginPath(); ctx.arc(p.x,p.y,2,0,Math.PI*2); ctx.fill();
-      });
+      let centerX = mouse.current.x ?? width / 2;
+      let centerY = mouse.current.y ?? height / 2;
 
       // 5. flashlight: big blurred circle then small sharp circle
-      if (mouse.current.x !== null) {
-        // loop blur steps from outer to inner, draw only logo without dark overlay
-        const steps = 8;
-        for (let i = 0; i < steps; i++) {
-          const t = i / (steps - 1);
-          const r = revealRadius * (1 - 0.2 * t);
-          const blur = 8 * (1 - t);
-          const grayPct = blur / 16 * 100;
-          ctx.save();
-          ctx.beginPath();
-          ctx.arc(mouse.current.x, mouse.current.y, r, 0, Math.PI * 2);
-          ctx.clip();
-          ctx.filter = `blur(${blur}px) grayscale(${grayPct}%)`;
-          ctx.drawImage(logoImg, offsetX, 0, height, height);
-          ctx.filter = 'none';
-          ctx.restore();
+      if (mouse.current.x !== null || revealAnimation.current !== null) {
+          const maxRadius = Math.hypot(width, height); // full screen diagonal
+          const currentRadius = revealAnimation.current ?? revealRadius;
+
+          if (revealAnimation.current !== null) {
+            revealAnimation.current += 10; // grow speed
+            centerX = width / 2;
+            centerY = height / 2;
+            if (revealAnimation.current >= maxRadius) {
+              revealAnimation.current = null; // done
+            }
+          }
+
+          const steps = 8;
+          for (let i = 0; i < steps; i++) {
+            const t = i / (steps - 1);
+            const r = currentRadius * (1 - 0.2 * t);
+            const blur = 8 * (1 - t);
+            const grayPct = blur / 16 * 100;
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+            ctx.clip();
+            ctx.filter = `blur(${blur}px) grayscale(${grayPct}%)`;
+            ctx.drawImage(logoImg, offsetX, 0, height, height);
+            ctx.filter = 'none';
+            ctx.restore();
+          }
         }
-      }
 
       requestAnimationFrame(animate);
     }
@@ -149,7 +159,7 @@ export default function LoginPage() {
   }, []);
 
   const handleLogin = () => {
-    // redirect into 42 OAuth
+    revealAnimation.current = revealRadius;
     window.location.href = "/auth/42/login";
   };
 
