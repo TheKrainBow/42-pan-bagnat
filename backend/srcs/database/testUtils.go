@@ -112,7 +112,17 @@ func CreateAndPopulateDatabase(t *testing.T, dbName string, sqlFile string) *sql
 		host = "localhost"
 	}
 
-	testDB, err = sqlx.Open("postgres", fmt.Sprintf("postgresql://admin:pw_admin@%s/%s?sslmode=disable", host, dbName))
+	dbPassword := os.Getenv("DB_PASSWORD")
+	if dbPassword == "" {
+		dbPassword = "uh oh..."
+	}
+
+	dbUser := os.Getenv("DB_USER")
+	if dbUser == "" {
+		dbUser = "uh oh..."
+	}
+
+	testDB, err = sqlx.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?sslmode=disable", dbUser, dbPassword, host, dbName))
 	if err != nil {
 		t.Fatalf("failed to connect to test database %s: %v", dbName, err)
 	}
