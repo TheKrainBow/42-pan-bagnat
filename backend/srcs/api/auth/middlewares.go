@@ -50,7 +50,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		log.Printf("[auth] user %s authenticated via session", user.FtLogin)
 
 		if time.Since(user.LastSeen) > time.Minute {
-			go core.TouchUserLastSeen(user.ID)
+			go core.TouchUserLastSeen(user.FtLogin)
 		}
 
 		ctx := context.WithValue(r.Context(), UserCtxKey, &user)
