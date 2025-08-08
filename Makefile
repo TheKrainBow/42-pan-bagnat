@@ -194,7 +194,12 @@ test-backend-verbose: 																	## Tests | Start tests for backend with v
 	cd backend/srcs && DATABASE_URL=$(DATABASE_URL) go test -v -timeout 30s ./...
 
 #########################################################################################
-#                                      DATABASE                                         #
+#                                       SWAGGER                                         #
 #########################################################################################
+HOST_NAME ?= localhost
 swagger:
-	cd backend/srcs && swag init -g main.go
+	cd backend/srcs && \
+	swag init -g main.go --parseDependency --parseInternal && \
+	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME):8080/' ./docs/docs.go && \
+	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME):8080/' ./docs/swagger.json && \
+	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME):8080/' ./docs/swagger.yaml

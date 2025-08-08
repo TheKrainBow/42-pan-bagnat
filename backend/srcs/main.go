@@ -32,7 +32,7 @@ import (
 // @title Pan Bagnat API
 // @version 1.1
 // @description API REST du projet Pan Bagnat.
-// @host localhost:8080
+// @host {{HOST_PLACEHOLDER}}
 // @BasePath /api/v1
 
 // @securityDefinitions.apikey SessionAuth
@@ -130,16 +130,8 @@ func main() {
 	// Set up the CORS middleware
 	corsMiddleware := cors.New(cors.Options{
 		AllowedOrigins: []string{
-			"http://localhost:*",
-			"http://localhost",
-			"https://localhost:*",
-			"https://localhost",
-			"http://127.0.0.1:*",
-			"http://127.0.0.1",
-			"https://127.0.0.1:*",
-			"https://127.0.0.1",
-			"http://heinz.42nice.fr",
-			"https://heinz.42nice.fr",
+			fmt.Sprintf("http://%s", os.Getenv("HOST_NAME")),
+			fmt.Sprintf("https://%s", os.Getenv("HOST_NAME")),
 		},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"},
 		AllowedHeaders:   []string{"Content-Type", "Authorization"},
