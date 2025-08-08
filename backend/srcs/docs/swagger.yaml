@@ -429,7 +429,7 @@ definitions:
           type: string
         type: array
     type: object
-host: localhost:8080
+host: 'localhost:8080'
 info:
   contact: {}
   description: API REST du projet Pan Bagnat.

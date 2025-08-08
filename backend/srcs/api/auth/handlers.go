@@ -3,6 +3,7 @@ package auth
 import (
 	"backend/core"
 	"context"
+	"fmt"
 	"net/http"
 	"os"
 	"time"
@@ -58,5 +59,5 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
 
-	http.Redirect(w, r, "http://localhost/", http.StatusFound)
+	http.Redirect(w, r, fmt.Sprintf("http://%s/", os.Getenv("HOST_NAME")), http.StatusFound)
 }
