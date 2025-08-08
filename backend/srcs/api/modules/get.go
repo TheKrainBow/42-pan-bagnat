@@ -393,73 +393,73 @@ func GetModuleContainers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// GetPages returns a paginated list of all module pages.
-// @Summary      Get Pages
-// @Description  Retrieves all pages across modules, with optional filtering, sorting, and pagination.
-// @Tags         Pages
-// @Accept       json
-// @Produce      json
-// @Param        filter           query   string  false  "Filter expression (e.g. \"title=Home\")"
-// @Param        next_page_token  query   string  false  "Pagination token for the next page"
-// @Param        order            query   string  false  "Sort order: asc or desc"                Enums(asc,desc)  default(desc)
-// @Param        limit            query   int     false  "Maximum number of items per page"       default(50)
-// @Success      200              {object} ModulePagesGetResponse
-// @Failure      400              {string} string                         "Invalid pagination token"
-// @Failure      500              {string} string                         "Internal server error"
-// @Router       /pages [get]
-func GetPages(w http.ResponseWriter, r *http.Request) {
-	var err error
-	var pages []core.ModulePage
-	var nextToken string
+// // GetPages returns a paginated list of all module pages.
+// // @Summary      Get Pages
+// // @Description  Retrieves all pages across modules, with optional filtering, sorting, and pagination.
+// // @Tags         Pages
+// // @Accept       json
+// // @Produce      json
+// // @Param        filter           query   string  false  "Filter expression (e.g. \"title=Home\")"
+// // @Param        next_page_token  query   string  false  "Pagination token for the next page"
+// // @Param        order            query   string  false  "Sort order: asc or desc"                Enums(asc,desc)  default(desc)
+// // @Param        limit            query   int     false  "Maximum number of items per page"       default(50)
+// // @Success      200              {object} ModulePagesGetResponse
+// // @Failure      400              {string} string                         "Invalid pagination token"
+// // @Failure      500              {string} string                         "Internal server error"
+// // @Router       /admin/pages [get]
+// func GetPages(w http.ResponseWriter, r *http.Request) {
+// 	var err error
+// 	var pages []core.ModulePage
+// 	var nextToken string
 
-	w.Header().Set("Content-Type", "application/json")
+// 	w.Header().Set("Content-Type", "application/json")
 
-	filter := r.URL.Query().Get("filter")
-	pageToken := r.URL.Query().Get("next_page_token")
-	order := r.URL.Query().Get("order")
-	limitStr := r.URL.Query().Get("limit")
-	limit := 0
-	if limitStr != "" {
-		limit, _ = strconv.Atoi(limitStr)
-	} else {
-		limit = 50
-	}
+// 	filter := r.URL.Query().Get("filter")
+// 	pageToken := r.URL.Query().Get("next_page_token")
+// 	order := r.URL.Query().Get("order")
+// 	limitStr := r.URL.Query().Get("limit")
+// 	limit := 0
+// 	if limitStr != "" {
+// 		limit, _ = strconv.Atoi(limitStr)
+// 	} else {
+// 		limit = 50
+// 	}
 
-	dest := ModulePagesGetResponse{}
-	pagination := core.ModulePagesPagination{
-		ModuleID:       nil,
-		OrderBy:        core.GenerateModulePagesOrderBy(order),
-		Filter:         filter,
-		LastModulePage: nil,
-		Limit:          limit,
-	}
+// 	dest := ModulePagesGetResponse{}
+// 	pagination := core.ModulePagesPagination{
+// 		ModuleID:       nil,
+// 		OrderBy:        core.GenerateModulePagesOrderBy(order),
+// 		Filter:         filter,
+// 		LastModulePage: nil,
+// 		Limit:          limit,
+// 	}
 
-	if pageToken != "" {
-		pagination, err = core.DecodeModulePagesPaginationToken(pageToken)
-		if err != nil {
-			http.Error(w, "Failed in core.GetModules()", http.StatusInternalServerError)
-			fmt.Printf("Couldn't decode token:\n%s\n: %s\n", pageToken, err.Error())
-			return
-		}
-	}
-	pages, nextToken, err = core.GetModulePages(pagination)
-	if err != nil {
-		log.Printf("error while getting modules: %s\n", err.Error())
-		http.Error(w, "Failed in core.GetModules()", http.StatusInternalServerError)
-		return
-	}
-	dest.NextPage = nextToken
-	dest.ModulePages = api.ModulePagesToAPIModulePages(pages)
+// 	if pageToken != "" {
+// 		pagination, err = core.DecodeModulePagesPaginationToken(pageToken)
+// 		if err != nil {
+// 			http.Error(w, "Failed in core.GetModules()", http.StatusInternalServerError)
+// 			fmt.Printf("Couldn't decode token:\n%s\n: %s\n", pageToken, err.Error())
+// 			return
+// 		}
+// 	}
+// 	pages, nextToken, err = core.GetModulePages(pagination)
+// 	if err != nil {
+// 		log.Printf("error while getting modules: %s\n", err.Error())
+// 		http.Error(w, "Failed in core.GetModules()", http.StatusInternalServerError)
+// 		return
+// 	}
+// 	dest.NextPage = nextToken
+// 	dest.ModulePages = api.ModulePagesToAPIModulePages(pages)
 
-	// Marshal the dest struct into JSON
-	destJSON, err := json.Marshal(dest)
-	if err != nil {
-		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
-		return
-	}
+// 	// Marshal the dest struct into JSON
+// 	destJSON, err := json.Marshal(dest)
+// 	if err != nil {
+// 		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
+// 		return
+// 	}
 
-	fmt.Fprint(w, string(destJSON))
-}
+// 	fmt.Fprint(w, string(destJSON))
+// }
 
 // PageRedirection proxies the root of a module page.
 // @Summary      Proxy Module Page (root)
