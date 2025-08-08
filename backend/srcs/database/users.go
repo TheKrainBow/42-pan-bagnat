@@ -235,7 +235,7 @@ func AddUser(user *User) error {
 
 func UpdateUserLastSeen(login string, ts time.Time) error {
 	_, err := mainDB.Exec(`
-        UPDATE users SET last_seen = $1 WHERE ft_login = $2
+        UPDATE users SET last_seen = $1 WHERE ft_login = $2 OR id = $2
     `, ts, login)
 	return err
 }

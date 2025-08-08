@@ -26,8 +26,7 @@ help:																					## Help | I am pretty sure you know what this one is d
 #                                        LOCAL                                          #
 #########################################################################################
 .PHONY: local-front local-back
-local-front:																			## Local | Stop frontend docker container, and run front locally (dev mode)
-# 	$(DOCKER_COMPOSE) stop frontend  ## Not needed since local frontend hit on a different port
+local-front:																			## Local | Frontend locally (dev mode)
 	cd frontend && BROWSER=none pnpm dev
 
 local-back:																				## Local | Stop backend docker container, and run back locally (dev mode)
@@ -41,14 +40,12 @@ local-back:																				## Local | Stop backend docker container, and run
 
 BE_WAS_RUNNING := $(shell docker inspect -f '{{.State.Running}}' pan-bagnat-backend-1 2>/dev/null)
 
-# Stop backend if running
 stop-backend-if-needed:
 	@if [ "$(BE_WAS_RUNNING)" = "true" ]; then \
 	  echo "⛔ Stopping backend..."; \
 	  docker stop pan-bagnat-backend-1; \
 	fi
 
-# Restart backend only if it was running before
 restart-backend-if-needed:
 	@if [ "$(BE_WAS_RUNNING)" = "true" ]; then \
 	  echo "▶️  Restarting backend..."; \
@@ -81,7 +78,7 @@ db-test: db-clear-data																	## Database | Set database datas with tes
 #                                       DOCKER                                          #
 #########################################################################################
 .PHONY: up up-dev down build build-back build-front prune fprune
-up:																						## Docker | Up latest built images for all containers. (Doesn't rebuild using your local files)
+up:																						## Docker Core | Up docker containers.   (PB only)
 	@echo "⏳ Ensuring network '$(NETWORK)' exists…"
 	@if ! docker network ls --format '{{.Name}}' | grep -q "^$(NETWORK)$$" ; then \
 		echo "✅ Creating network '$(NETWORK)'"; \
@@ -92,16 +89,50 @@ up:																						## Docker | Up latest built images for all containers. 
 	@echo "🚀 Bringing up services…"
 	$(DOCKER_COMPOSE) up -d
 
-down:																					## Docker | Down docker images. (Doesn't delete images)
+up-modules:																				## Docker Modules | Up docker containers.   (Modules only)
+	@echo "⏳ Ensuring network '$(NETWORK)' exists…"
+	@if ! docker network ls --format '{{.Name}}' | grep -q "^$(NETWORK)$$" ; then \
+		echo "✅ Creating network '$(NETWORK)'"; \
+		docker network create --driver bridge $(NETWORK); \
+	else \
+		echo "✅ Network '$(NETWORK)' already exists"; \
+	fi
+	@echo "🚀 Bringing up services…"
+	@for dir in repos/*; do \
+		if [ -d $$dir ] && [ -f $$dir/docker-compose.yml ]; then \
+			echo "==> Stopping containers in $$dir"; \
+			(cd $$dir && docker compose up); \
+		fi \
+	done
+
+up-all: up up-modules																	## Docker Both | Up docker containers.   (PB & Modules)
+down-all: down down-modules																## Docker Both | Stop docker containers. (PB & Modules)
+stop-all: stop stop-modules																## Docker Both | Down docker containers. (PB & Modules)
+
+stop:																					## Docker Core | Stop docker containers. (PB only)
+	$(DOCKER_COMPOSE) stop
+
+
+stop-modules:																			## Docker Modules | Stop docker containers. (Modules only)
 	@for dir in repos/*; do \
 		if [ -d $$dir ] && [ -f $$dir/docker-compose.yml ]; then \
 			echo "==> Stopping containers in $$dir"; \
 			(cd $$dir && docker compose stop); \
 		fi \
 	done
+
+down:																					## Docker Core | Down docker containers. (PB only)
 	$(DOCKER_COMPOSE) down
 
-prune:																					## Docker | Delete created images
+down-modules:																			## Docker Modules | Down docker containers. (Modules only)
+	@for dir in repos/*; do \
+		if [ -d $$dir ] && [ -f $$dir/docker-compose.yml ]; then \
+			echo "==> Stopping containers in $$dir"; \
+			(cd $$dir && docker compose down); \
+		fi \
+	done
+
+prune:																					## Docker Core | Delete created images (PB & Modules)
 	@echo "🛑 Bringing down containers…"
 	$(DOCKER_COMPOSE) down
 	@echo "🗑  Pruning images…"
@@ -118,27 +149,24 @@ prune:																					## Docker | Delete created images
 		echo "⚠️  Network '$(NETWORK)' does not exist—nothing to do."; \
 	fi
 
-build: 																					## Docker | Build all images and replace currently running images
+build: 																					## Docker Core | Build and up docker images. (PB only)
 	$(DOCKER_COMPOSE) build
 	@$(MAKE) -s up
 
-build-back: 																			## Docker | Build backend image and replace currently running backend image
+build-back: 																			## Docker Core | Build and up backend docker images. (PB only)
 	$(DOCKER_COMPOSE) build backend
 	@$(MAKE) -s up
 
-build-front: 																			## Docker | Build frontend image and replace currently running frontend image
+build-front: 																			## Docker Core | Build and up frontend docker images. (PB only)
 	$(DOCKER_COMPOSE) build frontend
 	@$(MAKE) -s up
 
-fprune: prune																			## Docker | Stop all containers, volumes, and networks
+REPO_DIRS := $(wildcard repos/*)
+
+fprune: prune																			## Docker Core | Stop all containers, volumes, and networks. (PB & Modules)
 	$(DOCKER_COMPOSE) down --volumes --remove-orphans || true
 	docker network rm pan-bagnat_default 2>/dev/null || true
 	docker system prune -af --volumes || true
-
-REPO_DIRS := $(wildcard repos/*)
-
-.PHONY: fprune-all
-fprune-all:
 	@echo $(REPO_DIRS)
 	@for dir in $(REPO_DIRS); do \
 	  if [ -d $$dir ]; then \

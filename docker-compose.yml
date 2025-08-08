@@ -1,6 +1,6 @@
 services:
   frontend:
-    container_name: pan-bagnat-frontend-1
+    container_name: pan-bagnat-frontend
     build:
       context: ./frontend
     expose:
@@ -8,19 +8,19 @@ services:
     env_file:
       - ./frontend/.env
     networks:
-      - pan-bagnat-net
+      - pan-bagnat-core
 
   nginx:
     image: nginx:alpine
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./nginx/ssl/42nice.fr.crt:/etc/ssl/42nice.fr.crt:ro
-      - ./nginx/ssl/42nice.fr.key:/etc/ssl/42nice.fr.key:ro
+      - ./nginx/ssl:/etc/ssl:ro
     ports:
       - '80:80'
       - '443:443'
     networks:
-      - pan-bagnat-net
+      - pan-bagnat-core
+      - pan-bagnat-host
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
@@ -28,7 +28,7 @@ services:
       - frontend
 
   backend:
-    container_name: pan-bagnat-backend-1
+    container_name: pan-bagnat-backend
     user: "root:root"
     build:
       context: ./backend
@@ -43,32 +43,40 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - pan-bagnat-net
+      - pan-bagnat-core
   db:
-    container_name: pan-bagnat-db-1
+    container_name: pan-bagnat-db
     image: postgres:16
     restart: on-failure
-    ports:
-      - "5432:5432"
+    expose:
+      - "5432"
     volumes:
       - ./db/init:/docker-entrypoint-initdb.d:Z
       - postgres_data:/var/lib/postgresql/data
     env_file:
       - ./db/.env
     networks:
-      - pan-bagnat-net
+      - pan-bagnat-core
 
   adminer:
-    container_name: pan-bagnat-adminer-1
+    container_name: pan-bagnat-adminer
     image: adminer
     ports: ["8081:8080"]
     networks:
-      - pan-bagnat-net
+      - pan-bagnat-core
+      - pan-bagnat-host
 
 volumes:
   postgres_data:
 
 networks:
+  pan-bagnat-core:
+    name: pan-bagnat-core
+    driver: bridge
+    internal: true
   pan-bagnat-net:
     name: pan-bagnat-net
     driver: bridge
     external: true
+  pan-bagnat-host:
+    driver: bridge
