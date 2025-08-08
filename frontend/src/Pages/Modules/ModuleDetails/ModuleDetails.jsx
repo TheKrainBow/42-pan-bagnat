@@ -135,7 +135,6 @@ const ModuleDetails = () => {
               onClick={() => {
                 setActiveTab('logs'); // or 'docker', 'settings'
                 setSearchParams({ tab: 'logs' }); // or the corresponding value
-                triggerAttention();
               }}
             />
             <Button
