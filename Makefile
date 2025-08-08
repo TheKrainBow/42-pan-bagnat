@@ -3,7 +3,9 @@
 #########################################################################################
 NETWORK := pan-bagnat-net
 DOCKER_COMPOSE := docker compose
-DATABASE_URL := postgres://admin:pw_admin@localhost/panbagnat?sslmode=disable
+DB_USER := ${DB_USER}
+DB_PASSWORD := ${DB_PASSWORD}
+DATABASE_URL := postgres://${DB_USER}:${DB_PASSWORD}@localhost/panbagnat?sslmode=disable
 
 #########################################################################################
 #                                                                                       #
