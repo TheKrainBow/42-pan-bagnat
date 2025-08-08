@@ -2,4 +2,4 @@ repos/
 *.crt
 *.key
 *.pem
-.env
+*.env
