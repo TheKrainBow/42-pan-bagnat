@@ -36,7 +36,19 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		session, err := database.GetSession(sid)
 		if err != nil || session.ExpiresAt.Before(time.Now()) {
 			log.Println("[auth] invalid/expired session:", err)
+
 			go database.PurgeExpiredSessions()
+
+			http.SetCookie(w, &http.Cookie{
+				Name:     "session_id",
+				Value:    "",
+				Path:     "/",
+				Expires:  time.Unix(0, 0),
+				MaxAge:   -1,
+				HttpOnly: true,
+				Secure:   true,
+				SameSite: http.SameSiteLaxMode,
+			})
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}

@@ -17,9 +17,9 @@ var testDB *sqlx.DB
 
 func init() {
 	var err error
-	connStr := os.Getenv("DATABASE_URL")
+	connStr := os.Getenv("POSTGRES_URL")
 	if connStr == "" {
-		log.Fatal("DATABASE_URL is not set")
+		log.Fatal("POSTGRES_URL is not set")
 	}
 	mainDB, err = sqlx.Open("postgres", connStr)
 	if err != nil {
@@ -107,22 +107,27 @@ func CreateAndPopulateDatabase(t *testing.T, dbName string, sqlFile string) *sql
 		t.Fatalf("failed to create test database %s: %v", dbName, err)
 	}
 
-	host := os.Getenv("HOST_NAME")
+	host := os.Getenv("POSTGRES_HOST")
 	if host == "" {
 		host = "localhost"
 	}
 
-	dbPassword := os.Getenv("DB_PASSWORD")
+	port := os.Getenv("POSTGRES_PORT")
+	if port == "" {
+		port = "localhost"
+	}
+
+	dbPassword := os.Getenv("POSTGRES_PASSWORD")
 	if dbPassword == "" {
 		dbPassword = "uh oh..."
 	}
 
-	dbUser := os.Getenv("DB_USER")
+	dbUser := os.Getenv("POSTGRES_USER")
 	if dbUser == "" {
 		dbUser = "uh oh..."
 	}
 
-	testDB, err = sqlx.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s/%s?sslmode=disable", dbUser, dbPassword, host, dbName))
+	testDB, err = sqlx.Open("postgres", fmt.Sprintf("postgresql://%s:%s@%s:%s/%s?sslmode=disable", dbUser, dbPassword, host, port, dbName))
 	if err != nil {
 		t.Fatalf("failed to connect to test database %s: %v", dbName, err)
 	}

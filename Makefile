@@ -3,9 +3,9 @@
 #########################################################################################
 NETWORK := pan-bagnat-net
 DOCKER_COMPOSE := docker compose
-DB_USER := ${DB_USER}
-DB_PASSWORD := ${DB_PASSWORD}
-DATABASE_URL := postgres://${DB_USER}:${DB_PASSWORD}@localhost/panbagnat?sslmode=disable
+POSTGRES_USER := ${POSTGRES_USER}
+POSTGRES_PASSWORD := ${POSTGRES_PASSWORD}
+POSTGRES_URL := postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost/panbagnat?sslmode=disable
 
 #########################################################################################
 #                                                                                       #
@@ -33,7 +33,7 @@ local-front:																			## Local | Frontend locally (dev mode)
 
 local-back:																				## Local | Stop backend docker container, and run back locally (dev mode)
 	$(DOCKER_COMPOSE) stop backend 
-	cd backend/srcs && DATABASE_URL=$(DATABASE_URL) go run main.go
+	cd backend/srcs && POSTGRES_URL=$(POSTGRES_URL) go run main.go
 
 #########################################################################################
 #                                      DATABASE                                         #
@@ -189,11 +189,11 @@ fprune: prune																			## Docker Core | Stop all containers, volumes, a
 .PHONY: test-backend test-backend-verbose
 test-backend:																			## Tests | Start tests for backend
 	@echo "🧪 Running backend tests…"
-	cd backend/srcs && DATABASE_URL=$(DATABASE_URL) go test -timeout 30s ./...
+	cd backend/srcs && POSTGRES_URL=$(POSTGRES_URL) go test -timeout 30s ./...
 
 test-backend-verbose: 																	## Tests | Start tests for backend with verbose enabled
 	@echo "🧪 Running backend tests…"
-	cd backend/srcs && DATABASE_URL=$(DATABASE_URL) go test -v -timeout 30s ./...
+	cd backend/srcs && POSTGRES_URL=$(POSTGRES_URL) go test -v -timeout 30s ./...
 
 #########################################################################################
 #                                       SWAGGER                                         #
@@ -205,3 +205,60 @@ swagger:
 	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME)/' ./docs/docs.go && \
 	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME)/' ./docs/swagger.json && \
 	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME)/' ./docs/swagger.yaml
+
+#########################################################################################
+#                                      MIGRATIONS                                       #
+#########################################################################################
+# Config (override if needed)
+ENV_FILE        ?= .env
+MIGRATE_NETWORK ?= pan-bagnat-core
+MIGRATIONS_DIR  ?= db/migrations
+MIGRATE_IMAGE   ?= migrate/migrate:latest
+POSTGRES_URL    ?= ${POSTGRES_URL}
+
+# Internal: docker-run wrapper; expands $$POSTGRES_URL inside the container
+define _MIGRATE_RUN
+bash -lc 'set -a; source $(ENV_FILE); \
+docker run --rm \
+  --network $(MIGRATE_NETWORK) \
+  -v "$(PWD)/$(MIGRATIONS_DIR)":/migrations:ro \
+  -e POSTGRES_URL \
+  $(MIGRATE_IMAGE) \
+  -path=/migrations \
+  -database "$$POSTGRES_URL" \
+  $(1)'
+endef
+
+.PHONY: migrate-up migrate-down1 migrate-steps migrate-goto migrate-version migrate-force migrate-new
+
+migrate-up:                                  ## Migrations | Apply all pending migrations (up)
+	@$(call _MIGRATE_RUN,up)
+
+migrate-down1:                               ## Migrations | Roll back the last migration (down 1)
+	@$(call _MIGRATE_RUN,down 1)
+
+migrate-steps:                               ## Migrations | Move N steps (use N=-2 to roll back two)
+	@if [ -z "$(N)" ]; then echo "Usage: make migrate-steps N=-2"; exit 2; fi
+	@$(call _MIGRATE_RUN,steps $(N))
+
+migrate-goto:                                ## Migrations | Go to version V (e.g., V=2)
+	@if [ -z "$(V)" ]; then echo "Usage: make migrate-goto V=2"; exit 2; fi
+	@$(call _MIGRATE_RUN,goto $(V))
+
+migrate-version:                             ## Migrations | Show current migration version
+	@$(call _MIGRATE_RUN,version)
+
+migrate-force:                               ## Migrations | Force version to V (clears dirty), e.g., V=1
+	@if [ -z "$(V)" ]; then echo "Usage: make migrate-force V=1"; exit 2; fi
+	@$(call _MIGRATE_RUN,force $(V))
+
+migrate-new:                                 ## Migrations | Create new pair: 000X_NAME.(up or down).sql (NAME=xxx)
+	@if [ -z "$(NAME)" ]; then echo "Usage: make migrate-new NAME=add_users_debug_note"; exit 2; fi
+	@mkdir -p "$(MIGRATIONS_DIR)"
+	@last=$$(ls -1 "$(MIGRATIONS_DIR)"/*_*.up.sql 2>/dev/null | sed -E 's#.*/([0-9]{4}).*#\1#' | sort -n | tail -1); \
+	v=$$([ -z "$$last" ] && printf "0001" || printf "%04d" $$(($$last+1))); \
+	up="$(MIGRATIONS_DIR)/$${v}_$(NAME).up.sql"; \
+	down="$(MIGRATIONS_DIR)/$${v}_$(NAME).down.sql"; \
+	printf "BEGIN;\n-- TODO: write migration\nCOMMIT;\n" > "$$up"; \
+	printf "BEGIN;\n-- TODO: write rollback\nCOMMIT;\n" > "$$down"; \
+	echo "Created: $$up and $$down"

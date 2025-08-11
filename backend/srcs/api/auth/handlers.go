@@ -3,9 +3,9 @@ package auth
 import (
 	"backend/core"
 	"context"
-	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -32,6 +32,16 @@ func StartLogin(w http.ResponseWriter, r *http.Request) {
 
 // GET /auth/42/callback
 func Callback(w http.ResponseWriter, r *http.Request) {
+	redirectHome := func() {
+		w.Header().Set("Cache-Control", "no-store")
+		http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+
+	if c, err := r.Cookie("session_id"); err == nil && c.Value != "" {
+		redirectHome()
+		return
+	}
+
 	code := r.URL.Query().Get("code")
 	if code == "" {
 		http.Error(w, "Missing code", http.StatusBadRequest)
@@ -49,15 +59,16 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	isHTTPS := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_id",
 		Value:    sessionID,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   true, // only if served over HTTPS!
+		Secure:   isHTTPS, // only if served over HTTPS!
 		SameSite: http.SameSiteLaxMode,
 		Expires:  time.Now().Add(24 * time.Hour),
 	})
 
-	http.Redirect(w, r, fmt.Sprintf("http://%s/", os.Getenv("HOST_NAME")), http.StatusFound)
+	redirectHome()
 }

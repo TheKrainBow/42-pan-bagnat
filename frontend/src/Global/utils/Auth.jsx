@@ -9,7 +9,7 @@ export async function fetchWithAuth(url, options = {}) {
     return null;
   }
 
-  if (res.status === 403 || res.status === 500) {
+  if (res.status === 403) {
     window.location.href = "/login";
     toast.error("Unauthorized")
     return null;

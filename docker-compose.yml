@@ -5,8 +5,7 @@ services:
       context: ./frontend
     expose:
       - '3000'
-    env_file:
-      - ./frontend/.env
+    # environment:
     networks:
       - pan-bagnat-core
 
@@ -34,8 +33,18 @@ services:
       context: ./backend
     ports:
       - "8080:8080"
-    env_file:
-      - ./backend/.env
+    environment:
+      HOST_NAME: ${HOST_NAME}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_URL: ${POSTGRES_URL}
+      FT_CALLBACK_URL: ${FT_CALLBACK_URL}
+      FT_CLIENT_ID: ${FT_CLIENT_ID}
+      FT_CLIENT_SECRET: ${FT_CLIENT_SECRET}
+      REPO_BASE_PATH: ${REPO_BASE_PATH}
     depends_on:
       - db
     volumes:
@@ -51,20 +60,30 @@ services:
     expose:
       - "5432"
     volumes:
-      - ./db/init:/docker-entrypoint-initdb.d:Z
       - postgres_data:/var/lib/postgresql/data
-    env_file:
-      - ./db/.env
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     networks:
       - pan-bagnat-core
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-panbagnat} -h localhost"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
 
-  adminer:
-    container_name: pan-bagnat-adminer
-    image: adminer
-    ports: ["8081:8080"]
+  migrator:
+    image: migrate/migrate:latest
+    command: ["-path", "/migrations", "-database", "${POSTGRES_URL}", "up"]
+    volumes:
+      - ./db/migrations:/migrations:ro
     networks:
       - pan-bagnat-core
-      - pan-bagnat-host
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
 
 volumes:
   postgres_data:
