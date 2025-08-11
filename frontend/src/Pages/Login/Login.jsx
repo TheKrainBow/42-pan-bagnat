@@ -22,11 +22,11 @@ export default function LoginPage() {
 
   // consts
   const revealRadius = 100;
-  const numParticles = 200;
-  const maxDist = 50;
-  const maxSize = 70; // your random size cap
-  const neighborCap = 12; // optional cap per particle
-  const steps = 8; // flashlight “ring” steps (cached layers)
+  const numParticles = 170;
+  const maxDist = 70;
+  const maxSize = 30;
+  const neighborCap = 12;
+  const steps = 8; // flashlight layers
 
   // canvas dims / layout
   const dims = useRef({
@@ -38,15 +38,15 @@ export default function LoginPage() {
     offsetX: 0,
     topY: 0,
     bottomY: 0,
-    squareSize: 0, // equals cssH (logo square side in CSS pixels)
+    squareSize: 0,
   });
 
   // grid for neighbor pruning
   const grid = useRef({
-    cell: maxDist + maxSize, // safe cell size
+    cell: maxDist + maxSize,
     cols: 0,
     rows: 0,
-    buckets: new Map(), // key "cx,cy" -> array of indices
+    buckets: new Map(),
   });
 
   useEffect(() => {
@@ -75,21 +75,36 @@ export default function LoginPage() {
         canvas.width = Math.floor(cssW * dpr);
         canvas.height = Math.floor(cssH * dpr);
         ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        // logo square is full height and centered horizontally
         const squareSize = cssH;
         const offsetX = (cssW - squareSize) / 2;
-        const topY = 220;
-        const bottomY = cssH - 220;
+        const topY = 0;
+        const bottomY = cssH - 0;
+
         off.width = squareSize;
         off.height = squareSize;
-        dims.current = { cssW, cssH, dw: canvas.width, dh: canvas.height, dpr, offsetX, topY, bottomY, squareSize };
+
+        dims.current = {
+          cssW,
+          cssH,
+          dw: canvas.width,
+          dh: canvas.height,
+          dpr,
+          offsetX,
+          topY,
+          bottomY,
+          squareSize,
+        };
+
         if (logoImgRef.current?.complete) {
           buildOffscreenAndCaches();
-          initParticles();
+          initParticles(); // will ensure no particle starts in a wall
         }
       };
-      if (skipRAF) {
-        doResize();
-      } else {
+
+      if (skipRAF) doResize();
+      else {
         if (resizeRaf) cancelAnimationFrame(resizeRaf);
         resizeRaf = requestAnimationFrame(doResize);
       }
@@ -98,17 +113,15 @@ export default function LoginPage() {
     function buildOffscreenAndCaches() {
       const { squareSize } = dims.current;
       const offCtx = offCtxRef.current;
-
       if (!squareSize) return;
-      // draw the logo once into offscreen
+
       offCtx.clearRect(0, 0, squareSize, squareSize);
       offCtx.drawImage(logoImgRef.current, 0, 0, squareSize, squareSize);
 
-      // cache raw pixel array (no per-frame getImageData)
-      const offData = offCtx.getImageData(0, 0, squareSize, squareSize).data;
-      offDataRef.current = offData;
+      // cache pixels
+      offDataRef.current = offCtx.getImageData(0, 0, squareSize, squareSize).data;
 
-      // prebuild blurred layers
+      // blurred flashlight layers
       const layers = [];
       for (let i = 0; i < steps; i++) {
         const t = i / (steps - 1);
@@ -131,17 +144,56 @@ export default function LoginPage() {
       return min + Math.random() * (max - min);
     }
 
+    // --- Pixel helpers on the logo mask ---
+    function sampleIndex(xCss, yCss) {
+      const { offsetX, squareSize } = dims.current;
+      let xi = (xCss - offsetX) | 0;
+      let yi = yCss | 0;
+      if (xi < 0 || yi < 0 || xi >= squareSize || yi >= squareSize) return -1;
+      return ((yi * squareSize + xi) << 2);
+    }
+
+    function isWall(xCss, yCss) {
+      const idx = sampleIndex(xCss, yCss);
+      if (idx < 0) return true; // treat out-of-bounds as wall
+      const data = offDataRef.current;
+      const r = data[idx], g = data[idx + 1], b = data[idx + 2], a = data[idx + 3];
+      return ((r <= 20 && g <= 20 && b <= 20) || a <= 200);
+    }
+
+    function colorAtLogo(xCss, yCss) {
+      const idx = sampleIndex(xCss, yCss);
+      if (idx < 0) return [72, 60, 60, 255];
+      const d = offDataRef.current;
+      const r = d[idx], g = d[idx + 1], b = d[idx + 2], a = d[idx + 3];
+      // if black (wall), we return fallback color; links can still cross walls
+      if (r === 0 && g === 0 && b === 0) return [72, 60, 60, a];
+      return [r, g, b, a];
+    }
+
+    // Ensure particles never start inside a wall
     function initParticles() {
       const { offsetX, topY, bottomY, squareSize } = dims.current;
-      particles.current = Array.from({ length: numParticles }, () => {
-        const x = offsetX + rand(0, squareSize);
-        const y = rand(topY, bottomY);
+      const arr = new Array(numParticles);
+      for (let k = 0; k < numParticles; k++) {
+        let tries = 0, x, y;
+        do {
+          x = offsetX + rand(0, squareSize);
+          y = rand(topY, bottomY);
+          tries++;
+        } while (isWall(x, y) && tries < 500);
+        // If stubborn, drop it in the center line
+        if (isWall(x, y)) {
+          x = offsetX + squareSize * 0.5;
+          y = (topY + bottomY) * 0.5;
+        }
         const vx = rand(-0.5, 0.5);
         const vy = rand(-0.5, 0.5);
         const speed = rand(0.5, 1);
         const size = rand(0, maxSize);
-        return { x, y, vx, vy, speed, size };
-      });
+        arr[k] = { x, y, vx, vy, speed, size };
+      }
+      particles.current = arr;
     }
 
     function rebuildGrid() {
@@ -187,19 +239,6 @@ export default function LoginPage() {
       return list;
     }
 
-    function colorAtLogo(xCss, yCss) {
-      // xCss, yCss are CSS-space coordinates
-      const { offsetX, squareSize } = dims.current;
-      const xi = Math.max(0, Math.min(squareSize - 1, (xCss - offsetX) | 0));
-      const yi = Math.max(0, Math.min(squareSize - 1, yCss | 0));
-      const idx = ((yi * squareSize + xi) << 2);
-      const data = offDataRef.current;
-      const r = data[idx], g = data[idx + 1], b = data[idx + 2], a = data[idx + 3];
-      // replace black with fallback color (72,60,60)
-      if (r === 0 && g === 0 && b === 0) return [72, 60, 60, a];
-      return [r, g, b, a];
-    }
-
     function drawFlashlight(ctx) {
       const { cssW: width, cssH: height, offsetX, squareSize } = dims.current;
 
@@ -219,7 +258,6 @@ export default function LoginPage() {
           }
         }
 
-        // reuse cached blurred layers
         const layers = blurredLayersRef.current;
         for (let i = 0; i < steps; i++) {
           const t = i / (steps - 1);
@@ -236,32 +274,54 @@ export default function LoginPage() {
     }
 
     function animate() {
-      const { cssW: width, cssH: height, offsetX, topY, bottomY } = dims.current;
+      const { cssW: width, cssH: height, offsetX, topY, bottomY, squareSize } = dims.current;
 
       // clear
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, width, height);
 
-      // update particles
+      // update + bounce
       for (const p of particles.current) {
-        p.x += p.vx * p.speed;
-        p.y += p.vy * p.speed;
+        const stepX = p.vx * p.speed;
+        const stepY = p.vy * p.speed;
 
-        if (p.x < offsetX) p.x = offsetX + dims.current.squareSize;
-        if (p.x > offsetX + dims.current.squareSize) p.x = offsetX;
-        if (p.y < topY) p.y = bottomY;
-        if (p.y > bottomY) p.y = topY;
+        // predict next pos
+        let nx = p.x + stepX;
+        let ny = p.y + stepY;
+
+        // bounce on black: test axis separately to reflect the right component
+        const hitDiag = isWall(nx, ny);
+        if (hitDiag) {
+          const hitX = isWall(p.x + stepX, p.y);
+          const hitY = isWall(p.x, p.y + stepY);
+
+          if (hitX) p.vx = -p.vx;
+          if (hitY) p.vy = -p.vy;
+
+          // recompute after reflection and nudge a bit to avoid sticking
+          nx = p.x + p.vx * p.speed;
+          ny = p.y + p.vy * p.speed;
+
+          if (nx < offsetX) nx = offsetX;
+          if (nx > offsetX + squareSize) nx = offsetX + squareSize;
+          if (ny < topY) ny = topY;
+          if (ny > bottomY) ny = bottomY;
+        }
+
+        p.x = nx;
+        p.y = ny;
       }
 
       // rebuild spatial grid and insert all
       insertIntoGrid();
 
-      // draw links with neighbor pruning and squared distances
+      // draw links (neighbor pruning, squared distances + gradient)
       const maxLinksSqCache = new Float32Array(particles.current.length);
       for (let i = 0; i < particles.current.length; i++) {
         const p = particles.current[i];
         maxLinksSqCache[i] = (maxDist + p.size) * (maxDist + p.size);
       }
+
       for (let i = 0; i < particles.current.length; i++) {
         const a = particles.current[i];
         const neighbors = getNeighbors(i);
@@ -270,10 +330,9 @@ export default function LoginPage() {
         const aMax = maxLinksSqCache[i];
 
         for (const j of neighbors) {
-          if (j <= i) continue; // avoid double draw
+          if (j <= i) continue;
           const b = particles.current[j];
 
-          // quick reject using each particle’s individual radius
           const bMax = maxLinksSqCache[j];
           const localMaxSq = Math.min(
             (maxDist + a.size + b.size) * (maxDist + a.size + b.size),
@@ -284,9 +343,8 @@ export default function LoginPage() {
           const dy = b.y - a.y;
           const distSq = dx * dx + dy * dy;
           if (distSq >= localMaxSq) continue;
-
-          const dist = Math.sqrt(distSq);
-          const alpha = (1 - dist / Math.sqrt(localMaxSq)) / 2 + 0.35;
+          const ratio = distSq / localMaxSq; // squared ratio
+          const alpha = (1 - ratio) / 2 + 0.35;
 
           const col1 = colorAtLogo(a.x, a.y);
           const col2 = colorAtLogo(b.x, b.y);
@@ -303,7 +361,7 @@ export default function LoginPage() {
           ctx.stroke();
 
           drawn++;
-          if (drawn >= neighborCap) break; // soft cap per particle
+          if (drawn >= neighborCap) break;
         }
       }
 
