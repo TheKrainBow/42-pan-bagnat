@@ -198,10 +198,10 @@ test-backend-verbose: 																	## Tests | Start tests for backend with v
 #########################################################################################
 #                                       SWAGGER                                         #
 #########################################################################################
-HOST_NAME ?= localhost
+HOST_NAME ?= localhost:8080
 swagger:
 	cd backend/srcs && \
-	swag init -g main.go --parseDependency --parseInternal && \
-	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME):8080/' ./docs/docs.go && \
-	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME):8080/' ./docs/swagger.json && \
-	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME):8080/' ./docs/swagger.yaml
+	swag init -g main.go --parseInternal && \
+	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME)/' ./docs/docs.go && \
+	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME)/' ./docs/swagger.json && \
+	sed -i 's/{{HOST_PLACEHOLDER}}/$(HOST_NAME)/' ./docs/swagger.yaml
