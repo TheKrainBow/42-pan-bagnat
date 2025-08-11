@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { fetchWithAuth } from "Global/utils/Auth";
 import RoleBadge from "Global/RoleBadge/RoleBadge";
 import ModuleBadge from "Global/ModuleBadge/ModuleBadge";
+import { toast } from 'react-toastify';
 import './UserDetail.css';
 
 export default function UserDetail() {

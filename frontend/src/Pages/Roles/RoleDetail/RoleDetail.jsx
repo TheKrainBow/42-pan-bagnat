@@ -8,6 +8,7 @@ import UserBadge from "Global/UserBadge/UserBadge";
 import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import { Wheel } from '@uiw/react-color';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-toastify';
 import './RoleDetail.css';
 
 export default function RoleDetail() {
@@ -30,6 +31,7 @@ export default function RoleDetail() {
   // form fields
   const [name, setName] = useState("");
   const [color, setColor] = useState('#7c3aed');
+  const [isDefault, setIsDefault] = useState(false);
   const nameRef = useRef();
   const colorRef = useRef();
 
@@ -47,6 +49,7 @@ export default function RoleDetail() {
         setRole(data);
         setName(data.name);
         setColor(data.color);
+        setIsDefault(data.is_default);
         setModules(data.modules || []);
         setUsers(data.users || []);
       } catch (err) {
@@ -169,13 +172,48 @@ export default function RoleDetail() {
       const res = await fetchWithAuth(`/api/v1/admin/roles/${roleId}`, {
         method: 'PATCH',
         headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ name: name.trim(), color })
+        body: JSON.stringify({ name: name.trim(), color: color, is_default: isDefault })
       });
       if (!res.ok) throw new Error(await res.text());
       // modules & users already updated via individual calls
     } catch (err) {
       setError(err.message);
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+      toast.success("Role saved")
+    }
+  };
+
+
+  const handleDelete = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      const res = await fetchWithAuth(`/api/v1/admin/roles/${roleId}`, {
+        method: 'DELETE',
+        headers: {'Content-Type':'application/json'},
+      });
+      if (!res.ok) throw new Error(await res.text());
+    } catch (err) {
+      setError(err.message);
+      console.log(err.message);
+    } finally {
+      setLoading(false);
+      toast(`🗑️ Role ${name} was deleted`, {
+        className: 'toast-simple',
+        autoClose: 10000,
+        onClick: () => {
+          if (window.location.pathname === `/admin/roles/${roleId}`) {
+            window.location.href = '/admin/roles';
+          }
+        },
+        onClose: () => {
+          if (window.location.pathname === `/admin/roles/${roleId}`) {
+            window.location.href = '/admin/roles';
+          }
+        }
+      });
+    }
   };
 
   if (!role) return <div>Loading...</div>;
@@ -195,15 +233,15 @@ export default function RoleDetail() {
               label={loading ? 'Saving…' : 'Save Changes'}
               color="blue"
               onClick={handleSave}
-              disabled={true}
+              disabled={false}
               disabledMessage={"Not implemented (sorry)"}
             />
 
             <Button
               label={'🗑️ Delete Role'}
               color="red"
-              onClick={handleSave}
-              disabled={true}
+              onClick={handleDelete}
+              disabled={false}
               disabledMessage={"Not implemented (sorry)"}
             />
           </div>
@@ -222,6 +260,14 @@ export default function RoleDetail() {
           <div className="color-wheel">
             <Wheel color={color} onChange={c=>setColor(c.hex?.toLowerCase())} width={120} height={120} />
           </div>
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={isDefault}
+              onChange={e => setIsDefault(e.target.checked)}
+            />
+            Assign this role to new users
+          </label>
         </div>
       </section>
 

@@ -106,7 +106,7 @@ func GetModule(w http.ResponseWriter, r *http.Request) {
 	module, err := core.GetModule(id)
 	if err != nil {
 		log.Printf("Failed fetching module: %s\n", err.Error())
-		http.Error(w, "Failed fetching module info", http.StatusInternalServerError)
+		http.Error(w, "Failed fetching module info", http.StatusNotFound)
 		return
 	}
 

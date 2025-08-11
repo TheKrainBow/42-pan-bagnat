@@ -104,7 +104,7 @@ func DecodeUserPaginationToken(encoded string) (UserPagination, error) {
 func GetUser(identifier string) (User, error) {
 	dbUser, err := database.GetUser(identifier)
 	if err != nil {
-		return User{}, fmt.Errorf("could not find user '%s': %w", identifier, err)
+		return User{}, ErrNotFound
 	}
 
 	apiUser := DatabaseUserToUser(*dbUser)

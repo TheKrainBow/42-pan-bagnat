@@ -9,6 +9,7 @@ func RoleToAPIRole(role core.Role) Role {
 		ID:         role.ID,
 		Name:       role.Name,
 		Color:      role.Color,
+		IsDefault:  role.IsDefault,
 		UsersCount: role.UsersCount,
 		Users:      UsersToAPIUsers(role.Users),
 		Modules:    ModulesToAPIModules(role.Modules),

@@ -1,6 +1,9 @@
 package roles
 
 import (
+	"backend/core"
+	"errors"
+	"log"
 	"net/http"
 	"strings"
 
@@ -28,16 +31,16 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// err := core.DeleteRole(roleID)
-	// if err != nil {
-	// 	if errors.Is(err, core.ErrNotFound) {
-	// 		http.Error(w, "Role not found", http.StatusNotFound)
-	// 	} else {
-	// 		log.Printf("error deleting role %s: %v\n", roleID, err)
-	// 		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	// 	}
-	// 	return
-	// }
+	err := core.DeleteRole(roleID)
+	if err != nil {
+		if errors.Is(err, core.ErrNotFound) {
+			http.Error(w, "Role not found", http.StatusNotFound)
+		} else {
+			log.Printf("error deleting role %s: %v\n", roleID, err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
 
 	w.WriteHeader(http.StatusNoContent)
 }

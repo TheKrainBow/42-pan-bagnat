@@ -1,11 +1,15 @@
 package roles
 
 import (
+	api "backend/api/dto"
+	"backend/core"
 	"encoding/json"
+	"errors"
+	"log"
 	"net/http"
 	"strings"
 
-	"github.com/go-chi/chi"
+	"github.com/go-chi/chi/v5"
 )
 
 // PatchRole updates the specified fields of a role.
@@ -43,24 +47,28 @@ func PatchRole(w http.ResponseWriter, r *http.Request) {
 	if input.Color != nil {
 		*input.Color = strings.TrimSpace(*input.Color)
 	}
-	// no trimming needed for *bool
 
 	// 3️⃣ Perform the update (core.UpdateRole must accept the new flag)
-	// updated, err := core.UpdateRole(roleID, input.Name, input.Color, input.IsDefault)
-	// if err != nil {
-	// 	if errors.Is(err, core.ErrNotFound) {
-	// 		http.Error(w, "Role not found", http.StatusNotFound)
-	// 	} else {
-	// 		log.Printf("error updating role %s: %v\n", roleID, err)
-	// 		http.Error(w, "Internal server error", http.StatusInternalServerError)
-	// 	}
-	// 	return
-	// }
+	updated, err := core.PatchRole(core.RolePatch{
+		ID:        roleID,
+		Name:      input.Name,
+		Color:     input.Color,
+		IsDefault: input.IsDefault,
+	})
+	if err != nil || updated == nil {
+		if errors.Is(err, core.ErrNotFound) {
+			http.Error(w, "Role not found", http.StatusNotFound)
+		} else {
+			log.Printf("error updating role %s: %v\n", roleID, err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
 
 	// // 4️⃣ Convert to API model & respond
-	// apiRole := api.RoleToAPIRole(updated)
-	// if err := json.NewEncoder(w).Encode(apiRole); err != nil {
-	// 	log.Printf("error encoding updated role %s: %v\n", roleID, err)
-	// 	http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-	// }
+	apiRole := api.RoleToAPIRole(*updated)
+	if err := json.NewEncoder(w).Encode(apiRole); err != nil {
+		log.Printf("error encoding updated role %s: %v\n", roleID, err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
 }

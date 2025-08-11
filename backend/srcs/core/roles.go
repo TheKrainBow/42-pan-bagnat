@@ -25,6 +25,13 @@ type RolePagination struct {
 	Limit    int
 }
 
+type RolePatch struct {
+	ID        string  `json:"id"`
+	Name      *string `json:"name"`
+	Color     *string `json:"color"`
+	IsDefault *bool   `json:"is_default"`
+}
+
 func GenerateRoleOrderBy(order string) (dest []database.RoleOrder) {
 	if order == "" {
 		return nil
@@ -199,4 +206,39 @@ func AddRoleToModule(roleID, moduleID string) error {
 
 func DeleteRoleFromModule(roleID, moduleID string) error {
 	return database.RemoveRoleFromModule(roleID, moduleID)
+}
+
+func DeleteRole(roleID string) error {
+	err := database.DeleteRole(roleID)
+	if err != nil {
+		fmt.Printf("couldn't delete module: %s\n", err.Error())
+		return err
+	}
+	return nil
+}
+
+func PatchRole(patch RolePatch) (*Role, error) {
+	if patch.ID == "" {
+		return nil, fmt.Errorf("missing role id")
+	}
+
+	dbPatch := database.RolePatch{
+		ID:        patch.ID,
+		Name:      patch.Name,
+		Color:     patch.Color,
+		IsDefault: patch.IsDefault,
+	}
+
+	err := database.PatchRole(dbPatch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to patch role: %w", err)
+	}
+
+	dbRole, err := database.GetRole(patch.ID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to patch role: %w", err)
+	}
+
+	role := DatabaseRoleToRole(*dbRole)
+	return &role, nil
 }

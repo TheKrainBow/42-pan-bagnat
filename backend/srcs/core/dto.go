@@ -4,9 +4,10 @@ import "backend/database"
 
 func DatabaseRoleToRole(dbRoles database.Role) (dest Role) {
 	return Role{
-		ID:    dbRoles.ID,
-		Name:  dbRoles.Name,
-		Color: dbRoles.Color,
+		ID:        dbRoles.ID,
+		Name:      dbRoles.Name,
+		Color:     dbRoles.Color,
+		IsDefault: dbRoles.IsDefault,
 	}
 }
 
