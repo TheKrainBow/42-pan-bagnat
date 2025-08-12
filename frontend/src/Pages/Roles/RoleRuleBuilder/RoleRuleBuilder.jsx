@@ -52,6 +52,43 @@ function guardedDragStart(e, rule, beginDrag) {
   e.stopPropagation();
 }
 
+function serializeRuleForSave(node) {
+  if (!node) return null;
+  if (node.kind === "group") {
+    return {
+      kind: "group",
+      logic: node.logic,
+      rules: (node.rules || []).map(serializeRuleForSave),
+    };
+  }
+  if (node.kind === "array") {
+    return {
+      kind: "array",
+      path: node.path,
+      quantifier: node.quantifier,
+      // normalize numeric extras
+      count: node.count === "" || node.count == null ? undefined : Number(node.count),
+      index: node.index === "" || node.index == null ? undefined : Number(node.index),
+      predicate: serializeRuleForSave(node.predicate),
+    };
+  }
+  if (node.kind === "scalar") {
+    const out = {
+      kind: "scalar",
+      path: node.path,
+      valueType: node.valueType,
+      op: node.op,
+    };
+    // only include values when they matter
+    if (!["exists","notExists","empty","notEmpty"].includes(node.op)) {
+      out.value = node.value;
+      if (node.op === "between") out.value2 = node.value2;
+    }
+    return out;
+  }
+  return null;
+}
+
 /* ----------------------- Small UI bits ----------------------- */
 function Section({ title, right, children }) {
   return (
@@ -74,6 +111,25 @@ function SmallButton({ children, onClick, variant = "ghost", disabled, title }) 
     >
       {children}
     </button>
+  );
+}
+function Modal({ open, title, children, footer, onClose }) {
+  if (!open) return null;
+  return (
+    <div className="rb-modal-backdrop" onMouseDown={onClose}>
+      <div
+        className="rb-modal"
+        onMouseDown={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div className="rb-modal-header">
+          <h3>{title}</h3>
+        </div>
+        <div className="rb-modal-body">{children}</div>
+        <div className="rb-modal-footer">{footer}</div>
+      </div>
+    </div>
   );
 }
 function TextInput({
@@ -1100,6 +1156,52 @@ export default function RoleRuleBuilder() {
   const [loadingUser, setLoadingUser] = useState(false);
   const [loadErr, setLoadErr] = useState("");
 
+  const [showSave, setShowSave] = useState(false);
+	const [applyExisting, setApplyExisting] = useState(false);
+	const [saving, setSaving] = useState(false);
+	const [saveErr, setSaveErr] = useState("");
+	const [saveOk, setSaveOk] = useState(false);
+
+	useEffect(() => {
+	const onKey = (e) => { if (e.key === "Escape") setShowSave(false); };
+	document.addEventListener("keydown", onKey);
+	return () => document.removeEventListener("keydown", onKey);
+	}, []);
+
+	const serializedRules = useMemo(() => serializeRuleForSave(rootRule), [rootRule]);
+
+	async function applyRules() {
+	setSaving(true);
+	setSaveErr("");
+	setSaveOk(false);
+	try {
+		const res = await fetchWithAuth(`/api/v1/roles/${encodeURIComponent(roleId)}/rules`, {
+		method: "PUT",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify({
+			rules: serializedRules,
+			applyToExisting: !!applyExisting,
+		}),
+		});
+		if (!res.ok) {
+		const msg = `HTTP ${res.status}`;
+		try {
+			const j = await res.json();
+			throw new Error(j?.error || j?.message || msg);
+		} catch {
+			throw new Error(msg);
+		}
+		}
+		setSaveOk(true);
+		// You can close automatically after a delay if you want:
+		// setTimeout(() => setShowSave(false), 800);
+	} catch (e) {
+		setSaveErr(e.message || "Failed to save rules");
+	} finally {
+		setSaving(false);
+	}
+	}
+
   useEffect(() => {
 	const isRbDrag = (e) =>
 		!!e.dataTransfer &&
@@ -1248,14 +1350,7 @@ export default function RoleRuleBuilder() {
           <SmallButton onClick={() => alert("TODO: GET /api/v1/roles/:roleId/rules")}>
             Load
           </SmallButton>
-          <SmallButton
-            onClick={() =>
-              alert("TODO: PUT /api/v1/roles/:roleId/rules (Export modal later)")
-            }
-            variant="primary"
-          >
-            Save
-          </SmallButton>
+		  <SmallButton onClick={() => setShowSave(true)} variant="primary">Save</SmallButton>
         </div>
       </div>
 
@@ -1360,6 +1455,39 @@ export default function RoleRuleBuilder() {
           </Section>
         </div>
       </div>
+	  <Modal
+		open={showSave}
+		title="Save role conditions"
+		onClose={() => setShowSave(false)}
+		footer={
+			<>
+			{saveErr && <span className="rb-hint" style={{ color: "var(--button-red)" }}>{saveErr}</span>}
+			{saveOk && <span className="rb-hint" style={{ color: "var(--ok-green, #1aa34a)" }}>Saved!</span>}
+			<div style={{ flex: 1 }} />
+			<SmallButton onClick={() => setShowSave(false)}>Cancel</SmallButton>
+			<SmallButton onClick={applyRules} variant="primary" disabled={saving}>
+				{saving ? "Applying…" : "Apply"}
+			</SmallButton>
+			</>
+		}
+		>
+		<p style={{ marginTop: 0 }}>
+			This role will be assigned to any user validating the following conditions:
+		</p>
+
+		<div className="rb-json-preview">
+			<pre><code>{JSON.stringify({ rules: serializedRules }, null, 2)}</code></pre>
+		</div>
+
+		<label className="rb-check">
+			<input
+			type="checkbox"
+			checked={applyExisting}
+			onChange={(e) => setApplyExisting(e.target.checked)}
+			/>
+			<span>Apply to existing users</span>
+		</label>
+		</Modal>
     </div>
   );
 }
