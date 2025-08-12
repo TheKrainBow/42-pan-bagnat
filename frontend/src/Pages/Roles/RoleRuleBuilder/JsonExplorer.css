@@ -1,0 +1,31 @@
+/* JSON viewer refinements */
+.rb-json { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.rb-json-line { white-space: pre; padding: 2px 6px;}
+.rb-json-line:hover { background: var(--button-dark-gray-hover); }
+.rb-json-clickable { cursor: pointer; }
+.rb-json-caret { display: inline-block; width: 1em; color: var(--text-primary); margin-right: 4px; }
+.rb-json-key { color: var(--text-primary); }
+.rb-json-punct { opacity: 0.6; color: var(--text-primary); }
+.rb-json-string { color: var(--button-blue-hover); }
+.rb-json-number { color: var(--button-yellow); }
+.rb-json-bool, .rb-json-null { color: var(--button-purple); }
+.rb-json-ellipsis { opacity: .6; }
+.rb-json-meta { opacity: .5; font-style: italic; }
+
+.rb-json-pass {
+  background: color-mix(in srgb, var(--status-enabled) 10%, transparent);
+}
+.rb-json-fail {
+  background: color-mix(in srgb, var(--button-red) 10%, transparent);
+}
+.rb-json-ancestor {
+  background: color-mix(in srgb, var(--button-dark-gray) 28%, transparent);
+}
+
+/* Per-key pass/fail colors */
+.rb-json-key-pass {
+	color: var(--status-enabled); font-weight: 600;
+}
+.rb-json-key-fail {
+	color: var(--button-red); font-weight: 600;
+}

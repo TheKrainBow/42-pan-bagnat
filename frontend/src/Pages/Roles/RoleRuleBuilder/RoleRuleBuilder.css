@@ -1,0 +1,188 @@
+/* RoleRuleBuilder — dark theme friendly */
+
+.rb-page { display: flex; flex-direction: column; gap: 16px; padding: 16px; }
+.rb-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.rb-subtitle { opacity: 0.7; margin-top: 4px; }
+.rb-link { color: var(--link-text); cursor: pointer; }
+.rb-actions { display: flex; gap: 8px; }
+
+.rb-grid { display: grid; grid-template-columns: 1fr 1.3fr 1fr; gap: 16px; }
+.rb-col { display: flex; flex-direction: column; gap: 16px; }
+
+/* Panels / sections */
+.rb-section {
+  background: var(--light-background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.rb-section-header { display: flex; justify-content: space-between; padding: 12px 12px 0 12px; align-items: center; }
+.rb-section-body { padding: 12px; }
+
+/* Buttons */
+.rb-btn {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--button-icon-border);
+  background: var(--button-dark-gray);
+  color: var(--text-primary);
+  cursor: pointer;
+  margin: 2px;
+}
+.rb-btn:hover { background: var(--button-dark-gray-hover); }
+.rb-btn-primary { background: var(--button-blue); color: var(--text-white); border: none; }
+.rb-btn-primary:hover { background: var(--button-blue-hover); }
+.rb-btn-danger { background: var(--button-red); color: var(--text-white); border: none; }
+.rb-btn-danger:hover { background: var(--button-red-hover); }
+
+/* Inputs */
+.rb-input, .rb-select, .rb-textarea {
+  background: var(--input-bg);
+  color: var(--input-text);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+.rb-textarea { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+/* Chips */
+.rb-chip {
+  background: var(--button-dark-gray);
+  border: 1px solid var(--light-border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  cursor: pointer;
+  color: var(--text-primary);
+}
+.rb-chip:hover { background: var(--button-dark-gray-hover); }
+
+/* Explorer tree */
+.rb-tree { font-family: ui-sans-serif; font-size: 13px; }
+.rb-tree-line { margin: 2px 0; display: block; }
+.rb-tree-key { font-weight: 600; }
+.rb-tree-children { margin-left: 12px; border-left: 1px dashed var(--light-border); padding-left: 8px; }
+.rb-literal { opacity: 0.8; }
+/* fallback tint + variable-based tint */
+.rb-match {
+  background: rgba(34, 197, 94, 0.10);
+  background: color-mix(in srgb, var(--status-enabled) 12%, transparent);
+}
+
+/* Cards */
+.rb-card {
+  border: 1px solid var(--light-border);
+  border-radius: 12px;
+  padding: 8px;
+  background: var(--dark-background);
+  margin-bottom: 8px;
+}
+.rb-card-header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 5px }
+.rb-card-title { font-weight: 600; }
+.rb-card-actions { display: flex; gap: 8px; }
+.rb-card-row { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
+.rb-card-subtitle { opacity: 0.8; margin: 4px 0 6px; }
+.rb-label { opacity: 0.7; min-width: 72px; color: var(--text-primary); }
+.rb-grow { flex: 1; }
+
+/* Badges */
+.rb-badge { padding: 2px 8px; border-radius: 8px; margin-left: 8px; }
+.rb-badge-pass {
+  color: var(--text-primary);
+  background: rgba(34, 197, 94, 0.18);
+  background: color-mix(in srgb, var(--status-enabled) 18%, transparent);
+  border: 1px solid var(--status-enabled);
+}
+.rb-badge-fail {
+  color: var(--text-primary);
+  background: rgba(239, 68, 68, 0.18);
+  background: color-mix(in srgb, var(--button-red) 18%, transparent);
+  border: 1px solid var(--button-red);
+}
+
+/* Pre / code blocks */
+.rb-pre {
+  background: var(--dark-background);
+  border: 1px solid var(--light-border);
+  border-radius: 8px;
+  padding: 8px;
+  overflow: auto;
+}
+.rb-pre.small { font-size: 12px; }
+
+.rb-details summary { cursor: pointer; }
+.rb-hint { opacity: 0.65; font-size: 12px; margin-top: 6px; }
+
+/* Search list */
+.rb-path-search { display: flex; flex-direction: column; gap: 8px; }
+.rb-path-list {
+  max-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--dark-background);
+}
+.rb-path-item { padding: 6px 8px; cursor: pointer; }
+.rb-path-item:hover { background: var(--button-dark-gray-hover); }
+
+
+/* Drag handle */
+.rb-drag-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  border-radius: 6px;
+  background: var(--button-dark-gray);
+  border: 1px solid var(--button-icon-border);
+  cursor: grab;
+  user-select: none;
+}
+.rb-drag-handle:active { cursor: grabbing; }
+
+/* Drop zones */
+.rb-dropzone {
+  height: 8px;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  margin: 6px 0;
+}
+
+.rb-dropzone-active { border-color: var(--button-dark-gray); background: rgba(255,255,255,0.03); }
+.rb-dropzone-active:hover { border-color: var(--button-green); background: var(--button-green); }
+.rb-dropzone-forbid { border-color: var(--button-red); background: color-mix(in srgb, var(--button-red) 10%, transparent); }
+
+/* Optional: smaller inputs for N / i */
+.rb-input--xs { width: 96px; }
+
+.rb-dropzone {
+  height: 8px;
+  border: 1px dashed transparent;
+  border-radius: 6px;
+  margin: 6px 0;
+  transition: background 120ms ease, border-color 120ms ease, height 120ms ease;
+}
+
+.rb-dropzone-active {
+  border-color: var(--button-dark-gray);
+  background: rgba(255,255,255,0.03);
+}
+
+.rb-dropzone-over {
+  border-color: var(--active);
+  background: color-mix(in srgb, var(--active) 20%, transparent);
+  height: 12px; /* grow on hover to make the target clear */
+}
+
+.rb-dropzone-forbid {
+  border-color: var(--button-red);
+  background: color-mix(in srgb, var(--button-red) 18%, transparent);
+}
+
+.rb-select.rb-boolean option[value="true"] {
+  color: var(--rb-green, #16a34a);
+}
+
+.rb-select.rb-boolean option[value="false"] {
+  color: var(--rb-red, #dc2626);
+}

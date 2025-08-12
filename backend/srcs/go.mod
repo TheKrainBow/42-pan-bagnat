@@ -1,9 +1,11 @@
 module backend
 
-go 1.24
+go 1.24.4
+
+toolchain go1.24.5
 
 require (
-	github.com/go-chi/chi v1.5.5
+	github.com/TheKrainBow/go-api v1.0.6
 	github.com/go-chi/chi/v5 v5.2.2
 	github.com/go-chi/cors v1.2.1
 	github.com/google/go-cmp v0.7.0

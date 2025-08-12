@@ -6,9 +6,60 @@
         "contact": {},
         "version": "1.1"
     },
-    "host": "localhost:8080",
+    "host": "localhost",
     "basePath": "/api/v1",
     "paths": {
+        "/admin/integrations/42/users/{login}": {
+            "get": {
+                "description": "Retrieves a user’s 42 details given their 42 login.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "integrations",
+                    "42"
+                ],
+                "summary": "Get User 42",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User 42 login",
+                        "name": "login",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/core.User42"
+                        }
+                    },
+                    "400": {
+                        "description": "Identifier is required",
+                        "schema": {
+                            "$ref": "#/definitions/integrations.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "User not found",
+                        "schema": {
+                            "$ref": "#/definitions/integrations.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/integrations.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/admin/module-page/{pageName}": {
             "get": {
                 "description": "Reverse-proxies /module-page/{pageName} to the module’s configured URL.",
@@ -1972,73 +2023,6 @@
                 }
             }
         },
-        "/pages": {
-            "get": {
-                "description": "Retrieves all pages across modules, with optional filtering, sorting, and pagination.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Pages"
-                ],
-                "summary": "Get Pages",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Filter expression (e.g. \\",
-                        "name": "filter",
-                        "in": "query"
-                    },
-                    {
-                        "type": "string",
-                        "description": "Pagination token for the next page",
-                        "name": "next_page_token",
-                        "in": "query"
-                    },
-                    {
-                        "enum": [
-                            "asc",
-                            "desc"
-                        ],
-                        "type": "string",
-                        "default": "desc",
-                        "description": "Sort order: asc or desc",
-                        "name": "order",
-                        "in": "query"
-                    },
-                    {
-                        "type": "integer",
-                        "default": 50,
-                        "description": "Maximum number of items per page",
-                        "name": "limit",
-                        "in": "query"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "$ref": "#/definitions/modules.ModulePagesGetResponse"
-                        }
-                    },
-                    "400": {
-                        "description": "Invalid pagination token",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/ping": {
             "get": {
                 "description": "Get a response from the API",
@@ -2408,6 +2392,137 @@
                 }
             }
         },
+        "core.Achievement42": {
+            "type": "object",
+            "properties": {
+                "description": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image": {
+                    "type": "string"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "nbr_of_success": {
+                    "type": "integer"
+                },
+                "tier": {
+                    "type": "string"
+                },
+                "users_url": {
+                    "type": "string"
+                },
+                "visible": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "core.Campus42": {
+            "type": "object",
+            "properties": {
+                "active": {
+                    "type": "boolean"
+                },
+                "address": {
+                    "type": "string"
+                },
+                "city": {
+                    "type": "string"
+                },
+                "country": {
+                    "type": "string"
+                },
+                "default_hidden_phone": {
+                    "type": "boolean"
+                },
+                "email_extension": {
+                    "type": "string"
+                },
+                "facebook": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "language": {
+                    "$ref": "#/definitions/core.CampusLang42"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "public": {
+                    "type": "boolean"
+                },
+                "time_zone": {
+                    "type": "string"
+                },
+                "twitter": {
+                    "type": "string"
+                },
+                "users_count": {
+                    "type": "integer"
+                },
+                "vogsphere_id": {
+                    "type": "integer"
+                },
+                "website": {
+                    "type": "string"
+                },
+                "zip": {
+                    "type": "string"
+                }
+            }
+        },
+        "core.CampusLang42": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "identifier": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "core.CampusUser42": {
+            "type": "object",
+            "properties": {
+                "campus_id": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "is_primary": {
+                    "type": "boolean"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "core.ContainerStatus": {
             "type": "string",
             "enum": [
@@ -2429,6 +2544,155 @@
                 "ContainerUnknown"
             ]
         },
+        "core.Cursus42": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "core.CursusUser42": {
+            "type": "object",
+            "properties": {
+                "begin_at": {
+                    "type": "string"
+                },
+                "blackholed_at": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "cursus": {
+                    "$ref": "#/definitions/core.Cursus42"
+                },
+                "cursus_id": {
+                    "type": "integer"
+                },
+                "end_at": {
+                    "type": "string"
+                },
+                "grade": {
+                    "type": "string"
+                },
+                "has_coalition": {
+                    "type": "boolean"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "level": {
+                    "type": "number"
+                },
+                "skills": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Skill42"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "core.ExpertiseUser42": {
+            "type": "object",
+            "properties": {
+                "contact_me": {
+                    "type": "boolean"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "expertise_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "interested": {
+                    "type": "boolean"
+                },
+                "user_id": {
+                    "type": "integer"
+                },
+                "value": {
+                    "type": "integer"
+                }
+            }
+        },
+        "core.Group42": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "core.Image42": {
+            "type": "object",
+            "properties": {
+                "link": {
+                    "type": "string"
+                },
+                "versions": {
+                    "$ref": "#/definitions/core.ImageVersions42"
+                }
+            }
+        },
+        "core.ImageVersions42": {
+            "type": "object",
+            "properties": {
+                "large": {
+                    "type": "string"
+                },
+                "medium": {
+                    "type": "string"
+                },
+                "micro": {
+                    "type": "string"
+                },
+                "small": {
+                    "type": "string"
+                }
+            }
+        },
+        "core.LanguageUser42": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "language_id": {
+                    "type": "integer"
+                },
+                "position": {
+                    "type": "integer"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "core.ModuleContainer": {
             "type": "object",
             "properties": {
@@ -2443,6 +2707,329 @@
                 },
                 "status": {
                     "$ref": "#/definitions/core.ContainerStatus"
+                }
+            }
+        },
+        "core.Patroned42": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "godfather_id": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "ongoing": {
+                    "type": "boolean"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "core.Project42": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "parent_id": {
+                    "type": "integer"
+                },
+                "slug": {
+                    "type": "string"
+                }
+            }
+        },
+        "core.ProjectUser42": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "current_team_id": {
+                    "type": "integer"
+                },
+                "cursus_ids": {
+                    "type": "array",
+                    "items": {
+                        "type": "integer"
+                    }
+                },
+                "final_mark": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "marked": {
+                    "type": "boolean"
+                },
+                "marked_at": {
+                    "type": "string"
+                },
+                "occurrence": {
+                    "type": "integer"
+                },
+                "project": {
+                    "$ref": "#/definitions/core.Project42"
+                },
+                "retriable_at": {
+                    "type": "string"
+                },
+                "status": {
+                    "description": "e.g., in_progress, finished, searching_a_group",
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "validated?": {
+                    "description": "bool or null",
+                    "type": "boolean"
+                }
+            }
+        },
+        "core.Role42": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "core.Skill42": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "level": {
+                    "type": "number"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "core.Title42": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
+                }
+            }
+        },
+        "core.TitleUser42": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "selected": {
+                    "type": "boolean"
+                },
+                "title_id": {
+                    "type": "integer"
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "user_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "core.User42": {
+            "type": "object",
+            "properties": {
+                "achievements": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Achievement42"
+                    }
+                },
+                "active?": {
+                    "type": "boolean"
+                },
+                "alumni?": {
+                    "type": "boolean"
+                },
+                "alumnized_at": {
+                    "type": "string"
+                },
+                "anonymize_date": {
+                    "type": "string"
+                },
+                "campus": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Campus42"
+                    }
+                },
+                "campus_users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.CampusUser42"
+                    }
+                },
+                "correction_point": {
+                    "type": "integer"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "cursus_users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.CursusUser42"
+                    }
+                },
+                "data_erasure_date": {
+                    "type": "string"
+                },
+                "displayname": {
+                    "type": "string"
+                },
+                "email": {
+                    "type": "string"
+                },
+                "expertises_users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.ExpertiseUser42"
+                    }
+                },
+                "first_name": {
+                    "type": "string"
+                },
+                "groups": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Group42"
+                    }
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "image": {
+                    "$ref": "#/definitions/core.Image42"
+                },
+                "kind": {
+                    "type": "string"
+                },
+                "languages_users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.LanguageUser42"
+                    }
+                },
+                "last_name": {
+                    "type": "string"
+                },
+                "location": {
+                    "type": "string"
+                },
+                "login": {
+                    "type": "string"
+                },
+                "partnerships": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    }
+                },
+                "patroned": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Patroned42"
+                    }
+                },
+                "patroning": {
+                    "type": "array",
+                    "items": {
+                        "type": "object"
+                    }
+                },
+                "phone": {
+                    "type": "string"
+                },
+                "pool_month": {
+                    "type": "string"
+                },
+                "pool_year": {
+                    "type": "string"
+                },
+                "projects_users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.ProjectUser42"
+                    }
+                },
+                "roles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Role42"
+                    }
+                },
+                "staff?": {
+                    "type": "boolean"
+                },
+                "titles": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.Title42"
+                    }
+                },
+                "titles_users": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/core.TitleUser42"
+                    }
+                },
+                "updated_at": {
+                    "type": "string"
+                },
+                "url": {
+                    "type": "string"
+                },
+                "usual_first_name": {
+                    "type": "string"
+                },
+                "usual_full_name": {
+                    "type": "string"
+                },
+                "wallet": {
+                    "type": "integer"
+                }
+            }
+        },
+        "integrations.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string"
+                },
+                "message": {
+                    "type": "string"
                 }
             }
         },

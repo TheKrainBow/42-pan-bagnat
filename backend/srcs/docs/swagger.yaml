@@ -172,6 +172,92 @@ definitions:
           $ref: '#/definitions/api.Role'
         type: array
     type: object
+  core.Achievement42:
+    properties:
+      description:
+        type: string
+      id:
+        type: integer
+      image:
+        type: string
+      kind:
+        type: string
+      name:
+        type: string
+      nbr_of_success:
+        type: integer
+      tier:
+        type: string
+      users_url:
+        type: string
+      visible:
+        type: boolean
+    type: object
+  core.Campus42:
+    properties:
+      active:
+        type: boolean
+      address:
+        type: string
+      city:
+        type: string
+      country:
+        type: string
+      default_hidden_phone:
+        type: boolean
+      email_extension:
+        type: string
+      facebook:
+        type: string
+      id:
+        type: integer
+      language:
+        $ref: '#/definitions/core.CampusLang42'
+      name:
+        type: string
+      public:
+        type: boolean
+      time_zone:
+        type: string
+      twitter:
+        type: string
+      users_count:
+        type: integer
+      vogsphere_id:
+        type: integer
+      website:
+        type: string
+      zip:
+        type: string
+    type: object
+  core.CampusLang42:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      identifier:
+        type: string
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  core.CampusUser42:
+    properties:
+      campus_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      is_primary:
+        type: boolean
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
   core.ContainerStatus:
     enum:
     - running
@@ -190,6 +276,103 @@ definitions:
     - ContainerRestarting
     - ContainerDead
     - ContainerUnknown
+  core.Cursus42:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      kind:
+        type: string
+      name:
+        type: string
+      slug:
+        type: string
+    type: object
+  core.CursusUser42:
+    properties:
+      begin_at:
+        type: string
+      blackholed_at:
+        type: string
+      created_at:
+        type: string
+      cursus:
+        $ref: '#/definitions/core.Cursus42'
+      cursus_id:
+        type: integer
+      end_at:
+        type: string
+      grade:
+        type: string
+      has_coalition:
+        type: boolean
+      id:
+        type: integer
+      level:
+        type: number
+      skills:
+        items:
+          $ref: '#/definitions/core.Skill42'
+        type: array
+      updated_at:
+        type: string
+    type: object
+  core.ExpertiseUser42:
+    properties:
+      contact_me:
+        type: boolean
+      created_at:
+        type: string
+      expertise_id:
+        type: integer
+      id:
+        type: integer
+      interested:
+        type: boolean
+      user_id:
+        type: integer
+      value:
+        type: integer
+    type: object
+  core.Group42:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  core.Image42:
+    properties:
+      link:
+        type: string
+      versions:
+        $ref: '#/definitions/core.ImageVersions42'
+    type: object
+  core.ImageVersions42:
+    properties:
+      large:
+        type: string
+      medium:
+        type: string
+      micro:
+        type: string
+      small:
+        type: string
+    type: object
+  core.LanguageUser42:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      language_id:
+        type: integer
+      position:
+        type: integer
+      user_id:
+        type: integer
+    type: object
   core.ModuleContainer:
     properties:
       name:
@@ -200,6 +383,219 @@ definitions:
         type: string
       status:
         $ref: '#/definitions/core.ContainerStatus'
+    type: object
+  core.Patroned42:
+    properties:
+      created_at:
+        type: string
+      godfather_id:
+        type: integer
+      id:
+        type: integer
+      ongoing:
+        type: boolean
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  core.Project42:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      parent_id:
+        type: integer
+      slug:
+        type: string
+    type: object
+  core.ProjectUser42:
+    properties:
+      created_at:
+        type: string
+      current_team_id:
+        type: integer
+      cursus_ids:
+        items:
+          type: integer
+        type: array
+      final_mark:
+        type: integer
+      id:
+        type: integer
+      marked:
+        type: boolean
+      marked_at:
+        type: string
+      occurrence:
+        type: integer
+      project:
+        $ref: '#/definitions/core.Project42'
+      retriable_at:
+        type: string
+      status:
+        description: e.g., in_progress, finished, searching_a_group
+        type: string
+      updated_at:
+        type: string
+      validated?:
+        description: bool or null
+        type: boolean
+    type: object
+  core.Role42:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  core.Skill42:
+    properties:
+      id:
+        type: integer
+      level:
+        type: number
+      name:
+        type: string
+    type: object
+  core.Title42:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  core.TitleUser42:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      selected:
+        type: boolean
+      title_id:
+        type: integer
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  core.User42:
+    properties:
+      achievements:
+        items:
+          $ref: '#/definitions/core.Achievement42'
+        type: array
+      active?:
+        type: boolean
+      alumni?:
+        type: boolean
+      alumnized_at:
+        type: string
+      anonymize_date:
+        type: string
+      campus:
+        items:
+          $ref: '#/definitions/core.Campus42'
+        type: array
+      campus_users:
+        items:
+          $ref: '#/definitions/core.CampusUser42'
+        type: array
+      correction_point:
+        type: integer
+      created_at:
+        type: string
+      cursus_users:
+        items:
+          $ref: '#/definitions/core.CursusUser42'
+        type: array
+      data_erasure_date:
+        type: string
+      displayname:
+        type: string
+      email:
+        type: string
+      expertises_users:
+        items:
+          $ref: '#/definitions/core.ExpertiseUser42'
+        type: array
+      first_name:
+        type: string
+      groups:
+        items:
+          $ref: '#/definitions/core.Group42'
+        type: array
+      id:
+        type: integer
+      image:
+        $ref: '#/definitions/core.Image42'
+      kind:
+        type: string
+      languages_users:
+        items:
+          $ref: '#/definitions/core.LanguageUser42'
+        type: array
+      last_name:
+        type: string
+      location:
+        type: string
+      login:
+        type: string
+      partnerships:
+        items:
+          type: object
+        type: array
+      patroned:
+        items:
+          $ref: '#/definitions/core.Patroned42'
+        type: array
+      patroning:
+        items:
+          type: object
+        type: array
+      phone:
+        type: string
+      pool_month:
+        type: string
+      pool_year:
+        type: string
+      projects_users:
+        items:
+          $ref: '#/definitions/core.ProjectUser42'
+        type: array
+      roles:
+        items:
+          $ref: '#/definitions/core.Role42'
+        type: array
+      staff?:
+        type: boolean
+      titles:
+        items:
+          $ref: '#/definitions/core.Title42'
+        type: array
+      titles_users:
+        items:
+          $ref: '#/definitions/core.TitleUser42'
+        type: array
+      updated_at:
+        type: string
+      url:
+        type: string
+      usual_first_name:
+        type: string
+      usual_full_name:
+        type: string
+      wallet:
+        type: integer
+    type: object
+  integrations.ErrorResponse:
+    properties:
+      error:
+        type: string
+      message:
+        type: string
     type: object
   modules.ComposeRequest:
     properties:
@@ -429,13 +825,47 @@ definitions:
           type: string
         type: array
     type: object
-host: 'localhost:8080'
+host: 'localhost'
 info:
   contact: {}
   description: API REST du projet Pan Bagnat.
   title: Pan Bagnat API
   version: "1.1"
 paths:
+  /admin/integrations/42/users/{login}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieves a user’s 42 details given their 42 login.
+      parameters:
+      - description: User 42 login
+        in: path
+        name: login
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/core.User42'
+        "400":
+          description: Identifier is required
+          schema:
+            $ref: '#/definitions/integrations.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/integrations.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/integrations.ErrorResponse'
+      summary: Get User 42
+      tags:
+      - integrations
+      - "42"
   /admin/module-page/{pageName}:
     get:
       description: Reverse-proxies /module-page/{pageName} to the module’s configured
@@ -1752,52 +2182,6 @@ paths:
       summary: Delete User
       tags:
       - Users
-  /pages:
-    get:
-      consumes:
-      - application/json
-      description: Retrieves all pages across modules, with optional filtering, sorting,
-        and pagination.
-      parameters:
-      - description: Filter expression (e.g. \
-        in: query
-        name: filter
-        type: string
-      - description: Pagination token for the next page
-        in: query
-        name: next_page_token
-        type: string
-      - default: desc
-        description: 'Sort order: asc or desc'
-        enum:
-        - asc
-        - desc
-        in: query
-        name: order
-        type: string
-      - default: 50
-        description: Maximum number of items per page
-        in: query
-        name: limit
-        type: integer
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            $ref: '#/definitions/modules.ModulePagesGetResponse'
-        "400":
-          description: Invalid pagination token
-          schema:
-            type: string
-        "500":
-          description: Internal server error
-          schema:
-            type: string
-      summary: Get Pages
-      tags:
-      - Pages
   /ping:
     get:
       consumes:

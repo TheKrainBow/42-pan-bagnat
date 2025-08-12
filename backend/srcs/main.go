@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"backend/api/auth"
+	"backend/api/integrations"
 	"backend/api/modules"
 	"backend/api/ping"
 	"backend/api/roles"
@@ -21,6 +22,7 @@ import (
 	"backend/utils"
 	"backend/websocket"
 
+	apiManager "github.com/TheKrainBow/go-api"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
@@ -138,6 +140,23 @@ func main() {
 		AllowCredentials: true,
 	})
 
+	APIClient, err := apiManager.NewAPIClient("42", apiManager.APIClientInput{
+		AuthType:     apiManager.AuthTypeClientCredentials,
+		TokenURL:     "https://api.intra.42.fr/oauth/token",
+		Endpoint:     "https://api.intra.42.fr/v2",
+		TestPath:     "/campus/41",
+		ClientID:     os.Getenv("FT_CLIENT_ID"),
+		ClientSecret: os.Getenv("FT_CLIENT_SECRET"),
+		Scope:        "public",
+	})
+	if err != nil {
+		log.Panic("Failed to connect to 42API: %w", err)
+	}
+	err = APIClient.TestConnection()
+	if err != nil {
+		log.Panic("42API connection failed! %w", err)
+	}
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(corsMiddleware.Handler)
@@ -200,6 +219,7 @@ func main() {
 		r.Group(func(r chi.Router) {
 			r.Use(InjectUserInMiddleware, auth.AuthMiddleware, auth.AdminMiddleware)
 
+			r.Route("/integrations", integrations.RegisterRoutes)
 			r.Route("/modules", modules.RegisterRoutes)
 			r.Route("/users", users.RegisterRoutes)
 			r.Route("/roles", roles.RegisterRoutes)

@@ -160,26 +160,6 @@ func GetUsers(pagination UserPagination) ([]User, string, error) {
 	return dest, token, nil
 }
 
-type IntraUser struct {
-	ID            int    `json:"id"`
-	Login         string `json:"login"`
-	Email         string `json:"email"`
-	DisplayName   string `json:"displayname"`
-	UsualFullName string `json:"usual_full_name"`
-	IsStaff       bool   `json:"staff?"`
-	Kind          string `json:"kind"`
-	Active        bool   `json:"active?"`
-	Image         struct {
-		Link     string `json:"link"`
-		Versions struct {
-			Small string `json:"small"`
-		} `json:"versions"`
-	} `json:"image"`
-	Campus []struct {
-		Name string `json:"name"`
-	} `json:"campus"`
-}
-
 func HandleUser42Connection(token *oauth2.Token) (string, error) {
 	req, _ := http.NewRequest("GET", "https://api.intra.42.fr/v2/me", nil)
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
@@ -190,7 +170,7 @@ func HandleUser42Connection(token *oauth2.Token) (string, error) {
 	}
 	defer resp.Body.Close()
 
-	var intra IntraUser
+	var intra User42
 	if err := json.NewDecoder(resp.Body).Decode(&intra); err != nil {
 		return "", fmt.Errorf("couldn't decode user")
 	}
@@ -201,9 +181,9 @@ func HandleUser42Connection(token *oauth2.Token) (string, error) {
 			user = &database.User{
 				FtLogin:   intra.Login,
 				FtID:      intra.ID,
-				FtIsStaff: intra.IsStaff,
+				FtIsStaff: intra.Staff,
 				PhotoURL:  intra.Image.Link,
-				IsStaff:   intra.IsStaff || intra.Kind == "admin",
+				IsStaff:   intra.Staff || intra.Kind == "admin",
 				LastSeen:  time.Now(),
 			}
 			if err := database.AddUser(user); err != nil {
@@ -218,7 +198,7 @@ func HandleUser42Connection(token *oauth2.Token) (string, error) {
 	}
 
 	user.LastSeen = time.Now()
-	_ = database.UpdateUserLastSeen(user.FtLogin, user.LastSeen) // optional
+	_ = database.UpdateUserLastSeen(user.FtLogin, user.LastSeen)
 
 	sessionID, err := GenerateSecureSessionID()
 	if err != nil {

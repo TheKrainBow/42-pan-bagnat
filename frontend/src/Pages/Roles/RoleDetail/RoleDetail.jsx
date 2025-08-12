@@ -229,6 +229,11 @@ export default function RoleDetail() {
             </RoleBadge>
           </h2>
           <div className="button-wrapper">
+              <Button
+                label={'🔧 Advanced rules'}
+                color="gray"
+                onClick={() => navigate(`/admin/roles/${roleId}/rule-builder`)}
+              />
             <Button
               label={loading ? 'Saving…' : 'Save Changes'}
               color="blue"
