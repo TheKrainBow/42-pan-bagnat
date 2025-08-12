@@ -11,6 +11,9 @@ const CURRENT_LOGIN_API = "/api/v1/users/me"; // response: { login: "andre" } or
 const USER_SAMPLE_API = (login) =>
   `/api/v1/admin/integrations/42/users/${encodeURIComponent(login)}`;
 
+const ROLE_RULES_API = (roleId) =>
+  `/api/v1/admin/roles/${encodeURIComponent(roleId)}/rules`;
+
 // --- Drag guards / helpers ---
 const DRAG_BLOCK_SELECTOR =
   'input, textarea, select, button, [contenteditable="true"], .rb-input, .rb-select';
@@ -801,6 +804,10 @@ function evaluateRules(rootRule, payload) {
 function evalRule(rule, ctx) {
   if (!rule) return { pass: true, diag: { kind: "none" } };
   if (rule.kind === "group") {
+	const children = rule.rules || [];
+	if (children.length === 0) {
+		return { pass: false, diag: { kind: "group", logic: rule.logic, children: [] } };
+	}
     const results = (rule.rules || []).map((r) => evalRule(r, ctx));
     const pass =
       rule.logic === "AND"
@@ -1147,6 +1154,37 @@ export default function RoleRuleBuilder() {
     withIds({ kind: "group", logic: "AND", rules: [] })
   );
 
+  // load rules on enter
+const [rulesLoading, setRulesLoading] = useState(false);
+const [rulesLoadErr, setRulesLoadErr] = useState("");
+
+async function loadRulesFromServer() {
+  if (!roleId) return;
+  setRulesLoading(true);
+  setRulesLoadErr("");
+  try {
+    const res = await fetchWithAuth(ROLE_RULES_API(roleId));
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const rules = data?.rules;
+    // if null/undefined/empty → keep an empty root group, but note it won't pass (see eval change)
+    const next = rules && typeof rules === "object"
+      ? withIds(rules)
+      : withIds({ kind: "group", logic: "AND", rules: [] });
+    setRootRule(next);
+  } catch (e) {
+    setRulesLoadErr(e.message || "Failed to load rules");
+  } finally {
+    setRulesLoading(false);
+  }
+}
+
+// on first render / when roleId changes
+useEffect(() => {
+  loadRulesFromServer();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, [roleId]);
+
   // payload source
   const [sampleSource, setSampleSource] = useState("default"); // "default" | "user"
   const [samplePayload, setSamplePayload] = useState(DEFAULT_42_SAMPLE);
@@ -1175,7 +1213,7 @@ export default function RoleRuleBuilder() {
 	setSaveErr("");
 	setSaveOk(false);
 	try {
-		const res = await fetchWithAuth(`/api/v1/roles/${encodeURIComponent(roleId)}/rules`, {
+		const res = await fetchWithAuth(`/api/v1/admin/roles/${encodeURIComponent(roleId)}/rules`, {
 		method: "PUT",
 		headers: { "Content-Type": "application/json" },
 		body: JSON.stringify({
@@ -1347,9 +1385,9 @@ export default function RoleRuleBuilder() {
           </div>
         </div>
         <div className="rb-actions">
-          <SmallButton onClick={() => alert("TODO: GET /api/v1/roles/:roleId/rules")}>
-            Load
-          </SmallButton>
+			<SmallButton onClick={loadRulesFromServer} disabled={rulesLoading}>
+			{rulesLoading ? "Loading…" : "Load"}
+			</SmallButton>
 		  <SmallButton onClick={() => setShowSave(true)} variant="primary">Save</SmallButton>
         </div>
       </div>

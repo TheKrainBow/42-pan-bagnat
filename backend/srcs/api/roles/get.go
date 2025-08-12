@@ -4,10 +4,13 @@ import (
 	api "backend/api/dto"
 	"backend/core"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 )
@@ -114,4 +117,63 @@ func GetRole(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(destJSON))
+}
+
+// GetRoleRules returns the JSON rule tree stored for the given role.
+// @Summary      Get role rules
+// @Description  Returns the rule tree JSON stored for this role (or null if not set).
+// @Tags         Roles
+// @Produce      json
+// @Param        roleID  path      string  true  "Role ID (roles_ULID)"
+// @Success      200     {object}  GetRoleRulesResponse
+// @Failure      400     {string}  string  "roleID is required"
+// @Failure      404     {string}  string  "Role not found"
+// @Failure      500     {string}  string  "Internal server error"
+// @Router       /admin/roles/{roleID}/rules [get]
+func GetRoleRules(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+
+	roleID := chi.URLParam(r, "roleID")
+	if strings.TrimSpace(roleID) == "" {
+		http.Error(w, "roleID is required", http.StatusBadRequest)
+		return
+	}
+
+	// bytes: the persisted JSON; updatedAt: when it was last changed
+	bytes, updatedAt, err := core.GetRoleRules(roleID)
+	if err != nil {
+		if errors.Is(err, core.ErrNotFound) {
+			http.Error(w, "Role not found", http.StatusNotFound)
+		} else {
+			log.Printf("get role rules: role=%s err=%v\n", roleID, err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	// Convert bytes → interface{} so the client receives a JSON object/array/primitive/null, not a quoted string.
+	var rules any
+	if len(bytes) > 0 && string(bytes) != "null" {
+		if err := json.Unmarshal(bytes, &rules); err != nil {
+			// Stored JSON is corrupt; surface as 500 to avoid sending bad data.
+			log.Printf("invalid rules_json for role=%s: %v\n", roleID, err)
+			http.Error(w, "Corrupted rules JSON", http.StatusInternalServerError)
+			return
+		}
+	} else {
+		rules = nil
+	}
+
+	resp := GetRoleRulesResponse{
+		RoleID:    roleID,
+		Rules:     rules,
+		UpdatedAt: updatedAt,
+	}
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
+type GetRoleRulesResponse struct {
+	RoleID    string      `json:"role_id"`
+	Rules     interface{} `json:"rules"`                // object/array/primitive/null
+	UpdatedAt *time.Time  `json:"updated_at,omitempty"` // last change timestamp
 }
