@@ -11,6 +11,47 @@ const CURRENT_LOGIN_API = "/api/v1/users/me"; // response: { login: "andre" } or
 const USER_SAMPLE_API = (login) =>
   `/api/v1/admin/integrations/42/users/${encodeURIComponent(login)}`;
 
+// --- Drag guards / helpers ---
+const DRAG_BLOCK_SELECTOR =
+  'input, textarea, select, button, [contenteditable="true"], .rb-input, .rb-select';
+
+function isDragBlocked(target) {
+  return !!(target && target.closest && target.closest(DRAG_BLOCK_SELECTOR));
+}
+
+function setCardDragImageFromEvent(e) {
+  const card = e.currentTarget.closest
+    ? e.currentTarget.closest(".rb-card")
+    : null;
+  if (card && e.dataTransfer && typeof e.dataTransfer.setDragImage === "function") {
+    const rect = card.getBoundingClientRect();
+    // center-ish anchor; tweak y if you prefer
+    e.dataTransfer.setDragImage(card, rect.width / 2, 20);
+  }
+}
+
+function setRbDragPayload(e, rid) {
+  if (!e.dataTransfer) return;
+  // Use a custom type to identify our drags
+  e.dataTransfer.setData("application/x-rb-rule", rid);
+
+  // Satisfy browsers that require text, but don't provide insertable content
+  e.dataTransfer.setData("text/plain", ""); // empty string → nothing gets inserted
+}
+
+function guardedDragStart(e, rule, beginDrag) {
+  // If drag originates from an interactive control, block it
+  if (isDragBlocked(e.target)) {
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+  setCardDragImageFromEvent(e);
+  e.dataTransfer.setData("text/plain", rule.__rid);
+  beginDrag(rule);
+  e.stopPropagation();
+}
+
 /* ----------------------- Small UI bits ----------------------- */
 function Section({ title, right, children }) {
   return (
@@ -368,13 +409,21 @@ function RuleEditor({
       });
 
     return (
-      <div className="rb-card">
+		<div
+			className="rb-card"
+			draggable
+			onDragStart={(e) => {guardedDragStart(e, rule, beginDrag); setRbDragPayload(e, rule.__rid);}}
+			onDragEnd={endDrag}
+		>
         <div className="rb-card-header">
           <div className="rb-card-title">
             <DragHandle
               onDragStart={(e) => {
+				setCardDragImageFromEvent(e);
                 e.dataTransfer.setData("text/plain", rule.__rid);
                 beginDrag(rule);
+				e.stopPropagation();
+				setRbDragPayload(e, rule.__rid);
               }}
               onDragEnd={endDrag}
               title="Drag group"
@@ -468,20 +517,20 @@ function RuleEditor({
 
   if (rule.kind === "scalar") {
     return (
-      <div
-        className="rb-card rb-card-scalar"
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData("text/plain", rule.__rid);
-          beginDrag(rule);
-        }}
-        onDragEnd={endDrag}
-      >
+      	<div
+		className="rb-card rb-card-scalar"
+		draggable
+		onDragStart={(e) => {guardedDragStart(e, rule, beginDrag); setRbDragPayload(e, rule.__rid);}}
+		onDragEnd={endDrag}
+		>
         <div className="rb-card-row">
           <DragHandle
             onDragStart={(e) => {
+			setCardDragImageFromEvent(e);
               e.dataTransfer.setData("text/plain", rule.__rid);
               beginDrag(rule);
+			  e.stopPropagation();
+			  setRbDragPayload(e, rule.__rid);
             }}
             onDragEnd={endDrag}
             title="Drag condition"
@@ -567,20 +616,20 @@ function RuleEditor({
 
   if (rule.kind === "array") {
     return (
-      <div
-        className="rb-card rb-card-array"
-        draggable
-        onDragStart={(e) => {
-          e.dataTransfer.setData("text/plain", rule.__rid);
-          beginDrag(rule);
-        }}
-        onDragEnd={endDrag}
-      >
+      	<div
+		className="rb-card rb-card-array"
+		draggable
+		onDragStart={(e) => {guardedDragStart(e, rule, beginDrag); setRbDragPayload(e, rule.__rid);}}
+		onDragEnd={endDrag}
+		>
         <div className="rb-card-row">
           <DragHandle
             onDragStart={(e) => {
+				setCardDragImageFromEvent(e);
               e.dataTransfer.setData("text/plain", rule.__rid);
               beginDrag(rule);
+			  e.stopPropagation();
+			  setRbDragPayload(e, rule.__rid);
             }}
             onDragEnd={endDrag}
             title="Drag array rule"
@@ -1050,6 +1099,38 @@ export default function RoleRuleBuilder() {
   const [loginInput, setLoginInput] = useState(""); // shown in header when sampleSource === "user"
   const [loadingUser, setLoadingUser] = useState(false);
   const [loadErr, setLoadErr] = useState("");
+
+  useEffect(() => {
+	const isRbDrag = (e) =>
+		!!e.dataTransfer &&
+		Array.from(e.dataTransfer.types || []).includes("application/x-rb-rule");
+
+	const allowIfDropzone = (target) =>
+		!!(target && target.closest && target.closest(".rb-dropzone"));
+
+	const onDragOver = (e) => {
+		if (isRbDrag(e) && !allowIfDropzone(e.target)) {
+		e.preventDefault();           // prevent caret / text insertion feedback
+		e.stopPropagation();
+		if (e.dataTransfer) e.dataTransfer.dropEffect = "none";
+		}
+	};
+
+	const onDrop = (e) => {
+		if (isRbDrag(e) && !allowIfDropzone(e.target)) {
+		e.preventDefault();           // block the actual drop outside zones
+		e.stopPropagation();
+		}
+	};
+
+	// Capture phase so we intercept before inputs/textareas handle it
+	document.addEventListener("dragover", onDragOver, true);
+	document.addEventListener("drop", onDrop, true);
+	return () => {
+		document.removeEventListener("dragover", onDragOver, true);
+		document.removeEventListener("drop", onDrop, true);
+	};
+	}, []);
 
   // preload current logged login for convenience
   useEffect(() => {
