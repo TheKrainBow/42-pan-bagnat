@@ -56,7 +56,7 @@ export default function Sidebar({ currentPage, user, pages }) {
             Users
           </div>
           <div className="sidebar-footer">
-            <div className="sidebar-item" onClick={() => navigate('/modules')}>
+            <div className="sidebar-item last" onClick={() => navigate('/modules')}>
               🔧 Switch to User
             </div>
           </div>
@@ -77,7 +77,7 @@ export default function Sidebar({ currentPage, user, pages }) {
 
           {user?.is_staff && (
             <div className="sidebar-footer">
-              <div className="sidebar-item" onClick={() => navigate('/admin/modules')}>
+              <div className="sidebar-item last" onClick={() => navigate('/admin/modules')}>
                 🔧 Switch to Admin
               </div>
             </div>
