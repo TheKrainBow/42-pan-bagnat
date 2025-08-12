@@ -198,7 +198,7 @@ test-backend-verbose: 																	## Tests | Start tests for backend with v
 #########################################################################################
 #                                       SWAGGER                                         #
 #########################################################################################
-HOST_NAME ?= localhost:8080
+HOST_NAME ?= localhost
 swagger:
 	cd backend/srcs && \
 	swag init -g main.go --parseInternal && \
