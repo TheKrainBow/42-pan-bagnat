@@ -57,10 +57,9 @@ func formatUsers(us []User) string {
 		y, mon, d := u.LastSeen.Date()
 		h, min, sec := u.LastSeen.Clock()
 		b.WriteString(fmt.Sprintf(
-			"\t{ID: %q, FtLogin: %q, FtID: %q, FtIsStaff: %t, PhotoURL: %q, LastSeen: time.Date(%d, %d, %d, %d, %d, %d, 0, time.UTC), IsStaff: %t},\n",
+			"\t{ID: %q, FtLogin: %q, FtID: %q, FtIsStaff: %t, PhotoURL: %q, LastSeen: time.Date(%d, %d, %d, %d, %d, %d, 0, time.UTC)},\n",
 			u.ID, u.FtLogin, u.FtID, u.FtIsStaff, u.PhotoURL,
 			y, int(mon), d, h, min, sec,
-			u.IsStaff,
 		))
 	}
 	b.WriteString("},")

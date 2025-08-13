@@ -104,6 +104,7 @@ func InjectUserInMiddleware(next http.Handler) http.Handler {
 
 		if time.Since(user.LastSeen) > time.Minute {
 			go core.TouchUserLastSeen(user.ID)
+			go core.TouchSession(r.Context(), session.SessionID)
 		}
 
 		ctx := context.WithValue(r.Context(), auth.UserCtxKey, &user)
@@ -208,16 +209,16 @@ func main() {
 	r.Route("/auth", func(r chi.Router) {
 		auth.RegisterRoutes(r)
 	})
-	r.With(InjectUserInMiddleware, InjectPageNameMiddleware, auth.PageAccessMiddleware).Get("/module-page/{pageName}", modules.PageRedirection)
-	r.With(InjectUserInMiddleware, InjectPageNameMiddleware, auth.PageAccessMiddleware).Get("/module-page/{pageName}/*", modules.PageRedirection)
+	r.With(InjectUserInMiddleware, InjectPageNameMiddleware, auth.BlackListMiddleware, auth.PageAccessMiddleware).Get("/module-page/{pageName}", modules.PageRedirection)
+	r.With(InjectUserInMiddleware, InjectPageNameMiddleware, auth.BlackListMiddleware, auth.PageAccessMiddleware).Get("/module-page/{pageName}/*", modules.PageRedirection)
 
-	r.With(InjectUserInMiddleware, auth.AuthMiddleware).Get("/api/v1/users/me", users.GetUserMe)
-	r.With(InjectUserInMiddleware, auth.AuthMiddleware).Get("/api/v1/users/me/pages", users.GetContextUserPages)
-	r.With(InjectUserInMiddleware, auth.AuthMiddleware).Get("/api/v1/ping", ping.Ping)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/users/me", users.GetUserMe)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/users/me/pages", users.GetContextUserPages)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/ping", ping.Ping)
 
 	r.Route("/api/v1/admin", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
-			r.Use(InjectUserInMiddleware, auth.AuthMiddleware, auth.AdminMiddleware)
+			r.Use(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware, auth.AdminMiddleware)
 
 			r.Route("/integrations", integrations.RegisterRoutes)
 			r.Route("/modules", modules.RegisterRoutes)

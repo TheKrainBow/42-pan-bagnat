@@ -1,6 +1,7 @@
 package users
 
 import (
+	"backend/api/auth"
 	"backend/core"
 	"errors"
 	"log"
@@ -73,6 +74,8 @@ func DeleteUserRole(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case errors.Is(err, core.ErrNotFound):
 			http.Error(w, "User or role not found", http.StatusNotFound)
+		case errors.Is(err, core.ErrWouldRemoveLastAdmin):
+			auth.WriteJSONError(w, http.StatusConflict, "Conflict", "Cannot remove the last admin user")
 		default:
 			log.Printf("error deleting role %s from user %s: %v\n", roleID, identifier, err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)

@@ -14,7 +14,6 @@ type User struct {
 	FtIsStaff bool      `json:"ft_is_staff" example:"true" db:"ft_is_staff"`
 	PhotoURL  string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id" db:"photo_url"`
 	LastSeen  time.Time `json:"last_update" example:"2025-02-18T15:00:00Z" db:"last_update"`
-	IsStaff   bool      `json:"is_staff" example:"true" db:"is_staff"`
 }
 
 type UserPatch struct {
@@ -24,7 +23,6 @@ type UserPatch struct {
 	FtIsStaff *bool      `json:"ft_is_staff" example:"true"`
 	PhotoURL  *string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id"`
 	LastSeen  *time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
-	IsStaff   *bool      `json:"is_staff" example:"true"`
 }
 
 type UserOrderField string
@@ -33,7 +31,6 @@ const (
 	UserID        UserOrderField = "id"
 	UserFtLogin   UserOrderField = "ft_login"
 	UserLastSeen  UserOrderField = "last_seen"
-	UserIsStaff   UserOrderField = "is_staff"
 	UserFtIsStaff UserOrderField = "ft_is_staff"
 	UserFtID      UserOrderField = "ft_id"
 )
@@ -53,10 +50,10 @@ func GetUser(identifier string) (*User, error) {
 func GetUserByID(id string) (*User, error) {
 	var user User
 	err := mainDB.QueryRow(`
-		SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff
+		SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen
 		FROM users
 		WHERE id = $1
-	`, id).Scan(&user.ID, &user.FtLogin, &user.FtID, &user.FtIsStaff, &user.PhotoURL, &user.LastSeen, &user.IsStaff)
+	`, id).Scan(&user.ID, &user.FtLogin, &user.FtID, &user.FtIsStaff, &user.PhotoURL, &user.LastSeen)
 
 	if err != nil {
 		return nil, err
@@ -67,10 +64,10 @@ func GetUserByID(id string) (*User, error) {
 func GetUserByLogin(login string) (*User, error) {
 	var user User
 	err := mainDB.QueryRow(`
-		SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff
+		SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen
 		FROM users
 		WHERE ft_login = $1
-	`, login).Scan(&user.ID, &user.FtLogin, &user.FtID, &user.FtIsStaff, &user.PhotoURL, &user.LastSeen, &user.IsStaff)
+	`, login).Scan(&user.ID, &user.FtLogin, &user.FtID, &user.FtIsStaff, &user.PhotoURL, &user.LastSeen)
 
 	if err != nil {
 		return nil, err
@@ -130,8 +127,6 @@ func GetAllUsers(
 				args = append(args, lastUser.FtID)
 			case UserFtIsStaff:
 				args = append(args, lastUser.FtIsStaff)
-			case UserIsStaff:
-				args = append(args, lastUser.IsStaff)
 			case UserLastSeen:
 				// pass time.Time directly
 				args = append(args, lastUser.LastSeen)
@@ -174,7 +169,7 @@ func GetAllUsers(
 	// 4) Assemble SQL
 	var sb strings.Builder
 	sb.WriteString(
-		`SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff
+		`SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen
 FROM users`,
 	)
 	if len(whereConds) > 0 {
@@ -207,7 +202,6 @@ FROM users`,
 			&u.FtIsStaff,
 			&u.PhotoURL,
 			&u.LastSeen,
-			&u.IsStaff,
 		); err != nil {
 			return nil, err
 		}
@@ -227,9 +221,9 @@ func AddUser(user *User) error {
 		return fmt.Errorf("you must provide ftlogin and ftid")
 	}
 	_, err := mainDB.Exec(`
-		INSERT INTO users (id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-	`, user.ID, user.FtLogin, user.FtID, user.FtIsStaff, user.PhotoURL, user.LastSeen, user.IsStaff)
+		INSERT INTO users (id, ft_login, ft_id, ft_is_staff, photo_url, last_seen)
+		VALUES ($1, $2, $3, $4, $5, $6)
+	`, user.ID, user.FtLogin, user.FtID, user.FtIsStaff, user.PhotoURL, user.LastSeen)
 	return err
 }
 
@@ -300,11 +294,6 @@ func PatchUser(patch UserPatch) error {
 	if patch.LastSeen != nil {
 		sets = append(sets, fmt.Sprintf("last_seen = $%d", argPos))
 		args = append(args, *patch.LastSeen)
-		argPos++
-	}
-	if patch.IsStaff != nil {
-		sets = append(sets, fmt.Sprintf("is_staff = $%d", argPos))
-		args = append(args, *patch.IsStaff)
 		argPos++
 	}
 

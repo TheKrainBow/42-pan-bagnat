@@ -23,14 +23,13 @@ import ModulePage from './Pages/Modules/ModulePage/ModulePage';
 import LoginPage from "./Pages/Login/Login";
 import Sidebar from 'Global/Sidebar/Sidebar';
 import { socketService } from 'Global/SocketService/SocketService';
-import { ToastContainer } from 'react-toastify';
+import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "./Notifications.css";
 
 function Main() {
   const location = useLocation();
   const { slug } = useParams();
-  const navigate = useNavigate();
   const path = location.pathname;
   const mode = path.startsWith('/admin/') ? 'admin' : 'user';
 
@@ -40,19 +39,39 @@ function Main() {
 
   const showSidebar = path !== "/login";
 
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('pb:pendingToast');
+      if (raw) {
+        const t = setTimeout(() => {
+          sessionStorage.removeItem('pb:pendingToast');
+        }, 300);
+        const data = JSON.parse(raw) || {};
+        const kind = data.kind || 'info';
+        const msg = data.message || '';
+        if (msg) (toast[kind] || toast.info)(msg);
+      }
+    } catch (e) {
+      console.log(e)
+    }
+  }, []); // run once on mount
+
   // Load current user
   useEffect(() => {
-    if (showSidebar) {
-      fetchWithAuth('/api/v1/users/me')
-        .then((res) => {
-          if (!res.ok) throw new Error(res.statusText);
-          return res.json();
-        })
-        .then(setUser)
-        .catch(() => setUser(null))
-        .finally(() => setUserLoaded(true));
-    }
-  }, []);
+    if (!showSidebar) return;
+    let cancelled = false;
+
+    fetchWithAuth('/api/v1/users/me')
+      .then((res) => {
+        if (!res || !res.ok) throw new Error(res ? res.statusText : "no response");
+        return res.json();
+      })
+      .then((u) => { if (!cancelled) setUser(u); })
+      .catch(() => { if (!cancelled) setUser(null); })
+      .finally(() => { if (!cancelled) setUserLoaded(true); });
+
+    return () => { cancelled = true; };
+  }, [showSidebar]);
 
   // Load user pages
   useEffect(() => {
@@ -69,12 +88,15 @@ function Main() {
       .catch(console.error);
   }, [mode, user]);
 
+  useEffect(() => {
+    document.body.classList.add('theme-dark');
+    return () => document.body.classList.remove('theme-dark'); // optional cleanup
+  }, []);
+
   // Redirect to login if unauthenticated user in user mode
   if (userLoaded && !user && mode === 'user') {
     return <Navigate to="/login" replace />;
   }
-
-  document.body.classList.add('theme-dark');
 
   return (
     <div className="app-container">

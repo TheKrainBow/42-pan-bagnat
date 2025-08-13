@@ -24,7 +24,6 @@ func DatabaseUserToUser(dbUser database.User) User {
 		FtID:      dbUser.FtID,
 		FtLogin:   dbUser.FtLogin,
 		FtIsStaff: dbUser.FtIsStaff,
-		IsStaff:   dbUser.IsStaff,
 		LastSeen:  dbUser.LastSeen,
 		PhotoURL:  dbUser.PhotoURL,
 		Roles:     []Role{},

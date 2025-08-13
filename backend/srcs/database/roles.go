@@ -2,6 +2,7 @@ package database
 
 import (
 	"backend/utils"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -234,7 +235,7 @@ FROM roles`,
 
 func GetRoleUsers(roleID string) ([]User, error) {
 	rows, err := mainDB.Query(`
-		SELECT u.id, u.ft_login, u.ft_id, u.ft_is_staff, u.photo_url, u.last_seen, u.is_staff
+		SELECT u.id, u.ft_login, u.ft_id, u.ft_is_staff, u.photo_url, u.last_seen
 		FROM users u
 		JOIN user_roles ur ON ur.user_id = u.id
 		WHERE ur.role_id = $1
@@ -254,7 +255,6 @@ func GetRoleUsers(roleID string) ([]User, error) {
 			&user.FtIsStaff,
 			&user.PhotoURL,
 			&user.LastSeen,
-			&user.IsStaff,
 		); err != nil {
 			return nil, err
 		}
@@ -383,4 +383,43 @@ func LinkDefaultRolesToUser(userID string) error {
 		SELECT $1, id FROM roles WHERE is_default = TRUE;
 	`, userID)
 	return err
+}
+
+func UserHasRoleByID(ctx context.Context, userID, roleID string) (bool, error) {
+	var exists bool
+	err := mainDB.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM user_roles
+			WHERE user_id = $1 AND role_id = $2
+		)
+	`, userID, roleID).Scan(&exists)
+	if err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+func CountUsersWithRole(ctx context.Context, roleID string) (int, error) {
+	var n int
+	// DISTINCT is harmless here (PK is (user_id, role_id)), but keeps us safe if schema changes.
+	err := mainDB.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM user_roles WHERE role_id = $1
+	`, roleID).Scan(&n)
+	return n, err
+}
+
+func CountActiveUsersWithRole(ctx context.Context, roleID, blacklistRoleID string) (int, error) {
+	var n int
+	err := mainDB.QueryRowContext(ctx, `
+		SELECT COUNT(DISTINCT ur.user_id)
+		FROM user_roles ur
+		WHERE ur.role_id = $1
+		  AND NOT EXISTS (
+		      SELECT 1
+		      FROM user_roles ub
+		      WHERE ub.user_id = ur.user_id
+		        AND ub.role_id = $2
+		  )
+	`, roleID, blacklistRoleID).Scan(&n)
+	return n, err
 }

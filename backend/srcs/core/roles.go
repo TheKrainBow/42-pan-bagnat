@@ -2,8 +2,10 @@ package core
 
 import (
 	"backend/database"
+	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -192,11 +194,78 @@ func ImportRole(name string, color string, isDefault bool, moduleIDs []string) (
 	return dest, nil
 }
 
+const (
+	RoleIDBlacklist = "roles_blacklist"
+	RoleIDAdmin     = "roles_admin"
+)
+
+// Returned when an action would leave the system with zero admins.
+var ErrWouldBlacklistLastAdmin = errors.New("cannot blacklist the last admin user")
+var ErrWouldRemoveLastAdmin = errors.New("cannot remove the last admin user")
+
 func AddRoleToUser(roleID, userIdentifier string) error {
+	if roleID == RoleIDBlacklist {
+		// Resolve to user ID
+		userID := userIdentifier
+		if !strings.HasPrefix(userIdentifier, "users_") {
+			u, err := database.GetUserByLogin(userIdentifier)
+			if err != nil {
+				return fmt.Errorf("resolve user by login: %w", err)
+			}
+			userID = u.ID
+		}
+
+		ctx := context.Background()
+
+		isAdmin, err := database.UserHasRoleByID(ctx, userID, RoleIDAdmin)
+		if err != nil {
+			return fmt.Errorf("check admin role: %w", err)
+		}
+
+		if isAdmin {
+			adminCount, err := database.CountActiveUsersWithRole(ctx, RoleIDAdmin, RoleIDBlacklist)
+			if err != nil {
+				return fmt.Errorf("count admins: %w", err)
+			}
+			if adminCount <= 1 {
+				return ErrWouldBlacklistLastAdmin
+			}
+		}
+	}
 	return database.AssignRoleToUser(roleID, userIdentifier)
 }
 
 func DeleteRoleFromUser(roleID, userIdentifier string) error {
+	if roleID == RoleIDAdmin {
+		userID := userIdentifier
+		if !strings.HasPrefix(userIdentifier, "users_") {
+			u, err := database.GetUserByLogin(userIdentifier)
+			if err != nil {
+				return fmt.Errorf("resolve user by login: %w", err)
+			}
+			userID = u.ID
+		}
+		ctx := context.Background()
+		isAdmin, err := database.UserHasRoleByID(ctx, userID, RoleIDAdmin)
+		if err != nil {
+			return fmt.Errorf("check admin role: %w", err)
+		}
+
+		isBlacklisted, err := database.UserHasRoleByID(ctx, userID, RoleIDBlacklist)
+		if err != nil {
+			return fmt.Errorf("check blacklist role: %w", err)
+		}
+
+		if isAdmin && !isBlacklisted {
+			adminCount, err := database.CountActiveUsersWithRole(ctx, RoleIDAdmin, RoleIDBlacklist)
+			if err != nil {
+				return fmt.Errorf("count admins: %w", err)
+			}
+			if adminCount <= 1 {
+				return ErrWouldRemoveLastAdmin
+			}
+		}
+	}
 	return database.RemoveRoleFromUser(roleID, userIdentifier)
 }
 

@@ -42,9 +42,8 @@ func PatchUser(w http.ResponseWriter, r *http.Request) {
 
 	// Build core patch struct from API input
 	patch := core.UserPatch{
-		ID:      id,
-		IsStaff: input.IsStaff,
-		Roles:   input.Roles,
+		ID:    id,
+		Roles: input.Roles,
 	}
 
 	updated, err := core.PatchUser(patch)

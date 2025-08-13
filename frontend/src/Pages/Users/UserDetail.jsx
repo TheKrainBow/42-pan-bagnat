@@ -6,13 +6,15 @@ import ModuleBadge from "Global/ModuleBadge/ModuleBadge";
 import { toast } from 'react-toastify';
 import './UserDetail.css';
 
+const ADMIN_ROLE_ID = 'roles_admin';
+
 export default function UserDetail() {
   const { identifier } = useParams();
   const [user, setUser] = useState(null);
   const [modules, setModules] = useState([]);
   const [availableRoles, setAvailableRoles] = useState([]);
   const [email, setEmail] = useState("");
-  const [isStaff, setIsStaff] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [showRoleSearch, setShowRoleSearch] = useState(false);
   const [searchRoleTerm, setSearchRoleTerm] = useState("");
   const dropdownRef = useRef();
@@ -54,6 +56,7 @@ export default function UserDetail() {
   }, [showRoleSearch]);
 
   const filteredRoles = availableRoles.filter((r) =>
+    r.id !== ADMIN_ROLE_ID &&                               // hide admin from list
     r.name.toLowerCase().includes(searchRoleTerm.toLowerCase()) &&
     !user?.roles?.some(existing => existing.id === r.id)
   );
@@ -69,28 +72,38 @@ export default function UserDetail() {
       .then(async data => {
         data.roles ??= [];
         setUser(data);
-        setIsStaff(data.is_staff);
+        setIsAdmin(data.roles.some(r => r.id === ADMIN_ROLE_ID));
         setEmail(data.email || "");
         await reloadModules(data.roles);
       });
   }, [identifier]);
 
-  async function handleStaffToggle(e) {
+  async function handleAdminToggle(e) {
     const newValue = e.target.checked;
-    setIsStaff(newValue); // Optimistic update
-
+    setIsAdmin(newValue); // optimistic
     try {
-      const res = await fetchWithAuth(`/api/v1/admin/users/${identifier}`, {
-        method: "PATCH",
+      const url = `/api/v1/admin/users/${identifier}/roles/${ADMIN_ROLE_ID}`;
+      const res = await fetchWithAuth(url, {
+        method: newValue ? "POST" : "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ is_staff: newValue }),
       });
+      if (!res || !res.ok) throw new Error("Failed to toggle admin role");
 
-      if (!res.ok) throw new Error("Failed to update staff status");
+      setUser(prev => {
+        const hasIt = prev.roles?.some(r => r.id === ADMIN_ROLE_ID);
+        let nextRoles = prev.roles || [];
+        if (newValue && !hasIt) {
+          nextRoles = [...nextRoles, { id: ADMIN_ROLE_ID, name: "Pan Bagnat Admin", color: "#1F2937" }];
+        } else if (!newValue && hasIt) {
+          nextRoles = nextRoles.filter(r => r.id !== ADMIN_ROLE_ID);
+        }
+        reloadModules(nextRoles);
+        return { ...prev, roles: nextRoles };
+      });
     } catch (err) {
       console.error(err);
-      // Optionally revert UI on error
-      setIsStaff((prev) => !prev);
+      // revert optimistic state on failure
+      setIsAdmin(prev => !prev);
     }
   }
 
@@ -166,8 +179,8 @@ export default function UserDetail() {
             <div className="value">
               <input
                 type="checkbox"
-                checked={isStaff}
-                onChange={handleStaffToggle}
+                checked={isAdmin}
+                onChange={handleAdminToggle}
               />
             </div>
   
@@ -188,19 +201,21 @@ export default function UserDetail() {
           </div>
 
           <div className="user-role-tags">
-            {user.roles.length === 0 ? (
+            {(user.roles.filter(r => r.id !== ADMIN_ROLE_ID)).length === 0 ? (
               <i>No roles assigned</i>
             ) : (
-              user.roles.map((role) => (
-                <RoleBadge
-                  key={role.id}
-                  role={role}
-                  onClick={() => navigate(`/admin/roles/${role.id}`)}
-                  onDelete={() => handleRoleRemove(role)}
-                >
-                {role.name}
-                </RoleBadge>
-              ))
+              user.roles
+                .filter(r => r.id !== ADMIN_ROLE_ID) // hide admin badge
+                .map((role) => (
+                  <RoleBadge
+                    key={role.id}
+                    role={role}
+                    onClick={() => navigate(`/admin/roles/${role.id}`)}
+                    onDelete={() => handleRoleRemove(role)}
+                  >
+                    {role.name}
+                  </RoleBadge>
+                ))
             )}
           </div>
 

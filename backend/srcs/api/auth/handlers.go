@@ -53,22 +53,24 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Token exchange failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	sessionID, err := core.HandleUser42Connection(token)
+	ua := r.UserAgent()
+	ip := r.Header.Get("X-Forwarded-For")
+	if ip == "" {
+		ip = strings.Split(r.RemoteAddr, ":")[0]
+	}
+
+	sessionID, err := core.HandleUser42Connection(r.Context(), token, core.DeviceMeta{
+		UserAgent: ua,
+		IP:        ip,
+		// DeviceLabel: optionally read from a cookie/query param for named devices
+	})
 	if err != nil {
 		http.Error(w, "Auth failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	isHTTPS := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
-	http.SetCookie(w, &http.Cookie{
-		Name:     "session_id",
-		Value:    sessionID,
-		Path:     "/",
-		HttpOnly: true,
-		Secure:   isHTTPS, // only if served over HTTPS!
-		SameSite: http.SameSiteLaxMode,
-		Expires:  time.Now().Add(24 * time.Hour),
-	})
+	core.WriteSessionCookie(w, sessionID, 24*time.Hour, isHTTPS)
 
 	redirectHome()
 }

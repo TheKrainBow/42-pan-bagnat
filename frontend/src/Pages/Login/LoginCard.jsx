@@ -14,11 +14,11 @@ export default function LoginCard({ onLogin, onMagicLink }) {
 
   const handleMagicLink = () => {
 	const isValid = loginFieldRef.current.isValid(true);
-    if (!isValid) {
-		loginFieldRef.current.triggerShake();
-		return
-	}
-	toast.success("Nothing happened but let's pretend it's working")
+      if (!isValid) {
+      loginFieldRef.current.triggerShake();
+      return
+    }
+    toast.success("Nothing happened but let's pretend it's working")
   };
   return (
     <div className="login-card">

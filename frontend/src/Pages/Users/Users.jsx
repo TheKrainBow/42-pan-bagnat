@@ -11,6 +11,8 @@ import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import ArrayHeader from 'Global/ArrayHeader/ArrayHeader';
 import { fetchWithAuth } from 'Global/utils/Auth';
 
+const ADMIN_ROLE_ID = 'roles_admin';
+
 const Users = () => {
   const [filterQuery, setFilterQuery] = useState('');
   const [debouncedFilter, setDebouncedFilter] = useState('');
@@ -119,12 +121,17 @@ const Users = () => {
         header: 'Roles',
         accessorKey: 'roles',
         disableSort: true,
-        cell: info =>
-          info.getValue()?.map(role => (
-            <RoleBadge key={role.id} role={role}>
-              {role.name}
-            </RoleBadge>
-          )) ?? null,
+        cell: info => {
+          const roles = info.getValue() || [];
+          const visible = roles.filter(r => r.id !== ADMIN_ROLE_ID); // hide PB Admin
+          return visible.length
+            ? visible.map(role => (
+                <RoleBadge key={role.id} role={role}>
+                  {role.name}
+                </RoleBadge>
+              ))
+            : null;
+        },
       },
       {
         header: 'Last Seen',

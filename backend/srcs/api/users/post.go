@@ -1,6 +1,7 @@
 package users
 
 import (
+	"backend/api/auth"
 	"backend/core"
 	"encoding/json"
 	"errors"
@@ -81,6 +82,8 @@ func PostUserRole(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "User or role not found", http.StatusNotFound)
 		case errors.Is(err, core.ErrRoleAlreadyAssigned):
 			http.Error(w, "Role already assigned to user", http.StatusConflict)
+		case errors.Is(err, core.ErrWouldBlacklistLastAdmin):
+			auth.WriteJSONError(w, http.StatusConflict, "Conflict", "Cannot blacklist the last admin user")
 		default:
 			log.Printf("error assigning role %s to user %s: %v\n", roleID, identifier, err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)

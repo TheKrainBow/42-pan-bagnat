@@ -232,10 +232,12 @@ export default function RoleDetail() {
               <Button
                 label={'🔧 Advanced rules'}
                 color="gray"
+                disabled={isDefault}
+                disabledMessage={"IsDefault over-ride advanced rules"}
                 onClick={() => navigate(`/admin/roles/${roleId}/rule-builder`)}
               />
             <Button
-              label={loading ? 'Saving…' : 'Save Changes'}
+              label={'Save Changes'}
               color="blue"
               onClick={handleSave}
               disabled={false}

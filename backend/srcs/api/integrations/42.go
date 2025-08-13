@@ -1,6 +1,7 @@
 package integrations
 
 import (
+	"backend/api/auth"
 	"backend/core"
 	"encoding/json"
 	"errors"
@@ -26,18 +27,18 @@ import (
 func GetUser42(w http.ResponseWriter, r *http.Request) {
 	login := chi.URLParam(r, "login")
 	if strings.TrimSpace(login) == "" {
-		writeJSONError(w, http.StatusBadRequest, "Identifier is required")
+		auth.WriteJSONError(w, http.StatusBadRequest, "Bad Request", "Identifier is required")
 		return
 	}
 
 	user42, err := core.GetUser42(login) // or core.GetUser42(r.Context(), login) if you add ctx
 	if err != nil {
 		if errors.Is(err, core.ErrNotFound) {
-			writeJSONError(w, http.StatusNotFound, "User not found")
+			auth.WriteJSONError(w, http.StatusNotFound, "Content Not Found", "User not found")
 			return
 		}
 		log.Printf("error fetching user %q from 42: %v", login, err)
-		writeJSONError(w, http.StatusInternalServerError, "Internal server error")
+		auth.WriteJSONError(w, http.StatusInternalServerError, "internal", "Internal server error")
 		return
 	}
 
@@ -52,13 +53,4 @@ func GetUser42(w http.ResponseWriter, r *http.Request) {
 type ErrorResponse struct {
 	Error   string `json:"error"`
 	Message string `json:"message"`
-}
-
-func writeJSONError(w http.ResponseWriter, code int, msg string) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	_ = json.NewEncoder(w).Encode(ErrorResponse{
-		Error:   http.StatusText(code),
-		Message: msg,
-	})
 }

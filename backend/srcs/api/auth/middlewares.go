@@ -4,6 +4,7 @@ import (
 	"backend/core"
 	"backend/database"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -15,40 +16,43 @@ type contextKey string
 const UserCtxKey contextKey = "user"
 const PageCtxKey contextKey = "page"
 
+type APIError struct {
+	Error   string `json:"error"`             // e.g. "forbidden"
+	Code    string `json:"code,omitempty"`    // e.g. "blacklisted"
+	Message string `json:"message,omitempty"` // user-friendly text
+}
+
+func WriteJSONError(w http.ResponseWriter, status int, code, message string) {
+	w.Header().Set("Content-Type", "application/json")
+	if code != "" {
+		w.Header().Set("X-Error-Code", code) // optional: easy to read from fetch()
+	}
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(APIError{
+		Error:   http.StatusText(status),
+		Code:    code,
+		Message: message,
+	})
+}
+
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cookie, err := r.Cookie("session_id")
-		sid := ""
-		if err == nil && cookie.Value != "" {
-			sid = cookie.Value
-		} else {
-			if hdr := r.Header.Get("session_id"); hdr != "" {
-				sid = hdr
-			}
-		}
-
+		sid := core.ReadSessionIDFromCookie(r)
 		if sid == "" {
-			log.Println("[auth] no session_id:", err)
+			log.Println("[auth] no session_id")
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
 
 		session, err := database.GetSession(sid)
 		if err != nil || session.ExpiresAt.Before(time.Now()) {
-			log.Println("[auth] invalid/expired session:", err)
-
+			if err != nil {
+				log.Println("[auth] error while getting the session: %w", err)
+			} else {
+				log.Println("[auth] expired session")
+			}
 			go database.PurgeExpiredSessions()
-
-			http.SetCookie(w, &http.Cookie{
-				Name:     "session_id",
-				Value:    "",
-				Path:     "/",
-				Expires:  time.Unix(0, 0),
-				MaxAge:   -1,
-				HttpOnly: true,
-				Secure:   true,
-				SameSite: http.SameSiteLaxMode,
-			})
+			core.ClearSessionCookie(w)
 			http.Error(w, "Unauthorized", http.StatusUnauthorized)
 			return
 		}
@@ -73,17 +77,58 @@ func AuthMiddleware(next http.Handler) http.Handler {
 func AdminMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		u, ok := r.Context().Value(UserCtxKey).(*core.User)
+		if !ok || u == nil {
+			// Not authenticated → 401 so the SPA can redirect to /login
+			WriteJSONError(w, http.StatusUnauthorized, "unauthorized", "Please sign in.")
+			return
+		}
+
+		isAdmin, err := database.UserHasRoleByID(r.Context(), u.ID, core.RoleIDAdmin)
+		if err != nil {
+			log.Printf("admin check failed for user %s: %v", u.ID, err)
+			WriteJSONError(w, http.StatusInternalServerError, "server_error", "Unable to verify permissions.")
+			return
+		}
+		if !isAdmin {
+			WriteJSONError(w, http.StatusForbidden, "admin_required", "You are not allowed to view this content.")
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
+func BlackListMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u, ok := r.Context().Value(UserCtxKey).(*core.User)
 		if !ok {
 			fmt.Printf("Couldn't get user\n")
 			http.Redirect(w, r, "/", http.StatusForbidden)
 			return
 		}
-		if !u.IsStaff {
-			fmt.Printf("%s is not a pan bagnat staff!\n", u.FtLogin)
-			http.Redirect(w, r, "/", http.StatusForbidden)
+		hasBlacklist, err := database.UserHasRoleByID(r.Context(), u.ID, "roles_blacklist")
+		if err != nil {
+			log.Printf("BlacklistGuard: role check failed for user %s: %v", u.ID, err)
+			next.ServeHTTP(w, r)
 			return
 		}
-		next.ServeHTTP(w, r)
+		if !hasBlacklist {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		n, err := database.DeleteUserSessions(r.Context(), u.ID)
+		if err != nil {
+			log.Printf("couldn't delete user %s sessions: %s\n", u.FtLogin, err.Error())
+		} else {
+			log.Printf("deleted %d sessions for user %s\n", n, u.FtLogin)
+		}
+		core.ClearSessionCookie(w)
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusForbidden)
+		WriteJSONError(w, http.StatusForbidden, "blacklisted", "Your account is currently blacklisted. Contact your bocal.")
+		fmt.Printf("[auth] user %s is blacklisted, returned 403 Forbidden\n", u.FtLogin)
 	})
 }
 

@@ -2,6 +2,7 @@ package core
 
 import (
 	"backend/database"
+	"context"
 	"database/sql"
 	"encoding/base64"
 	"encoding/json"
@@ -65,8 +66,6 @@ func GenerateUserOrderBy(order string) (dest []database.UserOrder) {
 			field = database.UserFtLogin
 		case "last_seen":
 			field = database.UserLastSeen
-		case "is_staff":
-			field = database.UserIsStaff
 		case "ft_is_staff":
 			field = database.UserFtIsStaff
 		case "ft_id":
@@ -113,7 +112,8 @@ func GetUser(identifier string) (User, error) {
 	if err == nil {
 		apiUser.Roles = DatabaseRolesToRoles(roles)
 	}
-
+	isAdmin, _ := database.UserHasRoleByID(context.Background(), apiUser.ID, "roles_admin")
+	apiUser.IsStaff = isAdmin
 	return apiUser, nil
 }
 
@@ -144,6 +144,8 @@ func GetUsers(pagination UserPagination) ([]User, string, error) {
 		} else {
 			apiUser.Roles = DatabaseRolesToRoles(roles)
 		}
+		isAdmin, _ := database.UserHasRoleByID(context.Background(), apiUser.ID, "roles_admin")
+		apiUser.IsStaff = isAdmin
 		dest = append(dest, apiUser)
 	}
 
@@ -214,7 +216,7 @@ func ApplyRoleRulesForNewUser(userID string, evalPayload any) error {
 	return database.BulkAddUserRoles(userID, addIDs)
 }
 
-func HandleUser42Connection(token *oauth2.Token) (string, error) {
+func HandleUser42Connection(ctx context.Context, token *oauth2.Token, meta DeviceMeta) (string, error) {
 	req, _ := http.NewRequest("GET", "https://api.intra.42.fr/v2/me", nil)
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
 
@@ -237,7 +239,6 @@ func HandleUser42Connection(token *oauth2.Token) (string, error) {
 				FtID:      intra.ID,
 				FtIsStaff: intra.Staff,
 				PhotoURL:  intra.Image.Link,
-				IsStaff:   intra.Staff || intra.Kind == "admin",
 				LastSeen:  time.Now(),
 			}
 			if err := database.AddUser(user); err != nil {
@@ -257,18 +258,9 @@ func HandleUser42Connection(token *oauth2.Token) (string, error) {
 	user.LastSeen = time.Now()
 	_ = database.UpdateUserLastSeen(user.FtLogin, user.LastSeen)
 
-	sessionID, err := GenerateSecureSessionID()
+	sessionID, err := EnsureDeviceSession(ctx, user.FtLogin, meta)
 	if err != nil {
-		return "", fmt.Errorf("failed to create session ID: %w", err)
-	}
-	session := database.Session{
-		SessionID: sessionID,
-		Login:     user.FtLogin,
-		CreatedAt: time.Now(),
-		ExpiresAt: time.Now().Add(24 * time.Hour),
-	}
-	if err := database.AddSession(session); err != nil {
-		return "", fmt.Errorf("failed to store session: %w", err)
+		return "", fmt.Errorf("failed to ensure session: %w", err)
 	}
 
 	return sessionID, nil
@@ -299,7 +291,6 @@ func PatchUser(patch UserPatch) (*User, error) {
 		FtIsStaff: patch.FtIsStaff,
 		PhotoURL:  patch.PhotoURL,
 		LastSeen:  patch.LastSeen,
-		IsStaff:   patch.IsStaff,
 	}
 
 	err = database.PatchUser(dbPatch)

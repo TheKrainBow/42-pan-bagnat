@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"backend/api/auth"
 	api "backend/api/dto"
 	"backend/core"
 	"encoding/json"
@@ -501,6 +502,7 @@ func PageRedirection(w http.ResponseWriter, r *http.Request) {
 	isIframe := r.Header.Get("Referer") != ""
 
 	if !page.IsPublic && !isIframe {
+		auth.WriteJSONError(w, http.StatusForbidden, "admin", "Your are not allowed to view this content")
 		http.Error(w, "This page is not public", http.StatusForbidden)
 		return
 	}
