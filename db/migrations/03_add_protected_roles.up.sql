@@ -65,4 +65,12 @@ VALUES
   ('roles_default', 'Student', '#edba55', TRUE, FALSE, NULL, NULL)
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO user_roles (user_id, role_id)
+SELECT u.id, 'roles_default'
+FROM users u
+LEFT JOIN user_roles ur
+  ON ur.user_id = u.id AND ur.role_id = 'roles_default'
+WHERE ur.user_id IS NULL
+ON CONFLICT DO NOTHING;
+
 COMMIT;
