@@ -160,6 +160,60 @@ func GetUsers(pagination UserPagination) ([]User, string, error) {
 	return dest, token, nil
 }
 
+// --- small helper: struct/anything → map[string]any for eval ---
+func toEvalMap(v any) (map[string]any, error) {
+	if v == nil {
+		return map[string]any{}, nil
+	}
+	if m, ok := v.(map[string]any); ok {
+		return m, nil
+	}
+	b, err := json.Marshal(v)
+	if err != nil {
+		return nil, err
+	}
+	var out map[string]any
+	if err := json.Unmarshal(b, &out); err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func ApplyRoleRulesForNewUser(userID string, evalPayload any) error {
+	payload, err := toEvalMap(evalPayload)
+	if err != nil {
+		return fmt.Errorf("normalize eval payload: %w", err)
+	}
+
+	roles, err := database.ListRolesWithRules()
+	if err != nil {
+		return fmt.Errorf("list roles with rules: %w", err)
+	}
+
+	var addIDs []string
+	for _, r := range roles {
+		if r.IsDefault {
+			continue // defaults handled separately
+		}
+		if len(r.Rules) == 0 || string(r.Rules) == "null" {
+			continue
+		}
+		var node any
+		if err := json.Unmarshal(r.Rules, &node); err != nil {
+			continue // skip invalid rules
+		}
+		if evalRuleNode(node, payload) {
+			addIDs = append(addIDs, r.ID)
+		}
+	}
+
+	if len(addIDs) == 0 {
+		return nil
+	}
+	// Bulk insert; no deletions for new users.
+	return database.BulkAddUserRoles(userID, addIDs)
+}
+
 func HandleUser42Connection(token *oauth2.Token) (string, error) {
 	req, _ := http.NewRequest("GET", "https://api.intra.42.fr/v2/me", nil)
 	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
@@ -189,8 +243,11 @@ func HandleUser42Connection(token *oauth2.Token) (string, error) {
 			if err := database.AddUser(user); err != nil {
 				return "", fmt.Errorf("failed to create user: %w", err)
 			}
+			if err := ApplyRoleRulesForNewUser(user.ID, intra); err != nil {
+				fmt.Printf("failed to link default roles: %s\n", err.Error())
+			}
 			if err := database.LinkDefaultRolesToUser(user.ID); err != nil {
-				return "", fmt.Errorf("failed to link default roles: %w", err)
+				fmt.Printf("failed to link default roles: %s\n", err.Error())
 			}
 		} else {
 			return "", fmt.Errorf("failed to get user: %w", err)

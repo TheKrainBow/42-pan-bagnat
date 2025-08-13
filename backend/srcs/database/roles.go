@@ -2,15 +2,17 @@ package database
 
 import (
 	"backend/utils"
+	"encoding/json"
 	"fmt"
 	"strings"
 )
 
 type Role struct {
-	ID        string `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X" db:"id"`
-	Name      string `json:"name" example:"captain-hook" db:"name"`
-	Color     string `json:"color" example:"#FF00FF" db:"color"`
-	IsDefault bool   `json:"is_default" example:"true" db:"is_default"`
+	ID        string          `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X" db:"id"`
+	Name      string          `json:"name" example:"captain-hook" db:"name"`
+	Color     string          `json:"color" example:"#FF00FF" db:"color"`
+	IsDefault bool            `json:"is_default" example:"true" db:"is_default"`
+	Rules     json.RawMessage `json:"rules" example:"{}" db:"rules"`
 }
 
 type RolePatch struct {

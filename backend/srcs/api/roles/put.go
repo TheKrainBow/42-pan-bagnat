@@ -2,6 +2,7 @@ package roles
 
 import (
 	"backend/core"
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -82,15 +83,14 @@ func PutRoleRules(w http.ResponseWriter, r *http.Request) {
 	updated := 0
 	applied := false
 	if input.ApplyToExisting {
-		n, err := core.ApplyRoleRulesNow(r.Context(), roleID)
-		if err != nil {
-			// Application failure shouldn’t hide that rules were saved successfully.
-			log.Printf("ApplyRoleRulesNow failed (role %s): %v", roleID, err)
-			http.Error(w, "Rules saved, but failed to apply to existing users", http.StatusInternalServerError)
-			return
-		}
-		applied = true
-		updated = n
+		go func(roleID string) {
+			// Fire-and-forget. The core function will broadcast WS when finished.
+			if n, err := core.ApplyRoleRulesNow(context.Background(), roleID); err != nil {
+				log.Printf("ApplyRoleRulesNow async failed (role %s): %v", roleID, err)
+			} else {
+				log.Printf("ApplyRoleRulesNow async done role=%s updated=%d", roleID, n)
+			}
+		}(roleID)
 	}
 
 	resp := RoleRulesUpdateResponse{

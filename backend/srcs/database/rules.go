@@ -3,6 +3,8 @@ package database
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"time"
 )
 
@@ -45,23 +47,6 @@ func UpdateRoleRulesJSON(ctx context.Context, roleID string, rulesJSON []byte) e
 	return nil
 }
 
-// GetRoleRulesJSON fetches the stored rules JSON (nil if NULL).
-func GetRoleRulesJSON(roleID string) ([]byte, *time.Time, error) {
-	const q = `
-		SELECT rules_json, rules_updated_at
-		FROM roles
-		WHERE id = $1
-	`
-	var rules []byte
-	var updatedAt *time.Time
-	err := mainDB.QueryRow(q, roleID).Scan(&rules, &updatedAt)
-	if err != nil {
-		return nil, nil, err // sql.ErrNoRows bubbles up for "role not found"
-	}
-	// Note: if rules_json is NULL, "rules" will be nil (which we treat as null in the handler)
-	return rules, updatedAt, nil
-}
-
 // ListActiveUsers returns users to evaluate. Tweak the WHERE to your "active" definition.
 func ListActiveUsers(ctx context.Context) ([]User, error) {
 	// Minimal filter: only users with a 42 login
@@ -92,12 +77,7 @@ func ListActiveUsers(ctx context.Context) ([]User, error) {
 
 // EnsureUserRole makes membership match shouldHave. Returns true if a change occurred.
 func EnsureUserRole(ctx context.Context, userID, roleID string, shouldHave bool) (bool, error) {
-	// if userID <= 0 || roleID <= 0 {
-	// 	return false, fmt.Errorf("invalid ids")
-	// }
-
 	if shouldHave {
-		// Insert if missing (no-op if already present).
 		_, err := mainDB.ExecContext(ctx, `
 			INSERT INTO user_roles (user_id, role_id)
 			VALUES ($1, $2)
@@ -106,9 +86,6 @@ func EnsureUserRole(ctx context.Context, userID, roleID string, shouldHave bool)
 		if err != nil {
 			return false, err
 		}
-		// Check if it was newly inserted by verifying existence vs affected rows:
-		// Unfortunately ExecContext doesn't reliably tell with ON CONFLICT DO NOTHING across drivers.
-		// Re-check quickly:
 		var exists bool
 		err = mainDB.QueryRowContext(ctx, `
 			SELECT EXISTS (
@@ -117,22 +94,9 @@ func EnsureUserRole(ctx context.Context, userID, roleID string, shouldHave bool)
 		if err != nil {
 			return false, err
 		}
-		// If it exists, we don't know if it was there before. To return a precise "changed",
-		// do a delete-then-insert dance or just attempt insert and detect by comparing count before/after.
-		// Simpler: try delete and reinsert? Not ideal. We'll do a best-effort cheap check:
-		// We'll assume "changed" when it did not exist before. We can measure by trying a DELETE ... RETURNING and re-insert,
-		// but that's heavier. If you want exactness, swap this block for a CTE that returns whether it inserted.
-		// For pgx you can read RowsAffected reliably; with lib/pq it's also okay.
-		// If you trust RowsAffected on your driver, uncomment below and remove the EXISTS check above.
-		//
-		// ra, _ := res.RowsAffected()
-		// return ra > 0, nil
-		//
-		// For now just return true meaning "converged"; callers use this as stats, not critical.
 		return true, nil
 	}
 
-	// should not have the role → delete if present
 	res, err := mainDB.ExecContext(ctx, `
 		DELETE FROM user_roles
 		 WHERE user_id = $1 AND role_id = $2
@@ -158,4 +122,90 @@ func RemoveRoleFromAllUsers(ctx context.Context, roleID string) (int, error) {
 	}
 	ra, _ := res.RowsAffected()
 	return int(ra), nil
+}
+
+func ListRolesWithRules() ([]Role, error) {
+	rows, err := mainDB.Query(`
+		SELECT id, is_default, rules_json
+		FROM roles
+		ORDER BY id
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("list roles with rules: %w", err)
+	}
+	defer rows.Close()
+
+	out := make([]Role, 0, 32)
+	for rows.Next() {
+		var r Role
+		var rulesBytes sql.NullString
+		if err := rows.Scan(&r.ID, &r.IsDefault, &rulesBytes); err != nil {
+			return nil, fmt.Errorf("scan role with rules: %w", err)
+		}
+		if rulesBytes.Valid && rulesBytes.String != "" {
+			r.Rules = json.RawMessage(rulesBytes.String)
+		} else {
+			// keep nil to mean "no rules set"
+			r.Rules = nil
+		}
+		out = append(out, r)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate roles with rules: %w", err)
+	}
+	return out, nil
+}
+
+// GetRoleRulesJSON fetches the stored rules JSON (nil if NULL).
+func GetRoleRulesJSON(roleID string) ([]byte, *time.Time, error) {
+	const q = `
+		SELECT rules_json, rules_updated_at
+		FROM roles
+		WHERE id = $1
+	`
+	var rules []byte
+	var updatedAt *time.Time
+	err := mainDB.QueryRow(q, roleID).Scan(&rules, &updatedAt)
+	if err != nil {
+		return nil, nil, err // sql.ErrNoRows bubbles up for "role not found"
+	}
+	// Note: if rules_json is NULL, "rules" will be nil (which we treat as null in the handler)
+	return rules, updatedAt, nil
+}
+
+func BulkAddUserRoles(userID string, roleIDs []string) error {
+	if userID == "" || len(roleIDs) == 0 {
+		return nil
+	}
+
+	tx, err := mainDB.BeginTx(context.Background(), &sql.TxOptions{})
+	if err != nil {
+		return fmt.Errorf("begin tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	const ins = `
+		INSERT INTO user_roles (user_id, role_id)
+		VALUES ($1, $2)
+		ON CONFLICT DO NOTHING
+	`
+	stmt, err := tx.Prepare(ins)
+	if err != nil {
+		return fmt.Errorf("prepare insert user_roles: %w", err)
+	}
+	defer stmt.Close()
+
+	for _, rid := range roleIDs {
+		if rid == "" {
+			continue
+		}
+		if _, err := stmt.Exec(userID, rid); err != nil {
+			return fmt.Errorf("insert user_role (%s,%s): %w", userID, rid, err)
+		}
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit add user roles: %w", err)
+	}
+	return nil
 }
