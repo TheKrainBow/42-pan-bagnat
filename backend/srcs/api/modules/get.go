@@ -189,6 +189,7 @@ func GetModuleLogs(w http.ResponseWriter, r *http.Request) {
 	// Marshal the dest struct into JSON
 	destJSON, err := json.Marshal(dest)
 	if err != nil {
+		log.Printf("Failed to convert struct to JSON: %s\n", err.Error())
 		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
 		return
 	}
@@ -347,6 +348,7 @@ func GetContainerLogs(w http.ResponseWriter, r *http.Request) {
 
 	logs, err := core.GetContainerLogs(module, containerName)
 	if err != nil {
+		log.Printf("Failed to get logs: %s\n", err.Error())
 		http.Error(w, fmt.Sprintf("Failed to get logs: %v", err), http.StatusInternalServerError)
 		return
 	}
