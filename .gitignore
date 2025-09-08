@@ -3,3 +3,4 @@ repos/
 *.key
 *.pem
 *.env
+.vscode
