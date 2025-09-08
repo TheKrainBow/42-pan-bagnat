@@ -4,8 +4,7 @@
     "paths": {
       "Global/*": ["Global/*"],
       "Pages/*": ["Pages/*"],
-      "Modules/*": ["Pages/Modules/*"],
-      "ui/*": ["ui/*"]
+      "Modules/*": ["Pages/Modules/*"]
     }
   },
   "include": ["src"]

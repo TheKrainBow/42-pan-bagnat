@@ -21,7 +21,7 @@ import RoleRuleBuilder from 'Pages/Roles/RoleRuleBuilder/RoleRuleBuilder';
 import UserDetail from './Pages/Users/UserDetail';
 import ModulePage from './Pages/Modules/ModulePage/ModulePage';
 import LoginPage from "./Pages/Login/Login";
-import Sidebar from 'ui/organisms/Sidebar/Sidebar';
+import Sidebar from 'Global/Sidebar/Sidebar';
 import { socketService } from 'Global/SocketService/SocketService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
