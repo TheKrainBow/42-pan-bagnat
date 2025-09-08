@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import './ModuleImport.css';
 import Button from 'Global/Button/Button';
 import Field from 'Global/Field/Field';
+import { useTour, TourAnchor, dataAnchorProps } from 'Global/Tour/TourProvider';
 import { useNavigate } from 'react-router-dom';
 import { fetchWithAuth } from 'Global/utils/Auth';
 
@@ -9,6 +10,7 @@ const ModuleImport = ({ onClose }) => {
   const gitInputRef = useRef();
   const gitBranchInputRef = useRef();
   const nameInputRef = useRef();
+  const importBtnRef = useRef();
   const navigate = useNavigate();
 
   const [moduleName, setModuleName] = useState('Hello World');
@@ -49,11 +51,20 @@ const ModuleImport = ({ onClose }) => {
     }
   };
 
+  // ---------------- Tutorial logic ----------------
+  const tour = useTour();
+
+  const startTutorial = () => tour?.start('module-import');
+
   return (
     <div className="mi-overlay">
       <div className="mi-content">
-        <h3>Import Module</h3>
+        <div className="mi-header-row">
+          <h3>Import Module</h3>
+          <Button color="gray" label="I need help!" onClick={startTutorial} />
+        </div>
 
+        <TourAnchor id="moduleImport.name"><div {...dataAnchorProps('moduleImport.name')}>
         <Field
           label="Module Name"
           ref={nameInputRef}
@@ -63,7 +74,9 @@ const ModuleImport = ({ onClose }) => {
           required={true}
           validator={value => !value ? 'Module name is required.' : null}
         />
+        </div></TourAnchor>
 
+        <TourAnchor id="moduleImport.git"><div {...dataAnchorProps('moduleImport.git')}>
         <Field
           label="Git Repository URL (SSH)"
           ref={gitInputRef}
@@ -73,26 +86,34 @@ const ModuleImport = ({ onClose }) => {
           required={true}
           validator={value => (sshUrlRegex.test(value) || httpUrlRegex.test(value)) ? null : 'Must be a valid URL.'}
         />
+        </div></TourAnchor>
 
+        <TourAnchor id="moduleImport.branch"><div {...dataAnchorProps('moduleImport.branch')}>
         <Field
           label="Git Branch Name"
-          ref={gitInputRef}
+          ref={gitBranchInputRef}
           value={gitBranch}
           onChange={e => setGitBranch(e.target.value)}
           placeholder="main"
           required={false}
         />
+        </div></TourAnchor>
 
         <div className="mi-actions">
           <Button label="Cancel" color="gray" onClick={onClose} />
+          <TourAnchor id="moduleImport.submit"><div {...dataAnchorProps('moduleImport.submit')}>
           <Button
             label={isSubmitting ? 'Importing...' : 'Import Module'}
             color="blue"
             onClick={handleSubmit}
             disabled={isSubmitting}
+            ref={importBtnRef}
           />
+          </div></TourAnchor>
         </div>
       </div>
+
+      {/* App-level TourOverlay is rendered by TourProvider */}
     </div>
   );
 };

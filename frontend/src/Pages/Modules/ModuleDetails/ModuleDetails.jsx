@@ -12,7 +12,6 @@ import ModuleDockerSection from '../Components/ModuleDockerSection/ModuleDockerS
 import { setModuleStatusUpdater } from 'Global/SocketService/SocketService';
 import ModuleUninstallModal from 'Pages/Modules/Components/ModuleUninstallModal/ModuleUninstallModal';
 import { fetchWithAuth } from 'Global/utils/Auth';
-import { toast } from 'react-toastify';
 
 const ModuleDetails = () => {
   const { moduleId } = useParams();

@@ -22,6 +22,7 @@ import UserDetail from './Pages/Users/UserDetail';
 import ModulePage from './Pages/Modules/ModulePage/ModulePage';
 import LoginPage from "./Pages/Login/Login";
 import Sidebar from 'Global/Sidebar/Sidebar';
+import { TourProvider } from 'Global/Tour/TourProvider';
 import { socketService } from 'Global/SocketService/SocketService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -147,7 +148,9 @@ function Main() {
 export default function App() {
   return (
     <Router>
-      <Main />
+      <TourProvider>
+        <Main />
+      </TourProvider>
     </Router>
   );
 }

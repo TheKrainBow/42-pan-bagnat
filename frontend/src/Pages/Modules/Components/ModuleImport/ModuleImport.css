@@ -29,6 +29,8 @@
   font-size: 1.25rem;
 }
 
+.mi-header-row { display:flex; align-items:center; justify-content:space-between; margin-bottom: 0.75rem; }
+
 .mi-field {
   display: flex;
   flex-direction: column;
@@ -88,3 +90,16 @@
   justify-content: flex-end;
   gap: 0.75rem;
 }
+
+/* Tutorial overlay */
+.mi-tutor-root { position: fixed; inset: 0; z-index: 1200; pointer-events: none; }
+.mi-tutor-dim { position:absolute; inset:0; background: rgba(0,0,0,0.6); }
+.mi-tutor-highlight { position:absolute; border: 2px solid #42b5ff; border-radius:6px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.6); }
+.mi-tutor-panel { position:absolute; transform: translate(0, calc(100% + 10px)); min-width: 280px; max-width:420px; background:#101215; border:1px solid #2b2e36; border-radius:8px; padding:12px; color:#e6e8eb; pointer-events:auto; }
+.mi-tutor-title { font-weight:600; margin-bottom:4px; }
+.mi-tutor-desc { font-size:13px; opacity:.9; }
+.mi-tutor-steps { font-size:12px; opacity:.7; margin-top:6px; }
+.mi-tutor-actions { display:flex; align-items:center; gap:8px; margin-top:10px; }
+.mi-tutor-btn { background:#2b2e36; color:#fff; border:none; padding:6px 10px; border-radius:6px; cursor:pointer; }
+.mi-tutor-btn.primary { background:#2563eb; }
+.mi-tutor-btn:disabled { opacity:.4; cursor: default; }
