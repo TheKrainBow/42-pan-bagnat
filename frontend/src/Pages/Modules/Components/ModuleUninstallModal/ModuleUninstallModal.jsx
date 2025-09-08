@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import './ModuleUninstallModal.css';
-import Button from 'ui/atoms/Button/Button';
+import Button from 'Global/Button/Button';
 
 const ModuleUninstallModal = ({ onConfirm, onCancel }) => {
   useEffect(() => {

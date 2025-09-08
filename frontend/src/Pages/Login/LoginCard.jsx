@@ -1,8 +1,8 @@
 // src/Components/LoginCard.jsx
 import React, { useState, useRef } from "react";
 import "./LoginCard.css";
-import Button from "ui/atoms/Button/Button";
-import Field from "ui/molecules/Field/Field";
+import Button from "Global/Button/Button";
+import Field from "Global/Field/Field";
 import { toast } from 'react-toastify';
 
 export default function LoginCard({ onLogin, onMagicLink }) {

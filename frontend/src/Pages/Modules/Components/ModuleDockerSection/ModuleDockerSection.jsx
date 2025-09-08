@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import Button from 'ui/atoms/Button/Button';
+import Button from 'Global/Button/Button';
 import DockerComposePage from './DockerComposeSection/DockerComposeSection';
 import DockerContainersSection from './DockerContainersSection/DockerContainersSection';
 import ModulePageSection from './DockerPageSection/DockerPageSection';

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import Button from 'ui/atoms/Button/Button';
+import Button from 'Global/Button/Button';
 import './DockerPageSection.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
 

@@ -1,11 +1,11 @@
 // Modules.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import './Modules.css';
-import AppIcon from 'ui/molecules/AppIcon/AppIcon';
+import AppIcon from 'Global/AppIcon/AppIcon';
 import Header from 'Global/Header/Header';
 import ModuleImport from 'Pages/Modules/Components/ModuleImport/ModuleImport';
 import ModuleStatusBadge from 'Pages/Modules/Components/ModuleStatusBadge/ModuleStatusBadge';
-import ModuleBadge from 'ui/molecules/Badges/ModuleBadge';
+import ModuleBadge from 'Global/ModuleBadge/ModuleBadge';
 import { Link } from 'react-router-dom';
 import { setModuleStatusUpdater } from 'Global/SocketService/SocketService';
 import { fetchWithAuth } from 'Global/utils/Auth';

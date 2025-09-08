@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import './ModuleImport.css';
-import Button from 'ui/atoms/Button/Button';
-import Field from 'ui/molecules/Field/Field';
+import Button from 'Global/Button/Button';
+import Field from 'Global/Field/Field';
 import { useNavigate } from 'react-router-dom';
 import { fetchWithAuth } from 'Global/utils/Auth';
 

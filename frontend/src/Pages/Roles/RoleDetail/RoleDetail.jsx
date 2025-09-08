@@ -1,11 +1,11 @@
 import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { fetchWithAuth } from "Global/utils/Auth";
-import Field from "ui/molecules/Field/Field";
-import Button from "ui/atoms/Button/Button";
-import ModuleSimpleBadge from 'ui/molecules/Badges/ModuleSimpleBadge';
-import UserBadge from "ui/molecules/Badges/UserBadge";
-import RoleBadge from 'ui/molecules/Badges/RoleBadge';
+import Field from "Global/Field/Field";
+import Button from "Global/Button/Button";
+import ModuleSimpleBadge from 'Global/ModuleSimpleBadge/ModuleSimpleBadge';
+import UserBadge from "Global/UserBadge/UserBadge";
+import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import { Wheel } from '@uiw/react-color';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
