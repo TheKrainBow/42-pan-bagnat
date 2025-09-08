@@ -4,3 +4,4 @@ repos/
 *.pem
 *.env
 .vscode
+AGENTS.md
