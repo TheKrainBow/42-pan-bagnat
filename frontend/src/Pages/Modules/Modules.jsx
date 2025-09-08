@@ -109,35 +109,7 @@ const Modules = () => {
   };
 
 
-  const handleSubmit = async ({ gitUrl, sshKey }) => {
-    try {
-      const response = await fetchWithAuth('/api/v1/admin/modules', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          git_url: gitUrl,
-          ssh_key: sshKey,
-        }),
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        console.error('Error from backend:', error);
-        return;
-      }
-
-      const result = await response.json();
-      console.log('Module created:', result);
-
-      // Optionally refresh module list or trigger UI update
-      fetchModules(false, '');
-      setShowModal(false);
-    } catch (err) {
-      console.error('Request failed:', err);
-    }
-  };
+  // Module import handled inside ModuleImport component
 
   return (
     <div className="p-4">
@@ -163,7 +135,7 @@ const Modules = () => {
       </div>
 
       {showModal && (
-        <ModuleImport onClose={handleClose} onSubmit={handleSubmit} />
+        <ModuleImport onClose={handleClose} />
       )}
     </div>
   );
