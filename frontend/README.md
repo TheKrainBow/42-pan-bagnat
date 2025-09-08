@@ -1,12 +1,85 @@
-# React + Vite
+# Frontend — Pan Bagnat
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This doc covers the frontend stack, how to run it locally, the (upcoming) development flow, testing status, and how the SPA interacts with the backend.
 
-Currently, two official plugins are available:
+Contents
+- Stack and prerequisites
+- Running locally
+- Development flow (molecular UI — high level, detailed later)
+- Testing (status and plan)
+- Backend interaction (API, auth, WebSocket, module pages)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack and prerequisites
 
-## Expanding the ESLint configuration
+- Framework: React + Vite
+- Routing: React Router v6
+- Styling: CSS modules and project styles (e.g., `App.css`, `Notifications.css`)
+- State: Local React state + helper utilities
+- Notifications: `react-toastify`
+- WS client: simple wrapper (see `Global/SocketService`)
+- Package manager: `pnpm`
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Prereqs
+- Node 18+ (LTS recommended)
+- pnpm installed globally: `npm i -g pnpm`
+
+## Running locally
+
+Option A — via Makefile
+- `make local-front` → `cd frontend && BROWSER=none pnpm dev`
+- Exposes Vite dev server on port 3000 (see `docker-compose.yml`/Nginx for proxying).
+
+Option B — manual
+- `cd frontend`
+- `pnpm install`
+- `BROWSER=none pnpm dev`
+
+Notes
+- For authenticated flows, the backend must be running and reachable on the host used by CORS (see `HOST_NAME` in `.env.example`).
+- In Docker, Nginx proxies `/` to the frontend and `/api`, `/auth`, `/ws`, `/module-page` to the backend.
+
+## Development flow (molecular UI)
+
+We follow a “molecular” approach: small reusable atoms/molecules compose into pages.
+- Global components: `src/Global/*` (icons, inputs, layout, helpers)
+- Pages: `src/Pages/*` for feature areas (Users, Roles, Modules)
+- Route shell: `src/App.jsx` wires the Sidebar and Routes
+
+Initial rules
+- Keep components small and cohesive; prefer composition over deep props.
+- Co-locate simple styles next to components; reuse global styles where helpful.
+- Keep network calls in page-level or service helpers (see `Global/utils/Auth.jsx`).
+
+We will document conventions and folder layout in detail during the refactor.
+
+## Testing (status and plan)
+
+- Current status: no formal test suite.
+- Planned: Vitest + React Testing Library for component tests and critical flows.
+- Philosophy: start with targeted tests around business logic and critical UI (auth, navigation), then broaden.
+
+## Backend interaction
+
+Auth + fetch helper
+- Use `fetchWithAuth` (`src/Global/utils/Auth.jsx`) for all API calls. It:
+  - Sends `credentials: 'include'` to use the `session_id` cookie
+  - On 401/403, shows a toast and redirects to `/login`
+  - Provides friendly handling for 404/409
+
+API endpoints
+- Base paths used in the SPA:
+  - `/api/v1/users/me` and `/api/v1/users/me/pages`
+  - `/api/v1/admin/modules` and related CRUD
+  - `/api/v1/admin/roles` and related CRUD
+  - Integrations (42): `/api/v1/admin/integrations/42/users/{login}`
+
+WebSocket
+- Endpoint: `/ws`. The client subscribes per module to receive live events/logs.
+
+Module Pages
+- User-facing pages are reverse-proxied from the backend at `/module-page/{slug}`.
+- `ModulePage.jsx` embeds them in an iframe and adjusts relative links with a `<base>` tag.
+
+Links
+- Backend details: ../backend/README.md
+- Root overview: ../README.md
