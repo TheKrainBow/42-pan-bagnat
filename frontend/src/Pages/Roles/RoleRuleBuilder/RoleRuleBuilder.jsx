@@ -1290,15 +1290,64 @@ useEffect(() => {
     };
   }, []);
 
-  // eval + coloring
-  const evalResult = useMemo(
-    () => evaluateRules(rootRule, samplePayload),
-    [rootRule, samplePayload]
-  );
-  const statusByPath = useMemo(
-    () => collectStatuses(rootRule, samplePayload),
-    [rootRule, samplePayload]
-  );
+  // Evaluation via backend (authoritative)
+  const [evalResult, setEvalResult] = useState({ pass: false, trace: null });
+
+  // Debounce rules before calling backend to avoid evaluating on every keystroke
+  const [debouncedRules, setDebouncedRules] = useState(() => serializeRuleForSave(rootRule));
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedRules(serializeRuleForSave(rootRule)), 200);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rootRule]);
+  useEffect(() => {
+    let cancelled = false;
+    async function runEval() {
+      // Always use backend evaluator; send current payload (default or user)
+      try {
+        const res = await fetchWithAuth(
+          `/api/v1/admin/roles/${encodeURIComponent(roleId)}/rules/evaluate`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ rules: debouncedRules, payload: samplePayload }),
+          }
+        );
+        if (!res) return; // fetchWithAuth already handled redirect/toast
+        const data = await res.json();
+        if (!cancelled) setEvalResult({ pass: !!data?.matched, trace: data?.trace || null });
+      } catch (e) {
+        if (!cancelled) setEvalResult({ pass: false, trace: null });
+        console.error(e);
+      }
+    }
+    runEval();
+    return () => { cancelled = true; };
+  }, [roleId, debouncedRules, samplePayload, sampleSource]);
+  // Build coloring/messages from backend trace
+  const statusByPath = useMemo(() => traceToStatusMap(evalResult.trace), [evalResult.trace]);
+  const messagesByPath = useMemo(() => traceToMessageMap(evalResult.trace), [evalResult.trace]);
+
+  function traceToStatusMap(trace) {
+    const out = {};
+    (function walk(t) {
+      if (!t) return;
+      if (t.kind === "scalar" && t.path) out[t.path] = t.result;
+      if (t.kind === "array" && t.path) out[t.path] = t.result;
+      if (Array.isArray(t.children)) t.children.forEach(walk);
+    })(trace);
+    return out;
+  }
+
+  function traceToMessageMap(trace) {
+    const out = {};
+    (function walk(t) {
+      if (!t) return;
+      if (!t.result && t.path && t.message) out[t.path] = String(t.message);
+      if (Array.isArray(t.children)) t.children.forEach(walk);
+    })(trace);
+    return out;
+  }
 
   // DnD
   const [draggingRid, setDraggingRid] = useState(null);
@@ -1452,8 +1501,9 @@ useEffect(() => {
             <JsonExplorer
               sample={samplePayload}
               rules={rootRule}
-              diag={{ pass: evalResult.pass, ...(evalResult.diag || {}) }}
+              diag={evalResult.trace}
               statusByPath={statusByPath}
+              messagesByPath={messagesByPath}
               onAddPath={addFromPath}
               defaultExpandDepth={2}
             />

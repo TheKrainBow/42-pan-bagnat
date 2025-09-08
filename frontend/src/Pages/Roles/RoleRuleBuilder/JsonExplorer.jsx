@@ -16,6 +16,7 @@ export default function JsonExplorer({
   rules,
   statusByPath = {},
   diag,
+  messagesByPath = {},
   onAddPath,
   defaultExpandDepth = 2,
 }) {
@@ -53,6 +54,7 @@ export default function JsonExplorer({
         used={used}
         matchedMap={matchedMap}
         statusByPath={statusByPath}
+        messagesByPath={messagesByPath}
         depth={0}
       />
     </div>
@@ -72,6 +74,7 @@ function JsonNode({
   used,
   matchedMap,
   statusByPath,
+  messagesByPath,
   depth = 0,
 }) {
   const indent = "  ".repeat(depth);
@@ -88,6 +91,7 @@ function JsonNode({
     const header = (
       <div
         className={`rb-json-line ${usedClass} ${successClass} rb-json-clickable`}
+        title={(messagesByPath && messagesByPath[arrPath]) || ""}
         onClick={() => onAddPath(arrPath)}
       >
         {indent}
@@ -141,6 +145,7 @@ function JsonNode({
                   used={used}
                   matchedMap={matchedMap}
                   statusByPath={statusByPath}
+                  messagesByPath={messagesByPath}
                   depth={depth + 1}
                 />
               </div>
@@ -166,6 +171,7 @@ function JsonNode({
                     used={used}
                     matchedMap={matchedMap}
                     statusByPath={statusByPath}
+                    messagesByPath={messagesByPath}
                     depth={depth + 2}
                   />
                 ))}
@@ -223,6 +229,7 @@ function JsonNode({
               used={used}
               matchedMap={matchedMap}
               statusByPath={statusByPath}
+              messagesByPath={messagesByPath}
               depth={1}
             />
           ))}
@@ -244,6 +251,7 @@ function JsonNode({
       <>
         <div
           className={`rb-json-line ${usedClass} ${successClass} rb-json-clickable`}
+          title={(messagesByPath && messagesByPath[objPath]) || ""}
           onClick={() => onAddPath(objPath)}
         >
           {indent}
@@ -302,6 +310,7 @@ function JsonNode({
   return (
     <div
       className={`rb-json-line ${usedClass} ${successClass} rb-json-clickable`}
+      title={(messagesByPath && messagesByPath[scalarPath]) || ""}
       onClick={() => onAddPath(scalarPath)}
     >
       {indent}
@@ -413,7 +422,10 @@ function collectArrayMatches(diag) {
   (function walk(d) {
     if (!d || typeof d !== "object") return;
     if (d.kind === "group" && Array.isArray(d.children)) d.children.forEach((c) => walk(c.diag || c));
-    if (d.kind === "array" && Array.isArray(d.matchedIndices)) map[d.path] = (map[d.path] || []).concat(d.matchedIndices);
+    if (d.kind === "array") {
+      const indices = d.matchedIndices || d.matched_indices || [];
+      if (Array.isArray(indices)) map[d.path] = (map[d.path] || []).concat(indices);
+    }
     if (Array.isArray(d.children) && d.kind !== "group") d.children.forEach((c) => walk(c.diag || c));
   })(diag);
   return map;
