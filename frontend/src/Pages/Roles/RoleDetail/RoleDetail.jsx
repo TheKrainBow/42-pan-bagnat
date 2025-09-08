@@ -59,6 +59,15 @@ export default function RoleDetail() {
     load();
   }, [roleId]);
 
+  const PROTECTED_ROLE_IDS = useMemo(
+    () => new Set(['roles_admin', 'roles_blacklist', 'roles_default']),
+    []
+  );
+  const isProtectedRole = role ? PROTECTED_ROLE_IDS.has(role.id) : false;
+
+  // Only allow editing name/color/advanced rules when NOT assigned by default
+  const canEditBasics = !isDefault; // false when the checkbox is ticked
+
   // load all modules & users on mount
   useEffect(() => {
     fetchWithAuth('/api/v1/admin/modules?limit=1000')
@@ -217,61 +226,79 @@ export default function RoleDetail() {
   };
 
   if (!role) return <div>Loading...</div>;
-
   return (
     <div className="role-detail-wrapper">
       <section className="assign-section">
         <div className="section-header">
           <h2 className="role-title">
-            Edit {" "}
+            Edit{" "}
             <RoleBadge role={{ id: role.id, color: color }}>
               {name}
             </RoleBadge>
           </h2>
           <div className="button-wrapper">
-              <Button
-                label={'🔧 Advanced rules'}
-                color="gray"
-                disabled={isDefault}
-                disabledMessage={"IsDefault over-ride advanced rules"}
-                onClick={() => navigate(`/admin/roles/${roleId}/rule-builder`)}
-              />
+            <Button
+              label={'🔧 Advanced rules'}
+              color="gray"
+              disabled={!canEditBasics}
+              disabledMessage={"Disable 'Assign this role to new users' to edit rules"}
+              onClick={() => navigate(`/admin/roles/${roleId}/rule-builder`)}
+            />
             <Button
               label={'Save Changes'}
               color="blue"
               onClick={handleSave}
-              disabled={false}
-              disabledMessage={"Not implemented (sorry)"}
             />
-
             <Button
               label={'🗑️ Delete Role'}
               color="red"
               onClick={handleDelete}
-              disabled={false}
-              disabledMessage={"Not implemented (sorry)"}
+              disabled={isProtectedRole}
+              disabledMessage={"This system role cannot be deleted"}
             />
           </div>
         </div>
+
         <div className="role-form">
-          <Field ref={nameRef} label="Name" value={name} onChange={e=>setName(e.target.value)} required />
+          <Field
+            ref={nameRef}
+            label="Name"
+            value={name}
+            onChange={e => canEditBasics && setName(e.target.value)}
+            required
+            disabled={!canEditBasics}
+          />
+
           <Field
             ref={colorRef}
             label="Color"
             value={color}
             backgroundColor={color}
-            onChange={e => setColor(e.target.value)}
+            onChange={e => canEditBasics && setColor(e.target.value)}
             required
+            disabled={!canEditBasics}
             validator={val => /^#[0-9A-Fa-f]{6}$/.test(val) ? null : 'Invalid hex'}
           />
-          <div className="color-wheel">
-            <Wheel color={color} onChange={c=>setColor(c.hex?.toLowerCase())} width={120} height={120} />
+
+          <div
+            className="color-wheel"
+            style={{ opacity: canEditBasics ? 1 : 0.5, pointerEvents: canEditBasics ? 'auto' : 'none' }}
+          >
+            <Wheel
+              color={color}
+              onChange={c => setColor(c.hex?.toLowerCase())}
+              width={120}
+              height={120}
+            />
           </div>
+
           <label className="checkbox-label">
             <input
               type="checkbox"
               checked={isDefault}
-              onChange={e => setIsDefault(e.target.checked)}
+              onChange={e => !isProtectedRole && setIsDefault(e.target.checked)}
+              disabled={isProtectedRole}
+              title={isProtectedRole ? "This system role's assignment is locked" : undefined}
             />
             Assign this role to new users
           </label>
@@ -279,9 +306,8 @@ export default function RoleDetail() {
       </section>
 
       {error && <div className="form-error">{error}</div>}
-      <div className="actions">
-      </div>
-      
+
+      {/* Modules */}
       <section className="assign-section">
         <div className="section-header">
           <label>Modules</label>
@@ -334,7 +360,7 @@ export default function RoleDetail() {
         )}
       </section>
 
-
+      {/* Users */}
       <section className="assign-section">
         <div className="section-header">
           <label>Users</label>
