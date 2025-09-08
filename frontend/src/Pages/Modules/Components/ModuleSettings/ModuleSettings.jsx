@@ -1,7 +1,7 @@
 // src/components/ModuleSettings.jsx
 import React, { useEffect, useState, useRef } from "react";
-import RoleBadge from 'Global/RoleBadge/RoleBadge';
-import Button from 'Global/Button/Button';
+import RoleBadge from 'ui/molecules/Badges/RoleBadge';
+import Button from 'ui/atoms/Button/Button';
 import { fetchWithAuth } from "Global/utils/Auth";
 import ModuleAboutSection from '../ModuleAboutSection/ModuleAboutSection';
 import { useNavigate } from 'react-router-dom'

@@ -1,6 +1,6 @@
 import { useState, useRef, forwardRef, useImperativeHandle } from "react";
 import './ModuleWarningSection.css';
-import Button from "Global/Button/Button";
+import Button from "ui/atoms/Button/Button";
 import { fetchWithAuth } from 'Global/utils/Auth';
 
 const ModuleWarningSection = forwardRef(({ sshKey, moduleID, onRetrySuccess, onRetry }, ref) => {

@@ -7,8 +7,8 @@ import {
 } from '@tanstack/react-table';
 import './Users.css';
 import Header from 'Global/Header/Header';
-import RoleBadge from 'Global/RoleBadge/RoleBadge';
-import ArrayHeader from 'Global/ArrayHeader/ArrayHeader';
+import RoleBadge from 'ui/molecules/Badges/RoleBadge';
+import ArrayHeader from 'ui/molecules/ArrayHeader/ArrayHeader';
 import { fetchWithAuth } from 'Global/utils/Auth';
 
 const ADMIN_ROLE_ID = 'roles_admin';

@@ -1,8 +1,8 @@
 // src/components/RoleImport.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { Wheel } from '@uiw/react-color';
-import AppIcon from 'Global/AppIcon/AppIcon';
-import Field from 'Global/Field/Field';
+import AppIcon from 'ui/molecules/AppIcon/AppIcon';
+import Field from 'ui/molecules/Field/Field';
 import './RoleImport.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
 

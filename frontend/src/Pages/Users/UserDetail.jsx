@@ -1,8 +1,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { fetchWithAuth } from "Global/utils/Auth";
-import RoleBadge from "Global/RoleBadge/RoleBadge";
-import ModuleBadge from "Global/ModuleBadge/ModuleBadge";
+import RoleBadge from "ui/molecules/Badges/RoleBadge";
+import ModuleBadge from "ui/molecules/Badges/ModuleBadge";
 import { toast } from 'react-toastify';
 import './UserDetail.css';
 

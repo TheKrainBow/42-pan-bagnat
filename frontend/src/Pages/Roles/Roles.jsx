@@ -7,11 +7,11 @@ import {
 } from '@tanstack/react-table';
 import { useNavigate } from 'react-router-dom'
 import './Roles.css';
-import AppIcon from 'Global/AppIcon/AppIcon';
+import AppIcon from 'ui/molecules/AppIcon/AppIcon';
 import Header from 'Global/Header/Header';
-import RoleBadge from 'Global/RoleBadge/RoleBadge';
-import ArrayHeader from 'Global/ArrayHeader/ArrayHeader';
-import Button from 'Global/Button/Button';
+import RoleBadge from 'ui/molecules/Badges/RoleBadge';
+import ArrayHeader from 'ui/molecules/ArrayHeader/ArrayHeader';
+import Button from 'ui/atoms/Button/Button';
 import RoleImport from './RoleImport/RoleImport';
 import { fetchWithAuth } from 'Global/utils/Auth';
 
