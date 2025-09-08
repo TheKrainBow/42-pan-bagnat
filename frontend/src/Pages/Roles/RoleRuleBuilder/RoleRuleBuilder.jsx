@@ -770,268 +770,6 @@ function RuleEditor({
   return null;
 }
 
-/* ----------------------- Evaluator & helpers ----------------------- */
-const toNum = (x) => (x === "" || x == null ? 0 : Number(x));
-
-/** Coerce any side to the declared valueType, to avoid string/boolean issues */
-function coerceByType(type, v) {
-  switch (type) {
-    case "boolean":
-      if (typeof v === "boolean") return v;
-      if (typeof v === "string") return v.toLowerCase() === "true";
-      if (typeof v === "number") return v !== 0;
-      return Boolean(v);
-    case "number":
-      if (typeof v === "number") return v;
-      if (v === "" || v == null) return 0; // treat empty as 0 for UX
-      {
-        const n = Number(v);
-        return Number.isFinite(n) ? n : 0;
-      }
-    case "string":
-      return v == null ? "" : String(v);
-    case "date":
-      return v;
-    default:
-      return v;
-  }
-}
-
-function evaluateRules(rootRule, payload) {
-  const { pass, diag } = evalRule(rootRule, payload);
-  return { pass, diag };
-}
-function evalRule(rule, ctx) {
-  if (!rule) return { pass: true, diag: { kind: "none" } };
-  if (rule.kind === "group") {
-	const children = rule.rules || [];
-	if (children.length === 0) {
-		return { pass: false, diag: { kind: "group", logic: rule.logic, children: [] } };
-	}
-    const results = (rule.rules || []).map((r) => evalRule(r, ctx));
-    const pass =
-      rule.logic === "AND"
-        ? results.every((r) => r.pass)
-        : results.some((r) => r.pass);
-    return { pass, diag: { kind: "group", logic: rule.logic, children: results } };
-  }
-  if (rule.kind === "scalar") {
-    const val = deepGet(ctx, rule.path);
-    const pass = evalScalar(rule, val);
-    return {
-      pass,
-      diag: { kind: "scalar", path: rule.path, value: val, op: rule.op },
-    };
-  }
-  if (rule.kind === "array") {
-    const arr = deepGet(ctx, rule.path);
-    if (!Array.isArray(arr)) {
-      const emptyPass = emptyArrayPass(rule.quantifier);
-      return {
-        pass: !!emptyPass,
-        diag: {
-          kind: "array",
-          path: rule.path,
-          matchedIndices: [],
-          size: 0,
-          quantifier: rule.quantifier,
-        },
-      };
-    }
-    const elementResults = arr.map((el) => evalRule(rule.predicate, el));
-    const matches = elementResults
-      .map((r, i) => (r.pass ? i : -1))
-      .filter((i) => i >= 0);
-    let pass = false;
-    switch (rule.quantifier) {
-      case "ANY":
-        pass = matches.length > 0;
-        break;
-      case "ALL":
-        pass = arr.length === 0 ? true : matches.length === arr.length;
-        break;
-      case "NONE":
-        pass = matches.length === 0;
-        break;
-      case "COUNT_GTE":
-        pass = toNum(rule.count) <= matches.length;
-        break;
-      case "COUNT_EQ":
-        pass = matches.length === toNum(rule.count);
-        break;
-      case "COUNT_LTE":
-        pass = matches.length <= toNum(rule.count);
-        break;
-      case "INDEX": {
-        const idx = toNum(rule.index);
-        pass =
-          idx >= 0 &&
-          idx < elementResults.length &&
-          elementResults[idx]?.pass === true;
-        break;
-      }
-      default:
-        pass = false;
-    }
-    return {
-      pass,
-      diag: {
-        kind: "array",
-        path: rule.path,
-        matchedIndices: matches,
-        size: arr.length,
-        quantifier: rule.quantifier,
-        count: rule.count,
-        index: rule.index,
-        children: elementResults,
-      },
-    };
-  }
-  return { pass: true, diag: { kind: "none" } };
-}
-function emptyArrayPass(quant) {
-  switch (quant) {
-    case "ANY":
-      return false;
-    case "NONE":
-      return true;
-    case "ALL":
-      return true;
-    default:
-      return 0;
-  }
-}
-function evalScalar(rule, val) {
-  const { op, value, value2, valueType } = rule;
-  const coerceDate = (x) => (x instanceof Date ? x : new Date(x));
-
-  if (op === "exists") return val !== undefined && val !== null;
-  if (op === "notExists") return val === undefined || val === null;
-  if (op === "empty")
-    return val == null || (typeof val === "string" && val.length === 0);
-  if (op === "notEmpty")
-    return val != null && !(typeof val === "string" && val.length === 0);
-
-  if (valueType === "number") {
-    const a = coerceByType("number", val),
-      b = coerceByType("number", value),
-      c = coerceByType("number", value2);
-    switch (op) {
-      case "eq":
-        return a === b;
-      case "neq":
-        return a !== b;
-      case "gt":
-        return a > b;
-      case "gte":
-        return a >= b;
-      case "lt":
-        return a < b;
-      case "lte":
-        return a <= b;
-      case "between":
-        return a >= Math.min(b, c) && a <= Math.max(b, c);
-      case "in":
-        return Array.isArray(value) && value.map(Number).includes(a);
-      case "notIn":
-        return Array.isArray(value) && !value.map(Number).includes(a);
-      default:
-        return false;
-    }
-  }
-
-  if (valueType === "boolean") {
-    const a = coerceByType("boolean", val),
-      b = coerceByType("boolean", value);
-    return op === "eq" ? a === b : op === "neq" ? a !== b : false;
-  }
-
-  if (valueType === "date") {
-    const a = coerceDate(val),
-      b = coerceDate(value),
-      c = coerceDate(value2);
-    if (isNaN(+a) || isNaN(+b)) return false;
-    switch (op) {
-      case "eq":
-        return +a === +b;
-      case "neq":
-        return +a !== +b;
-      case "gt":
-      case "after":
-        return +a > +b;
-      case "gte":
-        return +a >= +b;
-      case "lt":
-      case "before":
-        return +a < +b;
-      case "lte":
-        return +a <= +b;
-      case "between":
-        return +a >= Math.min(+b, +c) && +a <= Math.max(+b, +c);
-      default:
-        return false;
-    }
-  }
-
-  const s = coerceByType("string", val),
-    sv = coerceByType("string", value);
-  switch (op) {
-    case "eq":
-      return s === sv;
-    case "neq":
-      return s !== sv;
-    case "contains":
-      return s.includes(sv);
-    case "startsWith":
-      return s.startsWith(sv);
-    case "endsWith":
-      return s.endsWith(sv);
-    case "regex":
-      try {
-        return new RegExp(String(value)).test(s);
-      } catch {
-        return false;
-      }
-    case "in":
-      return Array.isArray(value) && value.map(String).includes(s);
-    case "notIn":
-      return Array.isArray(value) && !value.map(String).includes(s);
-    default:
-      return false;
-  }
-}
-function deepGet(obj, path) {
-  if (!path) return obj;
-  const parts = path.split(".").filter(Boolean);
-  let cur = obj;
-  for (const p of parts) {
-    if (cur == null) return undefined;
-    cur = cur[p];
-  }
-  return cur;
-}
-
-/** Build status map for coloring keys/lines */
-function collectStatuses(rule, payload, base = "", acc = {}) {
-  if (!rule) return acc;
-  if (rule.kind === "group") {
-    (rule.rules || []).forEach((r) => collectStatuses(r, payload, base, acc));
-    return acc;
-  }
-  if (rule.kind === "scalar") {
-    const full = base ? `${base}.${rule.path}` : rule.path;
-    const ok = evalScalar(rule, deepGet(payload, full));
-    acc[full] = full in acc ? acc[full] && ok : ok;
-    return acc;
-  }
-  if (rule.kind === "array") {
-    const arrPath = base ? `${base}.${rule.path}` : rule.path;
-    acc[arrPath] = evaluateRules(rule, payload).pass;
-    return acc;
-  }
-  return acc;
-}
-
 /* ----------------------- Default 42 /me sample ----------------------- */
 const DEFAULT_42_SAMPLE = {
   id: 2,
@@ -1597,7 +1335,7 @@ function ruleFromPath(path, sample) {
       predicate: emptyGroup,
     });
   }
-  return withIds(makeScalarFor(path, deepGet(sample, path)));
+  return withIds(makeScalarFor(path, safeGet(sample, path)));
 }
 
 function makeScalarFor(path, sampleValue) {
@@ -1630,11 +1368,11 @@ function makeScalarFor(path, sampleValue) {
   });
 }
 function sampleElementHint(sample, arrayPath, rest) {
-  const arr = deepGet(sample, arrayPath);
+  const arr = safeGet(sample, arrayPath);
   if (!Array.isArray(arr)) return undefined;
   const first = arr.find((x) => x != null);
   if (!first) return undefined;
-  return deepGet(first, rest);
+  return safeGet(first, rest);
 }
 function inferValueType(v) {
   if (typeof v === "number") return "number";
@@ -1656,6 +1394,18 @@ function defaultOpForType(t) {
     default:
       return "exists";
   }
+}
+// Robust getter for dotted paths, tolerant to [] markers
+function safeGet(obj, path) {
+  if (!path) return obj;
+  const parts = String(path).split('.').filter(Boolean);
+  let cur = obj;
+  for (const raw of parts) {
+    const key = raw.replace(/\[\]$/, '');
+    if (cur == null || typeof cur !== 'object') return undefined;
+    cur = cur[key];
+  }
+  return cur;
 }
 function defaultValueForType(t) {
   switch (t) {
