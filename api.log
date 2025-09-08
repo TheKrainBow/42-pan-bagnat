@@ -1,6 +1,0 @@
-ERROR:api42:[[91m404 Not Found[0m] ⚙️   GET:[94mhttps://api.intra.42.fr/v2[0m/[93mme[0m
-INFO:api42:[[92m200 OK[0m]  GET:[94mhttps://api.intra.42.fr/v2[0m/[93musers/heinz[0m
-INFO:api42:[[92m200 OK[0m]  GET:[94mhttps://api.intra.42.fr/v2[0m/[93musers/heinz/roles[0m
-INFO:api42:[[92m200 OK[0m]  POST:[94mhttps://api.intra.42.fr/v2[0m/[93musers/vpolojie/correction_points/add?reason="Give back points from error"&amount=13[0m
-ERROR:api42:[[91m404 Not Found[0m] ⚙️   POST:[94mhttps://api.intra.42.fr/v2[0m/[93m[0m
-INFO:api42:[[92m200 OK[0m]  POST:[94mhttps://api.intra.42.fr/v2[0m/[93musers/pory/correction_points/add?reason="Give back points from error"&amount=4[0m
