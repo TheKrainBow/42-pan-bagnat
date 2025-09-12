@@ -23,7 +23,7 @@ const ModuleDetails = () => {
   const [showConfirmUninstall, setShowConfirmUninstall] = useState(false);
 
   const tab = searchParams.get('tab') || 'logs';
-  const subtab = searchParams.get('subtab') || 'compose';
+  const subtab = searchParams.get('subtab') || 'containers';
 
   const [activeTab, setActiveTab] = useState(tab);
   const [activeSubTab, setActiveSubTab] = useState(subtab);
@@ -138,6 +138,17 @@ const ModuleDetails = () => {
               }}
             />
             <Button
+              label="IDE"
+              color={`${activeTab === 'ide' ? 'blue' : 'gray'}`}
+              onClick={() => {
+                setActiveTab('ide');
+                setSearchParams({ tab: 'ide' });
+              }}
+              disabled={showWarning}
+              disabledMessage={"You must resolve git issues first"}
+              onClickDisabled={() => { retryButtonRef.current?.callToAction(); }}
+            />
+            <Button
               label="Docker"
               color={`${activeTab === 'docker' ? 'blue' : 'gray'}`}
               onClick={() => {
@@ -162,6 +173,13 @@ const ModuleDetails = () => {
 
           <div className="tab-content">
             {activeTab === 'logs' && <LogViewer logType="module" moduleId={module.id}/>}
+            {activeTab === 'ide' && (
+              <ModuleDockerSection
+                moduleId={module.id}
+                dockerTab={'ide'}
+                setDockerTab={() => {}}
+              />
+            )}
             {activeTab === 'settings' && <ModuleSettings
                 module={module}
                 statusUpdating={statusUpdating}

@@ -69,11 +69,116 @@
 }
 
 .codemirror-wrapper .cm-scroller {
-  flex: 1 1 auto;
+  /* Ensure the editor's internal scroller fills the available space
+     so its scrollbar appears at the right time */
   min-height: 0;
   overflow: auto;
 }
 
 .codemirror-wrapper .cm-editor {
+  /* Fill container height so the scroller activates correctly */
   min-height: 0;
 }
+
+/* IDE layout */
+.ide-root { display:flex; height: 100%; gap: 12px; min-height: 0; }
+.ide-tree { width: 280px; border:1px solid var(--border); border-radius:8px; overflow:auto; min-height:0; position: relative; display:flex; flex-direction:column; }
+.ide-editor { flex:1; display:flex; flex-direction:column; border:1px solid var(--border); border-radius:8px; overflow:hidden; min-height:0; }
+.ide-textarea { flex:1; width:100%; background: var(--background); color: var(--text-primary); border:none; padding:12px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 13px; }
+.tree-root { padding:6px; flex: 1 1 auto; min-height: 0; height: 100%; width: 100%; box-sizing: border-box; outline: none; }
+.tree-ul { list-style:none; padding-left: 16px; margin:0; }
+.tree-li { margin:2px 0; }
+.tree-row { display:flex; gap:6px; align-items:center; cursor:pointer; padding:2px 4px; border-radius:4px; }
+.tree-row:hover { background: var(--light-background); }
+.tree-name { font-size:13px; }
+.unsaved-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:#fff; margin-left:6px; }
+.tree-li.sel > .tree-row { background:#23304a; }
+.tree-children { margin-left: 8px; }
+/* Drag & drop target highlight */
+.tree-li.drop-target > .tree-row { background: #2a3956; }
+
+/* Project-wide left border highlight when targeting a folder */
+.tree-root { position: relative; }
+.tree-root.drop-folder::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--primary);
+}
+
+/* Context menu */
+.tree-menu {
+  position: absolute;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  padding: 6px 0;
+  z-index: 20;
+  min-width: 180px;
+}
+.tree-menu-item { padding: 6px 12px; cursor: pointer; font-size: 13px; }
+.tree-menu-item:hover { background: var(--light-background); }
+.tree-menu-sep { height: 1px; background: var(--border); margin: 6px 0; }
+
+/* Inline rename input */
+.tree-edit-input {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 13px;
+  padding: 2px 6px;
+  background: var(--background);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.tree-edit-error {
+  color: #e06c75;
+  font-size: 12px;
+  margin: 2px 0 4px 28px; /* indent under the icon */
+  white-space: pre-wrap;
+  border: 1px solid #be5046;
+  border-radius: 4px;
+  padding: 6px 8px;
+}
+
+.tree-edit-input.error {
+  border-color: #be5046;
+  box-shadow: 0 0 0 1px #be5046 inset;
+}
+
+/* VS Code-like chevrons and icons */
+.tree-chevron { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; color: #9aa0a6; font-size: 12px; }
+.tree-chevron.spacer { opacity: 0; }
+.tree-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
+.tree-icon.spacer { opacity: 0; }
+
+/* When using codicons in the icon slot, match VS Code look */
+.tree-icon.codicon { font-size: 16px; color: #9aa0a6; }
+
+/* Toolbar */
+.tree-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 6px 4px 6px;
+  border-bottom: 1px solid var(--border);
+}
+.tree-toolbar .title {
+  font-size: 12px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.tree-toolbar .actions { display:flex; gap:6px; }
+.tree-toolbar .icon-btn {
+  width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: 4px; cursor: pointer; color: #c5c5c5; background: transparent;
+}
+.tree-toolbar .icon-btn:hover { background: var(--light-background); color: var(--text-primary); }
+.tree-toolbar .icon-btn .codicon { font-size: 16px; }

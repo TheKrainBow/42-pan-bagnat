@@ -1,19 +1,15 @@
 import React, { useState } from 'react';
 import Button from 'Global/Button/Button';
-import DockerComposePage from './DockerComposeSection/DockerComposeSection';
 import DockerContainersSection from './DockerContainersSection/DockerContainersSection';
+import DockerComposeSection from './DockerComposeSection/DockerComposeSection';
 import ModulePageSection from './DockerPageSection/DockerPageSection';
 import './ModuleDockerSection.css'
 
 export default function ModuleDockerSection({ moduleId, dockerTab, setDockerTab }) {
   return (
     <div className="module-docker-section">
+      {dockerTab !== 'ide' && (
       <div className="docker-tabs">
-        <Button
-          label="Compose"
-          color={`${dockerTab === 'compose' ? 'blue' : 'gray'}`}
-          onClick={() => setDockerTab('compose')}
-        />
         <Button
           label="Containers"
           color={`${dockerTab === 'containers' ? 'blue' : 'gray'}`}
@@ -29,9 +25,10 @@ export default function ModuleDockerSection({ moduleId, dockerTab, setDockerTab 
           disabledMessage={"You must compose your module first"}
         />
       </div>
+      )}
 
       <div className="docker-tab-content">
-        {dockerTab === 'compose' && <DockerComposePage moduleId={moduleId} />}
+        {dockerTab === 'ide' && <DockerComposeSection moduleId={moduleId} />}
         {dockerTab === 'containers' && <DockerContainersSection moduleId={moduleId} />}
         {dockerTab === 'pages' && <ModulePageSection moduleId={moduleId}/>}
       </div>

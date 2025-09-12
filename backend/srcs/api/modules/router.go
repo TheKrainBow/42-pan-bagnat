@@ -33,5 +33,13 @@ func RegisterRoutes(r chi.Router) {
 	r.Post("/{moduleID}/docker/{containerName}/start", StartModuleContainer)
 	r.Post("/{moduleID}/docker/{containerName}/stop", StopModuleContainer)
 	r.Post("/{moduleID}/docker/{containerName}/restart", RestartModuleContainer)
-	r.Delete("/{moduleID}/docker/{containerName}/delete", DeleteModuleContainer)
+    r.Delete("/{moduleID}/docker/{containerName}/delete", DeleteModuleContainer)
+
+    // File system endpoints for module repo
+    r.Get("/{moduleID}/fs/tree", GetFsTree)
+    r.Get("/{moduleID}/fs/read", ReadFsFile)
+    r.Post("/{moduleID}/fs/write", WriteFsFile)
+    r.Post("/{moduleID}/fs/rename", RenameFsPath)
+    r.Post("/{moduleID}/fs/delete", DeleteFsPath)
+    r.Post("/{moduleID}/fs/mkdir", MkdirFsPath)
 }
