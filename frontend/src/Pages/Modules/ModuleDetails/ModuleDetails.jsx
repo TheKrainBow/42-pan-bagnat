@@ -23,10 +23,7 @@ const ModuleDetails = () => {
   const [showConfirmUninstall, setShowConfirmUninstall] = useState(false);
 
   const tab = searchParams.get('tab') || 'logs';
-  const subtab = searchParams.get('subtab') || 'containers';
-
   const [activeTab, setActiveTab] = useState(tab);
-  const [activeSubTab, setActiveSubTab] = useState(subtab);
   const fetchedRef = useRef(false);
 
   const retryButtonRef = useRef();
@@ -149,17 +146,26 @@ const ModuleDetails = () => {
               onClickDisabled={() => { retryButtonRef.current?.callToAction(); }}
             />
             <Button
-              label="Docker"
-              color={`${activeTab === 'docker' ? 'blue' : 'gray'}`}
+              label="Containers"
+              color={`${activeTab === 'containers' ? 'blue' : 'gray'}`}
               onClick={() => {
-                setActiveTab('docker'); // or 'docker', 'settings'
-                setSearchParams({ tab: 'docker' }); // or the corresponding value
+                setActiveTab('containers');
+                setSearchParams({ tab: 'containers' });
               }}
               disabled={showWarning}
               disabledMessage={"You must resolve git issues first"}
-              onClickDisabled={() => {
-                retryButtonRef.current?.callToAction();
+              onClickDisabled={() => { retryButtonRef.current?.callToAction(); }}
+            />
+            <Button
+              label="Pages"
+              color={`${activeTab === 'pages' ? 'blue' : 'gray'}`}
+              onClick={() => {
+                setActiveTab('pages');
+                setSearchParams({ tab: 'pages' });
               }}
+              disabled={showWarning}
+              disabledMessage={"You must resolve git issues first"}
+              onClickDisabled={() => { retryButtonRef.current?.callToAction(); }}
             />
             <Button
               label="Settings"
@@ -186,15 +192,22 @@ const ModuleDetails = () => {
                 onToggleStatus={toggleModuleStatus}
                 onUninstall={() => setShowConfirmUninstall(true)}
               />}
-            {activeTab === 'docker' &&
+            {activeTab === 'containers' && (
               <ModuleDockerSection
                 moduleId={module.id}
-                dockerTab={activeSubTab}
-                setDockerTab={(newTab) => {
-                  setActiveSubTab(newTab);
-                  setSearchParams({ tab: 'docker', subtab: newTab });
-                }}
-              />}
+                dockerTab={'containers'}
+                setDockerTab={() => {}}
+                hideTabs={true}
+              />
+            )}
+            {activeTab === 'pages' && (
+              <ModuleDockerSection
+                moduleId={module.id}
+                dockerTab={'pages'}
+                setDockerTab={() => {}}
+                hideTabs={true}
+              />
+            )}
               {showConfirmUninstall && (
                 <ModuleUninstallModal
                   onConfirm={handleUninstall}

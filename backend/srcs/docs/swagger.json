@@ -557,7 +557,7 @@
                 }
             }
         },
-        "/admin/modules/{moduleID}/docker/{containerName}": {
+        "/admin/modules/{moduleID}/docker/{containerName}/delete": {
             "delete": {
                 "description": "Stops and removes the specified container for the given module.",
                 "consumes": [

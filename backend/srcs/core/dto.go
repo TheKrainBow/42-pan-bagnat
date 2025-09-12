@@ -1,6 +1,9 @@
 package core
 
-import "backend/database"
+import (
+    "backend/database"
+    "time"
+)
 
 func DatabaseRoleToRole(dbRoles database.Role) (dest Role) {
 	return Role{
@@ -38,21 +41,24 @@ func DatabaseUsersToUsers(dbUsers []database.User) (dest []User) {
 }
 
 func DatabaseModuleToModule(dbModule database.Module) Module {
-	return Module{
-		ID:            dbModule.ID,
-		SSHPublicKey:  dbModule.SSHPublicKey,
-		SSHPrivateKey: dbModule.SSHPrivateKey,
-		Name:          dbModule.Name,
-		Slug:          dbModule.Slug,
-		Version:       dbModule.Version,
-		Status:        ModuleStatus(dbModule.Status),
-		GitURL:        dbModule.GitURL,
-		GitBranch:     dbModule.GitBranch,
-		IconURL:       dbModule.IconURL,
-		LatestVersion: dbModule.LatestVersion,
-		LateCommits:   dbModule.LateCommits,
-		LastUpdate:    dbModule.LastUpdate,
-	}
+    return Module{
+        ID:            dbModule.ID,
+        SSHPublicKey:  dbModule.SSHPublicKey,
+        SSHPrivateKey: dbModule.SSHPrivateKey,
+        Name:          dbModule.Name,
+        Slug:          dbModule.Slug,
+        Version:       dbModule.Version,
+        Status:        ModuleStatus(dbModule.Status),
+        GitURL:        dbModule.GitURL,
+        GitBranch:     dbModule.GitBranch,
+        IconURL:       dbModule.IconURL,
+        LatestVersion: dbModule.LatestVersion,
+        LateCommits:   dbModule.LateCommits,
+        LastUpdate:    dbModule.LastUpdate,
+        IsDeploying:   dbModule.IsDeploying,
+        LastDeploy:    func() (t time.Time) { if dbModule.LastDeploy.Valid { return dbModule.LastDeploy.Time }; return t }(),
+        LastDeployStatus: dbModule.LastDeployStatus,
+    }
 }
 
 func DatabaseModulesToModules(dbModules []database.Module) (dest []Module) {

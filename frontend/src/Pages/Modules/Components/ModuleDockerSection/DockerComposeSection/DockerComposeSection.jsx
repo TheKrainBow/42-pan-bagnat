@@ -10,15 +10,15 @@ import Button from 'Global/Button/Button'
 import { fetchWithAuth } from 'Global/utils/Auth'
 
 export default function DockerComposeSection({ moduleId }) {
-  const [tree, setTree] = useState([]) // entries of current folder
-  const [cwd, setCwd] = useState('.')
-  const [openDirs, setOpenDirs] = useState({ '.': true })
-  const [currentPath, setCurrentPath] = useState('docker-compose-panbagnat.yml')
+  const [currentPath, setCurrentPath] = useState('docker-compose.yml')
   const [content, setContent] = useState('')
   const [dirty, setDirty] = useState(false)
   const [unsaved, setUnsaved] = useState({}) // path -> content not yet saved to server
   const [saveMode, setSaveMode] = useState(() => localStorage.getItem('ide:saveMode') || 'onFocusChange') // 'manual' | 'onFocusChange'
   const [extensions, setExtensions] = useState([])
+  const [isBinary, setIsBinary] = useState(false)
+  const [isDeploying, setIsDeploying] = useState(false)
+  const [remoteDeploying, setRemoteDeploying] = useState(false)
   const editorRef = useRef(null)
 
   // React to open-file events from tree
@@ -86,14 +86,7 @@ export default function DockerComposeSection({ moduleId }) {
     return () => window.removeEventListener('ide:deleted', onDeleted)
   }, [])
 
-  // Load directory listing for cwd
-  useEffect(() => {
-    fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/tree?path=${encodeURIComponent(cwd)}`)
-      .then(r => r.json())
-      .then(setTree)
-      .catch(() => setTree([]))
-  }, [moduleId, cwd])
-
+  // (legacy cwd/tree effect removed)
 
   // Load current file
   useEffect(() => {
@@ -103,13 +96,33 @@ export default function DockerComposeSection({ moduleId }) {
     if (typeof cached === 'string') {
       setContent(cached)
       setDirty(true)
+      setIsBinary(false)
       return
     }
     fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/read?path=${encodeURIComponent(currentPath)}`)
       .then(r => r?.json?.())
-      .then(d => { setContent((d && d.content) || ''); setDirty(false) })
+      .then(d => {
+        const txt = (d && d.content) || ''
+        setIsBinary(isProbablyBinary(txt))
+        setContent(txt)
+        setDirty(false)
+      })
       .catch(() => { setContent(''); setDirty(false) })
   }, [moduleId, currentPath])
+
+  // Poll module to know if a deployment is in progress (for button disable)
+  useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}`)
+      if (!res || !res.ok) return
+      const j = await res.json().catch(() => null)
+      if (!cancelled && j) setRemoteDeploying(!!j.is_deploying)
+    }
+    load()
+    const id = setInterval(load, 3000)
+    return () => { cancelled = true; clearInterval(id) }
+  }, [moduleId])
 
   // Ctrl+S to save
   useEffect(() => {
@@ -179,20 +192,7 @@ export default function DockerComposeSection({ moduleId }) {
     setUnsaved(prev => { const { [currentPath]:_, ...rest } = prev; return rest })
   }
 
-  const openEntry = async (entry) => {
-    if (entry.is_dir) {
-      setCwd(entry.path)
-      setOpenDirs(d => ({ ...d, [entry.path]: !d[entry.path] }))
-    } else {
-      // autosave if switching based on mode
-      if (dirty && saveMode === 'onFocusChange') await saveFile()
-      setCurrentPath(entry.path)
-    }
-  }
-
-  const renderTree = (base) => (
-    <FileList moduleId={moduleId} basePath={base} onOpen={openEntry} />
-  )
+  // (removed legacy openEntry/renderTree)
 
   return (
     <div className="ide-root">
@@ -203,7 +203,38 @@ export default function DockerComposeSection({ moduleId }) {
         <div className="pane-header">
           <span>{currentPath}</span>
           <div className="header-actions">
-            <Button label={dirty ? 'Save (Ctrl+S)' : 'Saved'} color="blue" onClick={saveFile} disabled={!dirty} />
+            {((currentPath || '').split('/').pop()?.toLowerCase() === 'docker-compose.yml') && (
+              <Button
+                label={isDeploying ? 'Deploying…' : 'Deploy'}
+                color="green"
+                onClick={async () => {
+                  setIsDeploying(true)
+                  try {
+                    const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/docker/deploy`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ config: content })
+                    })
+                    if (!res || !res.ok) {
+                      toast.error('Deploy failed')
+                    } else {
+                      toast.success('Deployment started')
+                    }
+                  } catch (e) {
+                    toast.error('Deploy failed')
+                  } finally {
+                    setIsDeploying(false)
+                  }
+                }}
+                disabled={isBinary || isDeploying || remoteDeploying}
+              />
+            )}
+            <Button label={dirty ? 'Save (Ctrl+S)' : 'Saved'} color="blue" onClick={saveFile} disabled={!dirty || isBinary} />
+            {isBinary && (
+              <span style={{ marginLeft: 8, fontSize: 12, color: 'var(--text-muted)' }}>
+                Read-only (binary)
+              </span>
+            )}
             <select
               value={saveMode}
               onChange={(e) => { setSaveMode(e.target.value); localStorage.setItem('ide:saveMode', e.target.value) }}
@@ -221,6 +252,7 @@ export default function DockerComposeSection({ moduleId }) {
             extensions={extensions}
             height="calc(100vh - 357px)"
             theme="dark"
+            editable={!isBinary}
             onChange={(v) => { setContent(v); setDirty(true); setUnsaved(prev => ({ ...prev, [currentPath]: v })) }}
             basicSetup={{ lineNumbers: true }}
             onBlur={() => { if (saveMode === 'onFocusChange') saveFile() }}
@@ -245,6 +277,7 @@ function TreeView({ moduleId, selectedPath, title }) {
   const treeRootRef = useRef(null)
   const [isActive, setIsActive] = useState(false)
   const [dragPath, setDragPath] = useState('')
+  const [dragIsDir, setDragIsDir] = useState(false)
   const [dropPath, setDropPath] = useState('') // path of folder/file hovered
   const [dropFolderPath, setDropFolderPath] = useState('') // active folder drop target for left border
   const openTimerRef = useRef(null)
@@ -267,8 +300,9 @@ function TreeView({ moduleId, selectedPath, title }) {
 
   const load = async (p) => {
     const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/tree?path=${encodeURIComponent(p)}`)
-    const data = await res.json()
-    setChildren(prev => ({ ...prev, [p]: data }))
+    if (!res) return
+    const data = await res.json().catch(() => [])
+    setChildren(prev => ({ ...prev, [p]: Array.isArray(data) ? data : [] }))
   }
 
   const toggle = async (p) => {
@@ -473,27 +507,30 @@ function TreeView({ moduleId, selectedPath, title }) {
     if (!res || !res.ok) throw new Error('rename-failed')
   }
   const apiDelete = async (path) => {
-    await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/delete`, {
+    const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/delete`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path })
     })
+    if (!res || !res.ok) return
   }
   const apiMkdir = async (path) => {
-    await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/mkdir`, {
+    const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/mkdir`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path })
     })
+    if (!res || !res.ok) return
   }
   const apiWrite = async (path, data) => {
-    await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/write`, {
+    const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/write`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path, content: data })
     })
+    if (!res || !res.ok) return
   }
   const apiRead = async (path) => {
     const r = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/read?path=${encodeURIComponent(path)}`)
-    if (!r.ok) return null
-    const j = await r.json()
+    if (!r || !r.ok) return null
+    const j = await r.json().catch(() => null)
     return j?.content ?? null
   }
 
@@ -521,17 +558,43 @@ function TreeView({ moduleId, selectedPath, title }) {
     return '.'
   }
 
-  const startNewFile = (base) => {
+  const ensureVisible = async (targetPath) => {
+    // Open all ancestors so the inline editor becomes visible
+    const chain = []
+    let cur = targetPath
+    while (cur && cur !== '.' && !chain.includes(cur)) {
+      chain.push(cur)
+      cur = parentOf(cur)
+    }
+    setOpen(o => {
+      const next = { ...o, '.': true }
+      for (let i = chain.length - 1; i >= 0; i--) {
+        next[chain[i]] = true
+      }
+      return next
+    })
+    // Load directories if not loaded yet so the tree renders all levels
+    if (!children['.']) await load('.')
+    for (let i = chain.length - 1; i >= 0; i--) {
+      const p = chain[i]
+      if (!children[p]) await load(p)
+    }
+  }
+
+  const startNewFile = async (base) => {
+    await ensureVisible(base)
     setEditing(`new@${base}`)
     setMenu(null)
   }
-  const startNewFolder = (base) => {
+  const startNewFolder = async (base) => {
+    await ensureVisible(base)
     setEditing(`newdir@${base}`)
     setMenu(null)
   }
 
   const onCommitEdit = async (nodePath, newName, isDir) => {
     if (!newName) { setEditing(''); return }
+    if (/[\\/]/.test(newName)) { setEditError('invalid'); inputRef.current?.focus(); return }
     // Front validation for duplicates
     const base = nodePath.startsWith('new@') ? nodePath.slice('new@'.length)
       : nodePath.startsWith('newdir@') ? nodePath.slice('newdir@'.length)
@@ -590,11 +653,13 @@ function TreeView({ moduleId, selectedPath, title }) {
     const stem = (idx > 0 ? name.slice(0, idx) : name)
     const target = join(base, ext ? `${stem}-copy.${ext}` : `${stem}-copy`)
     const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/read?path=${encodeURIComponent(path)}`)
-    const data = await res.json()
-    await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/write`, {
+    if (!res || !res.ok) return
+    const data = await res.json().catch(() => ({}))
+    const wr = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/write`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ path: target, content: data.content || '' })
     })
+    if (!wr || !wr.ok) return
     await load(base)
   }
 
@@ -652,11 +717,12 @@ function TreeView({ moduleId, selectedPath, title }) {
   const handleDragStart = (e, n) => {
     e.stopPropagation()
     setDragPath(n.path)
+    setDragIsDir(!!n.is_dir)
     try { e.dataTransfer.setData('text/plain', n.path) } catch {}
     e.dataTransfer.effectAllowed = 'move'
   }
   const handleDragEnd = () => {
-    setDragPath(''); setDropPath(''); setDropFolderPath(''); hoverPathRef.current=''
+    setDragPath(''); setDragIsDir(false); setDropPath(''); setDropFolderPath(''); hoverPathRef.current=''
     if (openTimerRef.current) { clearTimeout(openTimerRef.current); openTimerRef.current = null }
   }
   const handleDragOverRow = (e, n) => {
@@ -722,7 +788,13 @@ function TreeView({ moduleId, selectedPath, title }) {
     setRedoStack([])
     await Promise.all([load(parentOf(srcPath)), load(destDir)])
     setSelected(newPath)
-    try { const evt = new CustomEvent('ide:open', { detail: { path: newPath } }); window.dispatchEvent(evt) } catch {}
+    // For file moves, focus the moved file in editor; for folder moves, keep current file
+    if (!dragIsDir) {
+      try { const evt = new CustomEvent('ide:open', { detail: { path: newPath } }); window.dispatchEvent(evt) } catch {}
+    } else {
+      // Notify rename so editor updates paths only if current file lies under the moved folder
+      try { const ev = new CustomEvent('ide:renamed', { detail: { from: srcPath, to: newPath, isDir: true } }); window.dispatchEvent(ev) } catch {}
+    }
   }
   const handleDropOnRow = async (e, n) => {
     e.preventDefault();
@@ -779,8 +851,12 @@ function TreeView({ moduleId, selectedPath, title }) {
                 <span className="tree-name">{n.name}{hasUnsaved(n.path, n.is_dir) && (<span className="unsaved-dot" title="Unsaved changes" />)}</span>
               )}
             </div>
-            {editing === n.path && editError === 'duplicate' && (
-              <div className="tree-edit-error">A file or folder <strong>{editName}</strong> already exists at this location.<br />Please choose a different name.</div>
+            {editing === n.path && editError && (
+              <div className="tree-edit-error">{editError === 'duplicate' ? (
+                <>A file or folder <strong>{editName}</strong> already exists at this location.<br />Please choose a different name.</>
+              ) : (
+                <>Invalid name. Slashes are not allowed.</>
+              )}</div>
             )}
             {n.is_dir && open[n.path] && (
               <div className="tree-children">{render(n.path)}</div>
@@ -802,8 +878,12 @@ function TreeView({ moduleId, selectedPath, title }) {
                 autoFocus
               />
             </div>
-            {editing === `new@${p}` && editError === 'duplicate' && (
-              <div className="tree-edit-error">A file or folder <strong>{editName}</strong> already exists at this location.<br />Please choose a different name.</div>
+            {editing === `new@${p}` && editError && (
+              <div className="tree-edit-error">{editError === 'duplicate' ? (
+                <>A file or folder <strong>{editName}</strong> already exists at this location.<br />Please choose a different name.</>
+              ) : (
+                <>Invalid name. Slashes are not allowed.</>
+              )}</div>
             )}
           </li>
         )}
@@ -822,8 +902,12 @@ function TreeView({ moduleId, selectedPath, title }) {
                 autoFocus
               />
             </div>
-            {editing === `newdir@${p}` && editError === 'duplicate' && (
-              <div className="tree-edit-error">A file or folder <strong>{editName}</strong> already exists at this location.<br />Please choose a different name.</div>
+            {editing === `newdir@${p}` && editError && (
+              <div className="tree-edit-error">{editError === 'duplicate' ? (
+                <>A file or folder <strong>{editName}</strong> already exists at this location.<br />Please choose a different name.</>
+              ) : (
+                <>Invalid name. Slashes are not allowed.</>
+              )}</div>
             )}
           </li>
         )}
@@ -954,4 +1038,20 @@ async function detectExtensionsDynamic(path) {
     console.debug('Language extension not available:', e?.message)
   }
   return []
+}
+
+function isProbablyBinary(str) {
+  if (!str) return false
+  const sample = str.slice(0, 2000)
+  if (sample.indexOf('\u0000') !== -1 || sample.indexOf('\x00') !== -1) return true
+  let bad = 0
+  const total = sample.length || 1
+  for (let i = 0; i < sample.length; i++) {
+    const c = sample.charCodeAt(i)
+    if (c === 9 || c === 10 || c === 13) continue // tab/newline
+    if (c >= 32 && c <= 126) continue // ascii printable
+    if (c >= 160 && c <= 0xfffd) continue // common unicode printable
+    bad++
+  }
+  return bad / total > 0.3
 }

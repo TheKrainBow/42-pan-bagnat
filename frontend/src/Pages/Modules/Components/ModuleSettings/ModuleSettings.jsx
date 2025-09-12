@@ -102,6 +102,14 @@ export default function ModuleSettings({
     <div className="module-settings-container">
       <ModuleAboutSection module={module} />
 
+      <div className="module-last-deploy" style={{ margin: '8px 0', color: 'var(--text-muted)' }}>
+        <strong>Last deploy:</strong>{' '}
+        {module.last_deploy && new Date(module.last_deploy).getFullYear() > 2000
+          ? new Date(module.last_deploy).toLocaleString()
+          : 'Never'}
+        {module.last_deploy_status ? ` (${module.last_deploy_status})` : ''}
+      </div>
+
       <div className="module-settings-actions">
         <Button
           label="Fetch Data"

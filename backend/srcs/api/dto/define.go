@@ -98,6 +98,15 @@ type Module struct {
 
 	// Roles lists the roles that have access to this module
 	Roles []Role `json:"roles,omitempty"`
+
+	// IsDeploying indicates a deployment is currently running
+	IsDeploying bool `json:"is_deploying" example:"false"`
+
+	// LastDeploy is the timestamp of the latest successful deployment
+	LastDeploy time.Time `json:"last_deploy" example:"2025-06-01T10:15:00Z"`
+
+	// LastDeployStatus is the status of the latest deployment ("success", "failed", or "")
+	LastDeployStatus string `json:"last_deploy_status" example:"success"`
 }
 
 type ModuleLog struct {

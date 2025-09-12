@@ -233,7 +233,7 @@ func DeployConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := core.GetModule(moduleID)
+    module, err := core.GetModule(moduleID)
 	if err != nil {
 		log.Printf("error while getting module %s: %s\n", moduleID, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -248,15 +248,21 @@ func DeployConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var req ComposeRequest
+    if module.IsDeploying {
+        http.Error(w, "deployment already in progress", http.StatusConflict)
+        return
+    }
+
+    var req ComposeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, fmt.Sprintf("invalid request: %v", err), http.StatusBadRequest)
 		return
 	}
 
-	core.SaveModuleConfig(module, req.Config)
-
-	core.DeployModule(module)
+    core.SaveModuleConfig(module, req.Config)
+    go core.DeployModule(module)
+    w.WriteHeader(http.StatusAccepted)
+    w.Write([]byte("Deployment started for module " + moduleID))
 }
 
 // PostModulePage creates a new front-page for a module.
@@ -429,7 +435,7 @@ func RestartModuleContainer(w http.ResponseWriter, r *http.Request) {
 // @Success      204            {string}  string  "No Content"
 // @Failure      404            {string}  string  "Module not found"
 // @Failure      500            {string}  string  "Failed to delete container"
-// @Router       /admin/modules/{moduleID}/docker/{containerName} [delete]
+// @Router       /admin/modules/{moduleID}/docker/{containerName}/delete [delete]
 func DeleteModuleContainer(w http.ResponseWriter, r *http.Request) {
 	moduleID := chi.URLParam(r, "moduleID")
 	containerName := chi.URLParam(r, "containerName")

@@ -5,10 +5,10 @@ import DockerComposeSection from './DockerComposeSection/DockerComposeSection';
 import ModulePageSection from './DockerPageSection/DockerPageSection';
 import './ModuleDockerSection.css'
 
-export default function ModuleDockerSection({ moduleId, dockerTab, setDockerTab }) {
+export default function ModuleDockerSection({ moduleId, dockerTab, setDockerTab, hideTabs = false }) {
   return (
     <div className="module-docker-section">
-      {dockerTab !== 'ide' && (
+      {dockerTab !== 'ide' && !hideTabs && (
       <div className="docker-tabs">
         <Button
           label="Containers"

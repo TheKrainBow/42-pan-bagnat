@@ -34,8 +34,11 @@ type Module struct {
 	IconURL       string       `json:"icon_url"`
 	LatestVersion string       `json:"latest_Version"`
 	LateCommits   int          `json:"late_commits"`
-	LastUpdate    time.Time    `json:"last_update"`
-	Roles         []Role       `json:"roles"`
+    LastUpdate    time.Time    `json:"last_update"`
+    Roles         []Role       `json:"roles"`
+    IsDeploying   bool         `json:"is_deploying"`
+    LastDeploy    time.Time    `json:"last_deploy"`
+    LastDeployStatus string    `json:"last_deploy_status"`
 }
 
 type ModulePostInput struct {
@@ -164,16 +167,16 @@ func GenerateModuleOrderBy(order string) (dest []database.ModuleOrder) {
 }
 
 func GenerateModuleLogsOrderBy(order string) (dest []database.ModuleLogsOrder) {
-	if order == "" {
-		return nil
-	}
-	args := strings.SplitSeq(order, ",")
-	for arg := range args {
-		var direction database.OrderDirection
-		if arg[0] == '-' {
-			direction = database.Desc
-			arg = arg[1:]
-		} else {
+    if order == "" {
+        return nil
+    }
+    args := strings.Split(order, ",")
+    for _, arg := range args {
+        var direction database.OrderDirection
+        if arg[0] == '-' {
+            direction = database.Desc
+            arg = arg[1:]
+        } else {
 			direction = database.Asc
 		}
 

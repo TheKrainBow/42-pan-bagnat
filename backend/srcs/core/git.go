@@ -73,9 +73,10 @@ func CloneModuleRepo(module Module) error {
 	if err != nil {
 		return LogModule(module.ID, "ERROR", "error while updating status to database", nil, err)
 	}
-	err = InitModuleForDocker(module)
-	if err != nil {
-		return err
+
+	composePath := filepath.Join(targetDir, "docker-compose.yml")
+	if _, statErr := os.Stat(composePath); statErr != nil {
+		LogModule(module.ID, "WARN", "No docker-compose.yml found; Pan Bagnat modules require Docker Compose", nil, nil)
 	}
 	return nil
 }

@@ -52,7 +52,7 @@ Defined in `docker-compose.yml`:
 ## Volumes and repo mounts
 
 - `postgres_data` — persistent Postgres data volume.
-- `./repos` → `/data/repos` (on `backend`) — where module Git repos are checked out. Each module can define its own `docker-compose-panbagnat.yml` and containers attach to `pan-bagnat-net`.
+  - `./repos` → `/data/repos` (on `backend`) — where module Git repos are checked out. Each module uses its own `docker-compose.yml` and containers attach to `pan-bagnat-net`.
 
 ## Common workflows
 

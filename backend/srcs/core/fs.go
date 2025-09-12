@@ -25,6 +25,26 @@ func moduleRepoPath(mod Module) (string, error) {
     return filepath.Join(base, mod.Slug), nil
 }
 
+// repoRootReal resolves the module repo root path and evaluates any symlinks.
+func repoRootReal(mod Module) (string, error) {
+    root, err := moduleRepoPath(mod)
+    if err != nil { return "", err }
+    real, err := filepath.EvalSymlinks(root)
+    if err != nil { return "", err }
+    return real, nil
+}
+
+// ensureWithin checks that the absolute target is inside the resolved root.
+func ensureWithin(rootReal, targetAbs string) error {
+    rel, err := filepath.Rel(rootReal, targetAbs)
+    if err != nil { return err }
+    if rel == "." { return nil }
+    if strings.HasPrefix(rel, ".."+string(os.PathSeparator)) || rel == ".." {
+        return fmt.Errorf("path escapes repository root")
+    }
+    return nil
+}
+
 func sanitizeRelPath(p string) (string, error) {
     if p == "" { return ".", nil }
     clean := filepath.Clean(p)
@@ -40,6 +60,13 @@ func ListModuleDir(mod Module, rel string) ([]FileEntry, error) {
     rel, err = sanitizeRelPath(rel)
     if err != nil { return nil, err }
     dir := filepath.Join(root, rel)
+    // Ensure resolved target stays within repo in case of symlinks
+    rootReal, err := repoRootReal(mod)
+    if err != nil { return nil, err }
+    dirReal, err := filepath.EvalSymlinks(dir)
+    if err == nil { // directory may not exist yet; if it does, validate
+        if err := ensureWithin(rootReal, dirReal); err != nil { return nil, err }
+    }
     entries, err := os.ReadDir(dir)
     if err != nil { return nil, err }
     out := []FileEntry{}
@@ -60,7 +87,13 @@ func ReadModuleFile(mod Module, rel string) ([]byte, error) {
     if err != nil { return nil, err }
     rel, err = sanitizeRelPath(rel)
     if err != nil { return nil, err }
-    return os.ReadFile(filepath.Join(root, rel))
+    abs := filepath.Join(root, rel)
+    rootReal, err := repoRootReal(mod)
+    if err != nil { return nil, err }
+    fileReal, err := filepath.EvalSymlinks(abs)
+    if err != nil { return nil, err }
+    if err := ensureWithin(rootReal, fileReal); err != nil { return nil, err }
+    return os.ReadFile(abs)
 }
 
 func WriteModuleFile(mod Module, rel string, data []byte) error {
@@ -69,6 +102,17 @@ func WriteModuleFile(mod Module, rel string, data []byte) error {
     rel, err = sanitizeRelPath(rel)
     if err != nil { return err }
     abs := filepath.Join(root, rel)
+    // Validate parent directory (resolve symlinks on existing path)
+    rootReal, err := repoRootReal(mod)
+    if err != nil { return err }
+    parent := filepath.Dir(abs)
+    parentReal, err := filepath.EvalSymlinks(parent)
+    if err == nil { // parent exists
+        if err := ensureWithin(rootReal, parentReal); err != nil { return err }
+    } else {
+        // If parent doesn't exist yet, ensure the intended parent is under root
+        if err := ensureWithin(rootReal, parent); err != nil { return err }
+    }
     if err := os.MkdirAll(filepath.Dir(abs), 0o755); err != nil { return err }
     return os.WriteFile(abs, data, 0o644)
 }
@@ -82,6 +126,19 @@ func RenameModulePath(mod Module, oldRel, newRel string) error {
     if err != nil { return err }
     oldAbs := filepath.Join(root, oldRel)
     newAbs := filepath.Join(root, newRel)
+    rootReal, err := repoRootReal(mod)
+    if err != nil { return err }
+    // Old path must resolve within root if it exists
+    if oldReal, err := filepath.EvalSymlinks(oldAbs); err == nil {
+        if err := ensureWithin(rootReal, oldReal); err != nil { return err }
+    }
+    // New parent must resolve within root (avoid moving into symlink outside)
+    newParent := filepath.Dir(newAbs)
+    if newParentReal, err := filepath.EvalSymlinks(newParent); err == nil {
+        if err := ensureWithin(rootReal, newParentReal); err != nil { return err }
+    } else {
+        if err := ensureWithin(rootReal, newParent); err != nil { return err }
+    }
     if _, statErr := os.Stat(newAbs); statErr == nil {
         return fmt.Errorf("destination already exists")
     }
@@ -96,6 +153,15 @@ func DeleteModulePath(mod Module, rel string) error {
     if err != nil { return err }
     if rel == "." || rel == "" { return errors.New("refuse to delete root") }
     abs := filepath.Join(root, rel)
+    // Ensure parent resolves within root (deleting symlink removes the link itself)
+    rootReal, err := repoRootReal(mod)
+    if err != nil { return err }
+    parent := filepath.Dir(abs)
+    if parentReal, err := filepath.EvalSymlinks(parent); err == nil {
+        if err := ensureWithin(rootReal, parentReal); err != nil { return err }
+    } else {
+        if err := ensureWithin(rootReal, parent); err != nil { return err }
+    }
     return os.RemoveAll(abs)
 }
 
@@ -105,5 +171,14 @@ func MkdirModule(mod Module, rel string) error {
     rel, err = sanitizeRelPath(rel)
     if err != nil { return err }
     abs := filepath.Join(root, rel)
+    // Validate parent under root
+    rootReal, err := repoRootReal(mod)
+    if err != nil { return err }
+    parent := filepath.Dir(abs)
+    if parentReal, err := filepath.EvalSymlinks(parent); err == nil {
+        if err := ensureWithin(rootReal, parentReal); err != nil { return err }
+    } else {
+        if err := ensureWithin(rootReal, parent); err != nil { return err }
+    }
     return os.MkdirAll(abs, 0o755)
 }
