@@ -9,6 +9,7 @@ import (
     "strings"
     "time"
     "backend/database"
+    "backend/websocket"
 )
 // Compose now uses the repository's docker-compose.yml directly.
 
@@ -80,9 +81,10 @@ func DeployModule(module Module) error {
 	// Mark success: set last_deploy to now, clear in-progress, and set success status
 	now := time.Now().UTC()
 	_, _ = database.PatchModule(database.ModulePatch{ID: module.ID, IsDeploying: ptrBool(false), LastDeploy: &now, LastDeployStatus: strPtr("success")})
-	SetModuleStatus(module.ID, Enabled, true)
-	LogModule(module.ID, "INFO", "docker compose up succeeded", nil, nil)
-	return nil
+    SetModuleStatus(module.ID, Enabled, true)
+    LogModule(module.ID, "INFO", "docker compose up succeeded", nil, nil)
+    notifyContainersChanged(module)
+    return nil
 }
 
 func ptrBool(b bool) *bool { return &b }
@@ -168,10 +170,17 @@ func GetModuleContainers(module Module) ([]ModuleContainer, error) {
 	return containers, nil
 }
 
-func GetContainerLogs(module Module, containerName string) ([]string, error) {
-	fullName := fmt.Sprintf("%s-%s-1", module.Slug, containerName)
+func GetContainerLogs(module Module, containerName string, since string) ([]string, error) {
+    fullName := fmt.Sprintf("%s-%s-1", module.Slug, containerName)
 
-	cmd := exec.Command("docker", "logs", "--tail=1000", fullName)
+    // Include timestamps so clients can merge logs chronologically across sources
+    var cmd *exec.Cmd
+    if since != "" {
+        // Use RFC3339 timestamp to fetch only newer logs
+        cmd = exec.Command("docker", "logs", "--timestamps", "--since", since, fullName)
+    } else {
+        cmd = exec.Command("docker", "logs", "--timestamps", "--tail=1000", fullName)
+    }
 
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
@@ -205,25 +214,34 @@ func CleanupModuleDockerResources(module Module) error {
 		return LogModule(module.ID, "ERROR", "Failed to docker compose down", nil, err)
 	}
 
-	LogModule(module.ID, "INFO", "docker cleanup completed", nil, nil)
-	SetModuleStatus(module.ID, Disabled, false)
-	return nil
+    LogModule(module.ID, "INFO", "docker cleanup completed", nil, nil)
+    SetModuleStatus(module.ID, Disabled, false)
+    notifyContainersChanged(module)
+    return nil
 }
 
 func StartContainer(module Module, containerName string) error {
-	return runDockerCommand(module, containerName, "start")
+    if err := runDockerCommand(module, containerName, "start"); err != nil { return err }
+    notifyContainersChanged(module)
+    return nil
 }
 
 func StopContainer(module Module, containerName string) error {
-	return runDockerCommand(module, containerName, "stop")
+    if err := runDockerCommand(module, containerName, "stop"); err != nil { return err }
+    notifyContainersChanged(module)
+    return nil
 }
 
 func RestartContainer(module Module, containerName string) error {
-	return runDockerCommand(module, containerName, "restart")
+    if err := runDockerCommand(module, containerName, "restart"); err != nil { return err }
+    notifyContainersChanged(module)
+    return nil
 }
 
 func DeleteContainer(module Module, containerName string) error {
-	return runDockerCommand(module, containerName, "rm")
+    if err := runDockerCommand(module, containerName, "rm"); err != nil { return err }
+    notifyContainersChanged(module)
+    return nil
 }
 
 func runDockerCommand(module Module, containerName, action string) error {
@@ -238,4 +256,20 @@ func runDockerCommand(module Module, containerName, action string) error {
 		return fmt.Errorf("docker %s failed: %v – %s", action, err, stderr.String())
 	}
 	return nil
+}
+
+// notifyContainersChanged fetches the current containers and emits a WS event
+func notifyContainersChanged(module Module) {
+    containers, err := GetModuleContainers(module)
+    if err != nil { return }
+    payload := make([]websocket.ContainerPayload, 0, len(containers))
+    for _, c := range containers {
+        payload = append(payload, websocket.ContainerPayload{
+            Name:   c.Name,
+            Status: string(c.Status),
+            Reason: c.Reason,
+            Since:  c.Since,
+        })
+    }
+    websocket.SendContainersUpdatedEvent(module.ID, payload)
 }

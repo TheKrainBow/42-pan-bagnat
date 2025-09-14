@@ -1,24 +1,25 @@
 package websocket
 
 import (
-	"backend/database"
-	"encoding/json"
-	"fmt"
-	"log"
-	"time"
+    "backend/database"
+    "encoding/json"
+    "fmt"
+    "log"
+    "time"
 )
 
 // SendLogEvent takes a fully‐populated ModuleLog (with CreatedAt, Meta, etc.)
 // and builds & dispatches a WebSocket Event.
 // If the channel is full, the event is dropped and a warning is logged.
 func SendLogEvent(rec database.ModuleLog) {
-	ts := rec.CreatedAt.Format(time.RFC3339)
+    ts := rec.CreatedAt.Format(time.RFC3339)
 
-	payloadMap := map[string]any{
-		"level":   rec.Level,
-		"message": rec.Message,
-		"meta":    rec.Meta,
-	}
+    payloadMap := map[string]any{
+        "id":      rec.ID,
+        "level":   rec.Level,
+        "message": rec.Message,
+        "meta":    rec.Meta,
+    }
 
 	payloadBytes, err := json.Marshal(payloadMap)
 	if err != nil {
@@ -26,20 +27,42 @@ func SendLogEvent(rec database.ModuleLog) {
 		return
 	}
 
-	evt := Event{
-		EventType: "log",
-		ModuleID:  rec.ModuleID,
-		Timestamp: ts,
-		Payload:   json.RawMessage(payloadBytes),
-	}
+    evt := Event{
+        EventType: "log",
+        ModuleID:  rec.ModuleID,
+        Topic:     "module:" + rec.ModuleID,
+        Timestamp: ts,
+        Payload:   json.RawMessage(payloadBytes),
+    }
 
-	select {
-	case Events <- evt:
-		// Event dispatched, nothing to do
-	default:
-		fmt.Printf("%s [WARN] WS event channel full, dropped log for module %q\n",
-			ts, rec.ModuleID)
-	}
+    // Reliability over drop: block until queued
+    Events <- evt
+}
+
+// SendContainerLogEvent builds and dispatches a WebSocket event for a container log line.
+// moduleID is used for topic scoping; containerName labels the source.
+func SendContainerLogEvent(moduleID, containerName, timestamp, message string) {
+    payloadMap := map[string]any{
+        "container": containerName,
+        "message":   message,
+    }
+    payloadBytes, err := json.Marshal(payloadMap)
+    if err != nil {
+        log.Printf("%s [ERROR] failed to marshal container_log payload: %v", timestamp, err)
+        return
+    }
+    evt := Event{
+        EventType: "container_log",
+        ModuleID:  moduleID,
+        Topic:     "container:" + moduleID + ":" + containerName,
+        Timestamp: timestamp,
+        Payload:   json.RawMessage(payloadBytes),
+    }
+    select {
+    case Events <- evt:
+    default:
+        fmt.Printf("%s [WARN] WS event channel full, dropped container log for %q/%q\n", timestamp, moduleID, containerName)
+    }
 }
 
 // SendModuleStatusChangedEvent builds and dispatches a WebSocket event when a module changed status.
@@ -65,11 +88,7 @@ func SendModuleStatusChangedEvent(moduleID, moduleName, newStatus string) {
 		Payload:   json.RawMessage(payloadBytes),
 	}
 
-	select {
-	case Events <- evt:
-	default:
-		log.Printf("%s [WARN] WS event channel full, dropped module status event for %q\n", ts, moduleID)
-	}
+    Events <- evt
 }
 
 // SendModuleDeletedEvent builds and dispatches a WebSocket event when a module is deleted.
@@ -94,9 +113,23 @@ func SendModuleDeletedEvent(moduleID, moduleName string) {
 		Payload:   json.RawMessage(payloadBytes),
 	}
 
-	select {
-	case Events <- evt:
-	default:
-		log.Printf("%s [WARN] WS event channel full, dropped module deleted event for %q\n", ts, moduleID)
-	}
+    Events <- evt
+}
+
+// SendContainersUpdatedEvent notifies clients that the container list for a module changed.
+func SendContainersUpdatedEvent(moduleID string, containers []ContainerPayload) {
+    ts := time.Now().Format(time.RFC3339)
+    payloadBytes, err := json.Marshal(containers)
+    if err != nil {
+        log.Printf("%s [ERROR] failed to marshal containers_updated payload: %v", ts, err)
+        return
+    }
+    evt := Event{
+        EventType: "containers_updated",
+        ModuleID:  moduleID,
+        Topic:     "containers:" + moduleID,
+        Timestamp: ts,
+        Payload:   json.RawMessage(payloadBytes),
+    }
+    Events <- evt
 }

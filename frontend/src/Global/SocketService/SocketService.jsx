@@ -124,14 +124,26 @@ class SocketService {
     return () => this.listeners.delete(fn);
   }
 
+  // Generic topic subscribe/unsubscribe. Topic examples:
+  //  - module:<moduleId>
+  //  - container:<moduleId>:<containerName>
+  subscribeTopic(topic) {
+    this.send({ action: 'subscribe', module_id: topic });
+  }
+
+  unsubscribeTopic(topic) {
+    this.send({ action: 'unsubscribe', module_id: topic });
+  }
+
   subscribeModule(moduleId) {
-    // console.log('⚡ subscribeModule(', moduleId, ')');
-    this.send({ action: 'subscribe', module_id: moduleId });
+    // Backward-compat helper → subscribe to module log topic
+    const topic = `module:${moduleId}`;
+    this.subscribeTopic(topic);
   }
 
   unsubscribeModule(moduleId) {
-    // console.log('⚡ unsubscribeModule(', moduleId, ')');
-    this.send({ action: 'unsubscribe', module_id: moduleId });
+    const topic = `module:${moduleId}`;
+    this.unsubscribeTopic(topic);
   }
 }
 

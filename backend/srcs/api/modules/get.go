@@ -346,7 +346,8 @@ func GetContainerLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logs, err := core.GetContainerLogs(module, containerName)
+    since := r.URL.Query().Get("since")
+    logs, err := core.GetContainerLogs(module, containerName, since)
 	if err != nil {
 		log.Printf("Failed to get logs: %s\n", err.Error())
 		http.Error(w, fmt.Sprintf("Failed to get logs: %v", err), http.StatusInternalServerError)

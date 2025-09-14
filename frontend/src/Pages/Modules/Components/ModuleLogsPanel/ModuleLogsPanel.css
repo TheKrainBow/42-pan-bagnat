@@ -1,0 +1,68 @@
+.module-logs-layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+.log-selector { border: 1px solid #2b2f3a; border-radius: 10px; padding: 12px; background: #151820; overflow: auto; min-height: 0; box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset; }
+.selector-title { font-weight: 600; margin-bottom: 8px; color: #e8eaed; letter-spacing: 0.2px; }
+.selector-subtitle { margin-top: 12px; margin-bottom: 4px; font-size: 1em; font-weight: 600; color: #c7cbd1; }
+.selector-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; }
+.selector-item:hover { background: rgba(255,255,255,0.03); border-radius: 6px; }
+.selector-empty { color: #9aa0a6; font-size: 0.9em; padding: 6px 0; }
+.selector-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: #4da3ff; }
+/* Custom colored checkbox that shows the color even when unchecked */
+.selector-checkbox {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+  border: 2px solid var(--cb-color, #4da3ff);
+  background: transparent;
+  position: relative;
+  cursor: pointer;
+  /* Remove animations for instant toggling */
+  transition: none;
+}
+.selector-checkbox:hover { box-shadow: none; }
+.selector-checkbox:focus-visible { outline: none; box-shadow: 0 0 0 2px rgba(77,163,255,0.25); }
+.selector-checkbox:checked {
+  background: var(--cb-color, #4da3ff);
+  border-color: var(--cb-color, #4da3ff);
+}
+.selector-checkbox:checked::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 6px;
+  height: 9px;
+  border: solid #0f1116;
+  border-width: 0 2px 2px 0;
+  /* Tiny more upward nudge for perfect centering */
+  transform: translate(-50%, -64%) rotate(45deg);
+}
+.selector-label { display: inline-flex; align-items: center; gap: 8px; color: #e8eaed; }
+.selector-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 2px rgba(255,255,255,0.06) inset; }
+.log-panel {
+  border: 1px solid #2b2f3a;
+  border-radius: 8px;
+  padding: 8px;
+  background: #0f1116;
+  overflow: auto;
+  height: 100%;
+  min-height: 0;
+}
+.log-placeholder { color: #9aa0a6; padding: 12px; }
+.log-row { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 12px; padding: 2px 0; border-bottom: 1px solid rgba(255,255,255,0.03); }
+.log-src { color: #8ab4f8; margin-right: 6px; }
+.log-date, .log-time { color: #9aa0a6; margin-right: 6px; }
+.log-msg { color: #e8eaed; }
+.log-meta { margin-left: 8px; color: #bdbdbd; font-size: 11px; }
+.log-meta-error { margin-left: 8px; color: #ff6961; font-size: 11px; white-space: pre-wrap; }
+.level-info .log-msg { color: #e8eaed; }
+.level-warn .log-msg, .level-warning .log-msg { color: #fbbc05; }
+.level-error .log-msg { color: #ea4335; }
+.level-debug .log-msg { color: #42a5f5; }

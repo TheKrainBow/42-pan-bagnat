@@ -4,7 +4,7 @@ import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom'
 import './ModuleDetails.css';
 import AppIcon from 'Global/AppIcon/AppIcon';
 import Button from 'Global/Button/Button';
-import LogViewer from 'Global/LogViewer/LogViewer';
+import ModuleLogsPanel from 'Pages/Modules/Components/ModuleLogsPanel/ModuleLogsPanel';
 import ModuleSettings from 'Pages/Modules/Components/ModuleSettings/ModuleSettings';
 import ModuleWarningSection from 'Pages/Modules/Components/ModuleWarningSection/ModuleWarningSection';
 import ModuleStatusBadge from 'Pages/Modules/Components/ModuleStatusBadge/ModuleStatusBadge';
@@ -178,7 +178,7 @@ const ModuleDetails = () => {
           </div>
 
           <div className="tab-content">
-            {activeTab === 'logs' && <LogViewer logType="module" moduleId={module.id}/>}
+            {activeTab === 'logs' && <ModuleLogsPanel moduleId={module.id} />} 
             {activeTab === 'ide' && (
               <ModuleDockerSection
                 moduleId={module.id}

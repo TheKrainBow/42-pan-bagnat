@@ -3,6 +3,7 @@ import Button from 'Global/Button/Button';
 import LogViewer from '../../../../../Global/LogViewer/LogViewer';
 import './DockerContainersSection.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
+import { socketService } from 'Global/SocketService/SocketService';
 
 export default function DockerContainers({ moduleId }) {
   const [containers, setContainers] = useState([]);
@@ -18,6 +19,18 @@ export default function DockerContainers({ moduleId }) {
       .then(setContainers)
       .catch(err => console.error('Failed to fetch containers:', err));
   };
+
+  // Subscribe to WS container updates for live list
+  useEffect(() => {
+    const topic = `containers:${moduleId}`;
+    socketService.subscribeTopic(topic);
+    const unsub = socketService.subscribe(msg => {
+      if (msg.eventType === 'containers_updated' && msg.module_id === moduleId && Array.isArray(msg.payload)) {
+        setContainers(msg.payload);
+      }
+    });
+    return () => { socketService.unsubscribeTopic(topic); unsub(); };
+  }, [moduleId]);
 
   useEffect(() => {
     if (selectedName && !containers.find(c => c.name === selectedName)) {

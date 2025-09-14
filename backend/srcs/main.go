@@ -229,6 +229,10 @@ func main() {
 
 	go websocket.Dispatch()
 
+	// Wire WS subscribe/unsubscribe hooks for container log streaming
+	websocket.OnSubscribe = core.WSOnSubscribe
+	websocket.OnUnsubscribe = core.WSOnUnsubscribe
+
 	// Mount WebSocket endpoint
 	r.HandleFunc("/ws", websocket.Handler())
 
