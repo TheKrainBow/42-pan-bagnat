@@ -21,7 +21,8 @@ export default function ContainersGraph({ moduleId }) {
     const map = new Map();
     filtered.forEach(it => {
       const key = it.project || 'external';
-      if (!map.has(key)) map.set(key, { project: key, module_id: it.module_id, module_name: it.module_name, items: [] });
+      const label = key === 'orphans' ? 'Pan Bagnat' : key;
+      if (!map.has(key)) map.set(key, { project: label, key, module_id: it.module_id, module_name: it.module_name, items: [] });
       map.get(key).items.push(it);
     });
     return Array.from(map.values()).sort((a,b) => a.project.localeCompare(b.project));
@@ -46,6 +47,7 @@ export default function ContainersGraph({ moduleId }) {
     (items || []).forEach(it => {
       const p = it.project || '';
       (it.networks || []).forEach(n => {
+        if (n === 'pan-bagnat-net') return; // never choose internal infra as primary
         const curr = map.get(p) || { name: '', count: 0, counts: {} };
         curr.counts[n] = (curr.counts[n] || 0) + 1;
         map.set(p, curr);
@@ -88,14 +90,19 @@ export default function ContainersGraph({ moduleId }) {
   // layout groups in a grid
   const layout = useMemo(() => {
     const cols = 3;
-    // Give more space between module groups
-    const gapX = 520, gapY = 380;
+    const gapX = 680, gapY = 420;
     const positions = new Map();
-    groups.forEach((g, idx) => {
+    const modules = groups.filter(g => g.key !== 'orphans');
+    modules.forEach((g, idx) => {
       const row = Math.floor(idx / cols);
       const col = idx % cols;
       positions.set(g.project, { x: col * gapX, y: row * gapY });
     });
+    const rows = Math.ceil(modules.length / cols);
+    const pb = groups.find(g => g.key === 'orphans');
+    if (pb) {
+      positions.set(pb.project, { x: 0, y: rows * gapY + 200 });
+    }
     return { positions, gapX, gapY };
   }, [groups]);
 
@@ -128,17 +135,30 @@ export default function ContainersGraph({ moduleId }) {
 
   // Center on current module group initially
   useEffect(() => {
-    const current = groups.find(g => g.module_id === moduleId) || groups[0];
+    const modulesOnly = groups.filter(g => g.key !== 'orphans');
+    const current = modulesOnly.find(g => g.module_id === moduleId) || modulesOnly[0] || groups[0];
     if (!current) return;
     // defer to next frame so refs are set
     requestAnimationFrame(() => fitGroup(current.project));
   }, [moduleId, groups, layout]);
 
   const onWheel = (e) => {
-    e.preventDefault();
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const rect = vp.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    // world coords before zoom
+    const wx = (mouseX - tx) / scale;
+    const wy = (mouseY - ty) / scale;
     const delta = -e.deltaY;
     const factor = delta > 0 ? 1.1 : 0.9;
     const newScale = Math.min(2, Math.max(0.5, scale * factor));
+    // adjust translation so that (wx,wy) stays under the cursor
+    const ntx = mouseX - wx * newScale;
+    const nty = mouseY - wy * newScale;
+    setTx(ntx);
+    setTy(nty);
     setScale(newScale);
   };
 
@@ -154,10 +174,40 @@ export default function ContainersGraph({ moduleId }) {
   };
   const onMouseUp = () => { dragRef.current = null; };
 
+  const zoomAt = (factor, cx, cy) => {
+    const vp = viewportRef.current;
+    if (!vp) return;
+    const rect = vp.getBoundingClientRect();
+    const x = (typeof cx === 'number') ? (cx - rect.left) : rect.width / 2;
+    const y = (typeof cy === 'number') ? (cy - rect.top) : rect.height / 2;
+    const wx = (x - tx) / scale;
+    const wy = (y - ty) / scale;
+    const newScale = Math.min(2, Math.max(0.5, scale * factor));
+    setTx(x - wx * newScale);
+    setTy(y - wy * newScale);
+    setScale(newScale);
+  };
+
   const resetToModule = () => {
     const current = groups.find(g => g.module_id === moduleId) || groups[0];
     if (!current) return;
     fitGroup(current.project);
+  };
+
+  const composeAction = async (action) => {
+    if (!moduleId) return;
+    if (action === 'down' && !confirm('Compose down will stop and remove project containers. Continue?')) return;
+    const url = action === 'rebuild'
+      ? `/api/v1/admin/modules/${moduleId}/docker/compose/rebuild`
+      : `/api/v1/admin/modules/${moduleId}/docker/compose/down`;
+    await fetchWithAuth(url, { method: 'POST' });
+    // Refresh list after action
+    setLoading(true);
+    fetchWithAuth('/api/v1/admin/docker/ls')
+      .then(r => r.json())
+      .then(setItems)
+      .catch(e => setError(e.message))
+      .finally(() => setLoading(false));
   };
 
   if (loading) return <div>Loading containers…</div>;
@@ -168,12 +218,13 @@ export default function ContainersGraph({ moduleId }) {
       <div className="cg-toolbar">
         <Button label="Back to current module" onClick={resetToModule} />
         <div className="spacer" />
-        <Button label="-" onClick={() => setScale(s => Math.max(0.5, s * 0.9))} />
-        <Button label="+" onClick={() => setScale(s => Math.min(2, s * 1.1))} />
+        <Button label="-" onClick={() => zoomAt(0.9)} />
+        <Button label="+" onClick={() => zoomAt(1.1)} />
+        {/* module-level compose buttons removed; use per-card Deploy/Prune instead */}
       </div>
       <div className="cg-viewport" ref={viewportRef} onWheel={onWheel} onMouseDown={onMouseDown} onMouseMove={onMouseMove} onMouseUp={onMouseUp}>
         <div className="cg-canvas" style={{ transform: `translate(${tx}px, ${ty}px) scale(${scale})` }}>
-          {groups.map(g => {
+          {[...groups.filter(g => g.key !== 'orphans'), ...groups.filter(g => g.key === 'orphans')].map(g => {
             const p = layout.positions.get(g.project) || { x: 0, y: 0 };
             return (
               <div
@@ -183,14 +234,21 @@ export default function ContainersGraph({ moduleId }) {
                 ref={el => { if (el) groupRefs.current.set(g.project, el); }}
               >
                 <div
-                  className={`cg-group-title ${g.module_id && g.module_id !== moduleId ? 'link' : ''}`}
-                  onClick={() => { if (g.module_id && g.module_id !== moduleId) window.location.href = `/admin/modules/${g.module_id}`; }}
-                  title={g.module_id && g.module_id !== moduleId ? 'Open module page' : undefined}
+                  className={`cg-group-title ${g.key !== 'orphans' && g.module_id && g.module_id !== moduleId ? 'link' : ''}`}
+                  onClick={() => { if (g.key !== 'orphans' && g.module_id && g.module_id !== moduleId) window.location.href = `/admin/modules/${g.module_id}`; }}
+                  title={g.key !== 'orphans' && g.module_id && g.module_id !== moduleId ? 'Open module page' : undefined}
                 >
                   {g.project || 'external'}
-                  {primaryNetworkByProject.get(g.project) && (
-                    <span className="cg-primary-net" style={{ borderColor: networkColors.get(primaryNetworkByProject.get(g.project)) || '#8ab4f8', color: networkColors.get(primaryNetworkByProject.get(g.project)) || '#8ab4f8' }}>
-                      {primaryNetworkByProject.get(g.project)}
+                  {g.key !== 'orphans' && primaryNetworkByProject.get(g.key) && (
+                    <span className="cg-primary-net" style={{ borderColor: networkColors.get(primaryNetworkByProject.get(g.key)) || '#8ab4f8', color: networkColors.get(primaryNetworkByProject.get(g.key)) || '#8ab4f8' }}>
+                      {primaryNetworkByProject.get(g.key)}
+                    </span>
+                  )}
+                  <span className="spacer" />
+                  {g.key !== 'orphans' && g.module_id && (
+                    <span className="cg-group-actions">
+                      <Button label="Deploy" color="green" onClick={async () => { await fetchWithAuth(`/api/v1/admin/modules/${g.module_id}/docker/compose/deploy`, { method: 'POST' }); try { localStorage.setItem(`logs.selection.${g.module_id}`, JSON.stringify({ module: true, containers: {} })) } catch {}; window.location.href = `/admin/modules/${g.module_id}?tab=logs`; }} />
+                      <Button label="Prune" color="red" onClick={async () => { if (!confirm('Compose down will stop and remove project containers. Continue?')) return; await fetchWithAuth(`/api/v1/admin/modules/${g.module_id}/docker/compose/down`, { method: 'POST' }); }} />
                     </span>
                   )}
                 </div>
@@ -201,8 +259,10 @@ export default function ContainersGraph({ moduleId }) {
                       c={c}
                       currentModuleId={moduleId}
                       netStats={netStats}
-                      primaryNet={primaryNetworkByProject.get(g.project)}
+                      primaryNet={primaryNetworkByProject.get(g.key)}
                       networkColors={networkColors}
+                      missing={c.missing}
+                      orphan={c.orphan}
                     />
                   ))}
                 </div>
@@ -215,11 +275,13 @@ export default function ContainersGraph({ moduleId }) {
   );
 }
 
-function ContainerCard({ c, currentModuleId, netStats, primaryNet, networkColors }) {
+function ContainerCard({ c, currentModuleId, netStats, primaryNet, networkColors, missing, orphan }) {
   const name = c.name.includes('-1') ? c.name.replace(/-1$/, '') : c.name;
   const moduleId = c.module_id;
   const displayName = moduleId ? name.replace(`${c.project}-`, '') : name;
   const canAct = !!moduleId;
+  const orphanCore = orphan && (Array.isArray(c.networks) && c.networks.includes('pan-bagnat-core'));
+  const actionDisabled = !!missing || orphanCore;
 
   const act = (action) => {
     if (!canAct) return;
@@ -233,9 +295,49 @@ function ContainerCard({ c, currentModuleId, netStats, primaryNet, networkColors
   const tint = tintColor ? tintFromHex(tintColor, 0.10) : undefined;
   const tintBorder = tintColor ? tintFromHex(tintColor, 0.45) : undefined;
 
+  const gotoDeploy = () => {
+    if (!moduleId) return;
+    try { localStorage.setItem(`logs.selection.${moduleId}`, JSON.stringify({ module: true, containers: {} })) } catch {}
+    window.location.href = `/admin/modules/${moduleId}?tab=logs`;
+  };
+
+  const pruneProject = () => {
+    if (!moduleId) return;
+    if (!confirm('Prune (compose down) will stop and remove project containers. Continue?')) return;
+    fetchWithAuth(`/api/v1/admin/modules/${moduleId}/docker/compose/down`, { method: 'POST' })
+      .catch(err => console.error('down failed', err));
+  };
+
+  const disabledMessageMissing = 'This container has never been built. Use Deploy button first';
+  const disabledMessageCore = 'Cannot interact with Pan bagnat Core containers from Webapp';
+  const disabledMessageOrphan = 'Only delete is available for orphan containers';
+
+  const canDeleteOrphan = orphan && !orphanCore && !missing && !canAct;
+
+  const globalDelete = async () => {
+    await fetchWithAuth(`/api/v1/admin/docker/${encodeURIComponent(c.name)}/delete`, { method: 'DELETE' });
+  };
+
+  const statusLabel = (s) => {
+    switch ((s || '').toLowerCase()) {
+      case 'running': return 'running';
+      case 'exited': return 'stopped';
+      case 'paused': return 'paused';
+      case 'created': return 'created';
+      case 'restarting': return 'restarting';
+      case 'dead': return 'dead';
+      default: return 'unknown';
+    }
+  };
+
   return (
-    <div className={`cg-card status-${c.status}`} style={tintColor ? { backgroundColor: tint, borderColor: tintBorder } : undefined}>
-      <div className="cg-card-name" title={c.name}>{displayName}</div>
+    <div className={`cg-card status-${c.status} ${missing ? 'missing' : ''} ${orphan ? 'orphan' : ''}`} style={tintColor ? { backgroundColor: tint, borderColor: tintBorder } : undefined}>
+      <div className="cg-card-name" title={c.name}>
+        {displayName}{missing ? ' (never built)' : ''}
+        {!missing && (
+          <span className={`cg-status ${statusLabel(c.status)}`}>({statusLabel(c.status)})</span>
+        )}
+      </div>
       {Array.isArray(c.networks) && c.networks.length > 0 && (
         <div className="cg-networks" title={c.networks.join(', ')}>
           {c.networks.map(n => {
@@ -256,13 +358,19 @@ function ContainerCard({ c, currentModuleId, netStats, primaryNet, networkColors
       )}
       <div className="cg-card-actions">
         {c.status === 'exited' && (
-          <Button icon="/icons/button-play.png" color="warning" onClick={() => act('start')} />
+          <Button icon="/icons/button-play.png" color="yellow" onClick={() => act('start')} disabled={actionDisabled || !canAct} disabledMessage={orphanCore ? disabledMessageCore : disabledMessageMissing} />
         )}
         {c.status === 'running' && (
-          <Button icon="/icons/button-stop.png" color="warning" onClick={() => act('stop')} />
+          <Button icon="/icons/button-stop.png" color="yellow" onClick={() => act('stop')} disabled={actionDisabled || !canAct} disabledMessage={orphanCore ? disabledMessageCore : disabledMessageMissing} />
         )}
-        <Button icon="/icons/button-refresh.png" color="warning" onClick={() => act('restart')} />
-        <Button icon="/icons/button-delete.png" color="warning" onClick={() => act('delete')} />
+        <Button icon="/icons/button-refresh.png" color="yellow" onClick={() => act('restart')} disabled={actionDisabled || !canAct} disabledMessage={orphanCore ? disabledMessageCore : disabledMessageMissing} />
+        <Button
+          icon="/icons/button-delete.png"
+          color="red"
+          onClick={() => { if (canAct) act('delete'); else if (canDeleteOrphan) globalDelete(); }}
+          disabled={actionDisabled || (!canAct && !canDeleteOrphan)}
+          disabledMessage={orphanCore ? disabledMessageCore : (missing ? disabledMessageMissing : disabledMessageOrphan)}
+        />
       </div>
     </div>
   );

@@ -58,6 +58,12 @@ func DatabaseModuleToModule(dbModule database.Module) Module {
         IsDeploying:   dbModule.IsDeploying,
         LastDeploy:    func() (t time.Time) { if dbModule.LastDeploy.Valid { return dbModule.LastDeploy.Time }; return t }(),
         LastDeployStatus: dbModule.LastDeployStatus,
+        GitLastFetch: func() (t time.Time) { if dbModule.GitLastFetch.Valid { return dbModule.GitLastFetch.Time }; return t }(),
+        GitLastPull:  func() (t time.Time) { if dbModule.GitLastPull.Valid { return dbModule.GitLastPull.Time }; return t }(),
+        CurrentCommitHash: dbModule.CurrentCommitHash,
+        CurrentCommitSubject: dbModule.CurrentCommitSubject,
+        LatestCommitHash: dbModule.LatestCommitHash,
+        LatestCommitSubject: dbModule.LatestCommitSubject,
     }
 }
 

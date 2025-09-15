@@ -104,14 +104,16 @@ func GetModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := core.GetModule(id)
-	if err != nil {
-		log.Printf("Failed fetching module: %s\n", err.Error())
-		http.Error(w, "Failed fetching module info", http.StatusNotFound)
-		return
-	}
+    module, err := core.GetModule(id)
+    if err != nil {
+        log.Printf("Failed fetching module: %s\n", err.Error())
+        http.Error(w, "Failed fetching module info", http.StatusNotFound)
+        return
+    }
 
-	dest := api.ModuleToAPIModule(module)
+    // Do not refresh git here to avoid blocking settings; use dedicated endpoints instead
+
+    dest := api.ModuleToAPIModule(module)
 	destJSON, err := json.Marshal(dest)
 	if err != nil {
 		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
@@ -543,4 +545,66 @@ func GetAllContainers(w http.ResponseWriter, r *http.Request) {
         return
     }
     json.NewEncoder(w).Encode(items)
+}
+
+// ComposeDeploy triggers docker compose build && up using the repo's docker-compose.yml
+// @Security     SessionAuth
+// @Summary      Compose Deploy
+// @Tags         Docker
+// @Param        moduleID   path      string  true  "Module ID"
+// @Success      202        "Deployment started"
+// @Router       /admin/modules/{moduleID}/docker/compose/deploy [post]
+func ComposeDeploy(w http.ResponseWriter, r *http.Request) {
+    moduleID := chi.URLParam(r, "moduleID")
+    module, err := core.GetModule(moduleID)
+    if err != nil { http.Error(w, "module not found", http.StatusNotFound); return }
+    go core.DeployModule(module)
+    w.WriteHeader(http.StatusAccepted)
+}
+
+// DeleteContainerGlobal removes a container by name regardless of module scope (for orphans management).
+// @Security     SessionAuth
+// @Summary      Remove container by name
+// @Tags         Docker
+// @Param        containerName path string true "Container name"
+// @Success      204           ""
+// @Router       /admin/docker/{containerName}/delete [delete]
+func DeleteContainerGlobal(w http.ResponseWriter, r *http.Request) {
+    name := chi.URLParam(r, "containerName")
+    if name == "" { http.Error(w, "container name required", http.StatusBadRequest); return }
+    if err := core.RemoveContainer(name); err != nil {
+        http.Error(w, fmt.Sprintf("failed to remove container: %v", err), http.StatusInternalServerError)
+        return
+    }
+    w.WriteHeader(http.StatusNoContent)
+}
+
+// ComposeRebuild triggers a build --no-cache and up -d for the module.
+// @Security     SessionAuth
+// @Summary      Compose Rebuild
+// @Tags         Docker
+// @Param        moduleID   path      string  true  "Module ID"
+// @Success      204        ""
+// @Router       /admin/modules/{moduleID}/docker/compose/rebuild [post]
+func ComposeRebuild(w http.ResponseWriter, r *http.Request) {
+    moduleID := chi.URLParam(r, "moduleID")
+    module, err := core.GetModule(moduleID)
+    if err != nil { http.Error(w, "module not found", http.StatusNotFound); return }
+    if err := core.ComposeRebuild(module); err != nil { http.Error(w, fmt.Sprintf("rebuild failed: %v", err), http.StatusInternalServerError); return }
+    w.WriteHeader(http.StatusNoContent)
+}
+
+// ComposeDown performs docker compose down --remove-orphans for the module project.
+// @Security     SessionAuth
+// @Summary      Compose Down
+// @Tags         Docker
+// @Param        moduleID   path      string  true  "Module ID"
+// @Success      204        ""
+// @Router       /admin/modules/{moduleID}/docker/compose/down [post]
+func ComposeDown(w http.ResponseWriter, r *http.Request) {
+    moduleID := chi.URLParam(r, "moduleID")
+    module, err := core.GetModule(moduleID)
+    if err != nil { http.Error(w, "module not found", http.StatusNotFound); return }
+    if err := core.ComposeDown(module); err != nil { http.Error(w, fmt.Sprintf("down failed: %v", err), http.StatusInternalServerError); return }
+    w.WriteHeader(http.StatusNoContent)
 }

@@ -34,6 +34,32 @@ func repoRootReal(mod Module) (string, error) {
     return real, nil
 }
 
+// ModuleRepoRoot returns the absolute path to the module repository root.
+// It evaluates symlinks and guarantees an absolute path.
+func ModuleRepoRoot(mod Module) (string, error) {
+    return repoRootReal(mod)
+}
+
+// HostModuleRepoRoot returns the absolute repo path as seen from the host/VM running Docker.
+// When Pan Bagnat runs inside a container, REPO_HOST_BASE_PATH should point to the host's
+// base path that is bind-mounted inside the container as REPO_BASE_PATH. If unset, we
+// fall back to ModuleRepoRoot.
+func HostModuleRepoRoot(mod Module) (string, error) {
+    hostBase := os.Getenv("REPO_HOST_BASE_PATH")
+    if strings.TrimSpace(hostBase) == "" {
+        return ModuleRepoRoot(mod)
+    }
+    if mod.Slug == "" { return "", errors.New("invalid module slug") }
+    p := filepath.Join(hostBase, mod.Slug)
+    // Best-effort: ensure absolute and resolve symlinks if possible
+    if !filepath.IsAbs(p) {
+        abs, err := filepath.Abs(p)
+        if err == nil { p = abs }
+    }
+    if real, err := filepath.EvalSymlinks(p); err == nil { p = real }
+    return p, nil
+}
+
 // ensureWithin checks that the absolute target is inside the resolved root.
 func ensureWithin(rootReal, targetAbs string) error {
     rel, err := filepath.Rel(rootReal, targetAbs)

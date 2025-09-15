@@ -133,3 +133,41 @@ func SendContainersUpdatedEvent(moduleID string, containers []ContainerPayload) 
     }
     Events <- evt
 }
+
+// SendModuleDeployStatus notifies clients of a module's deployment state in real-time.
+// Topic: "module:<moduleID>"
+// Payload: { module_id, is_deploying, last_deploy_status, last_deploy }
+func SendModuleDeployStatus(moduleID string, isDeploying bool, lastDeployStatus string, lastDeploy string) {
+    ts := time.Now().Format(time.RFC3339)
+    payloadMap := map[string]any{
+        "module_id":          moduleID,
+        "is_deploying":       isDeploying,
+        "last_deploy_status": lastDeployStatus,
+        "last_deploy":        lastDeploy,
+    }
+    payloadBytes, err := json.Marshal(payloadMap)
+    if err != nil { return }
+    evt := Event{
+        EventType: "module_deploy_status",
+        ModuleID:  moduleID,
+        Topic:     "module:" + moduleID,
+        Timestamp: ts,
+        Payload:   json.RawMessage(payloadBytes),
+    }
+    Events <- evt
+}
+
+// SendGenericModuleEvent sends a generic event with a payload map on topic module:<moduleID>.
+func SendGenericModuleEvent(moduleID string, eventType string, payload map[string]any) {
+    ts := time.Now().Format(time.RFC3339)
+    b, err := json.Marshal(payload)
+    if err != nil { return }
+    evt := Event{
+        EventType: eventType,
+        ModuleID:  moduleID,
+        Topic:     "module:" + moduleID,
+        Timestamp: ts,
+        Payload:   json.RawMessage(b),
+    }
+    Events <- evt
+}

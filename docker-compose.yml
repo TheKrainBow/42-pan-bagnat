@@ -44,6 +44,7 @@ services:
       FT_CLIENT_ID: ${FT_CLIENT_ID}
       FT_CLIENT_SECRET: ${FT_CLIENT_SECRET}
       REPO_BASE_PATH: ${REPO_BASE_PATH}
+      REPO_HOST_BASE_PATH: ${REPO_HOST_BASE_PATH}
     depends_on:
       - db
     volumes:
@@ -97,4 +98,5 @@ networks:
     driver: bridge
     external: true
   pan-bagnat-host:
+    name: pan-bagnat-host
     driver: bridge

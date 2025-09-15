@@ -1,0 +1,5 @@
+ALTER TABLE modules
+  ADD COLUMN IF NOT EXISTS current_commit_hash TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS current_commit_subject TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS latest_commit_hash TEXT NOT NULL DEFAULT '',
+  ADD COLUMN IF NOT EXISTS latest_commit_subject TEXT NOT NULL DEFAULT '';

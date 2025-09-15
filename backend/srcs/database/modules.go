@@ -33,39 +33,52 @@ const (
 )
 
 type Module struct {
-    ID            string    `json:"id" db:"id"`
-    SSHPublicKey  string    `json:"ssh_public_key" db:"ssh_public_key"`
-    SSHPrivateKey string    `json:"ssh_private_key" db:"ssh_private_key"`
-    Name          string    `json:"name" db:"name"`
-    Slug          string    `json:"slug" db:"slug"`
-    Version       string    `json:"version" db:"version"`
-    Status        string    `json:"status" db:"status"`
-    GitURL        string    `json:"git_url" db:"git_url"`
-    GitBranch     string    `json:"git_branch" db:"git_branch"`
-    IconURL       string    `json:"icon_url" db:"icon_url"`
-    LatestVersion string    `json:"latest_version" db:"latest_version"`
-    LateCommits   int       `json:"late_commits" db:"late_commits"`
-    LastUpdate    time.Time `json:"last_update" db:"last_update"`
-    IsDeploying   bool         `json:"is_deploying" db:"is_deploying"`
-    LastDeploy    sql.NullTime `json:"last_deploy" db:"last_deploy"`
-    LastDeployStatus string    `json:"last_deploy_status" db:"last_deploy_status"`
+	ID                   string       `json:"id" db:"id"`
+	SSHPublicKey         string       `json:"ssh_public_key" db:"ssh_public_key"`
+	SSHPrivateKey        string       `json:"ssh_private_key" db:"ssh_private_key"`
+	Name                 string       `json:"name" db:"name"`
+	Slug                 string       `json:"slug" db:"slug"`
+	Version              string       `json:"version" db:"version"`
+	Status               string       `json:"status" db:"status"`
+	GitURL               string       `json:"git_url" db:"git_url"`
+	GitBranch            string       `json:"git_branch" db:"git_branch"`
+	IconURL              string       `json:"icon_url" db:"icon_url"`
+	LatestVersion        string       `json:"latest_version" db:"latest_version"`
+	LateCommits          int          `json:"late_commits" db:"late_commits"`
+	LastUpdate           time.Time    `json:"last_update" db:"last_update"`
+	IsDeploying          bool         `json:"is_deploying" db:"is_deploying"`
+	LastDeploy           sql.NullTime `json:"last_deploy" db:"last_deploy"`
+	LastDeployStatus     string       `json:"last_deploy_status" db:"last_deploy_status"`
+	GitLastFetch         sql.NullTime `json:"git_last_fetch" db:"git_last_fetch"`
+	GitLastPull          sql.NullTime `json:"git_last_pull" db:"git_last_pull"`
+	CurrentCommitHash    string       `json:"current_commit_hash" db:"current_commit_hash"`
+	CurrentCommitSubject string       `json:"current_commit_subject" db:"current_commit_subject"`
+	LatestCommitHash     string       `json:"latest_commit_hash" db:"latest_commit_hash"`
+	LatestCommitSubject  string       `json:"latest_commit_subject" db:"latest_commit_subject"`
 }
 
 type ModulePatch struct {
-    ID            string     `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
-	SSHPublicKey  *string    `json:"ssh_public_key" example:"ssh-rsa AAAA..."`
-	SSHPrivateKey *string    `json:"ssh_private_key" example:"-----BEGIN OPENSSH PRIVATE KEY-----..."`
-	Name          *string    `json:"name" example:"captain-hook"`
-	Version       *string    `json:"version" example:"1.2"`
-	Status        *string    `json:"status" example:"enabled"`
-	GitURL        *string    `json:"git_url" example:"https://github.com/some-user/some-repo"`
-	IconURL       *string    `json:"icon_url" example:"https://someURL/image.png"`
-	LatestVersion *string    `json:"latest_version" example:"1.7"`
-	LateCommits   *int       `json:"late_commits" example:"2"`
-    LastUpdate    *time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
-    IsDeploying   *bool      `json:"is_deploying"`
-    LastDeploy    *time.Time `json:"last_deploy"`
-    LastDeployStatus *string `json:"last_deploy_status"`
+	ID                   string     `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	SSHPublicKey         *string    `json:"ssh_public_key" example:"ssh-rsa AAAA..."`
+	SSHPrivateKey        *string    `json:"ssh_private_key" example:"-----BEGIN OPENSSH PRIVATE KEY-----..."`
+	Name                 *string    `json:"name" example:"captain-hook"`
+	Version              *string    `json:"version" example:"1.2"`
+	Status               *string    `json:"status" example:"enabled"`
+	GitURL               *string    `json:"git_url" example:"https://github.com/some-user/some-repo"`
+	GitBranch            *string    `json:"git_branch" example:"main"`
+	IconURL              *string    `json:"icon_url" example:"https://someURL/image.png"`
+	LatestVersion        *string    `json:"latest_version" example:"1.7"`
+	LateCommits          *int       `json:"late_commits" example:"2"`
+	LastUpdate           *time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
+	IsDeploying          *bool      `json:"is_deploying"`
+	LastDeploy           *time.Time `json:"last_deploy"`
+	LastDeployStatus     *string    `json:"last_deploy_status"`
+	GitLastFetch         *time.Time `json:"git_last_fetch"`
+	GitLastPull          *time.Time `json:"git_last_pull"`
+	CurrentCommitHash    *string    `json:"current_commit_hash"`
+	CurrentCommitSubject *string    `json:"current_commit_subject"`
+	LatestCommitHash     *string    `json:"latest_commit_hash"`
+	LatestCommitSubject  *string    `json:"latest_commit_subject"`
 }
 
 type ModuleLog struct {
@@ -136,8 +149,8 @@ type ModulePagesPagination struct {
 }
 
 func GetModule(moduleID string) (Module, error) {
-    row := mainDB.QueryRow(`
-		SELECT id, ssh_public_key, ssh_private_key, name, slug, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update, is_deploying, last_deploy, last_deploy_status
+	row := mainDB.QueryRow(`
+		SELECT id, ssh_public_key, ssh_private_key, name, slug, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update, is_deploying, last_deploy, last_deploy_status, git_last_fetch, git_last_pull, current_commit_hash, current_commit_subject, latest_commit_hash, latest_commit_subject
 		FROM modules
 		WHERE id = $1
     `, moduleID)
@@ -160,6 +173,12 @@ func GetModule(moduleID string) (Module, error) {
 		&module.IsDeploying,
 		&module.LastDeploy,
 		&module.LastDeployStatus,
+		&module.GitLastFetch,
+		&module.GitLastPull,
+		&module.CurrentCommitHash,
+		&module.CurrentCommitSubject,
+		&module.LatestCommitHash,
+		&module.LatestCommitSubject,
 	); err != nil {
 		return Module{}, err
 	}
@@ -370,10 +389,10 @@ func GetAllModules(
 
 	// 4) Assemble SQL
 	var sb strings.Builder
-    sb.WriteString(
-        `SELECT id, ssh_private_key, ssh_public_key, name, slug, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update, is_deploying, last_deploy, last_deploy_status
+	sb.WriteString(
+		`SELECT id, ssh_private_key, ssh_public_key, name, slug, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update, is_deploying, last_deploy, last_deploy_status, git_last_fetch, git_last_pull, current_commit_hash, current_commit_subject, latest_commit_hash, latest_commit_subject
 FROM modules`,
-    )
+	)
 	if len(whereConds) > 0 {
 		sb.WriteString("\nWHERE ")
 		sb.WriteString(strings.Join(whereConds, " AND "))
@@ -397,24 +416,30 @@ FROM modules`,
 	out := []Module{}
 	for rows.Next() {
 		var m Module
-        if err := rows.Scan(
-            &m.ID,
-            &m.SSHPrivateKey,
-            &m.SSHPublicKey,
-            &m.Name,
-            &m.Slug,
-            &m.Version,
-            &m.Status,
-            &m.GitURL,
-            &m.GitBranch,
-            &m.IconURL,
-            &m.LatestVersion,
-            &m.LateCommits,
-            &m.LastUpdate,
-            &m.IsDeploying,
-            &m.LastDeploy,
-            &m.LastDeployStatus,
-        ); err != nil {
+		if err := rows.Scan(
+			&m.ID,
+			&m.SSHPrivateKey,
+			&m.SSHPublicKey,
+			&m.Name,
+			&m.Slug,
+			&m.Version,
+			&m.Status,
+			&m.GitURL,
+			&m.GitBranch,
+			&m.IconURL,
+			&m.LatestVersion,
+			&m.LateCommits,
+			&m.LastUpdate,
+			&m.IsDeploying,
+			&m.LastDeploy,
+			&m.LastDeployStatus,
+			&m.GitLastFetch,
+			&m.GitLastPull,
+			&m.CurrentCommitHash,
+			&m.CurrentCommitSubject,
+			&m.LatestCommitHash,
+			&m.LatestCommitSubject,
+		); err != nil {
 			return nil, err
 		}
 		out = append(out, m)
@@ -502,6 +527,7 @@ func InsertModuleLog(l ModuleLog) (ModuleLog, error) {
 }
 
 func PatchModule(patch ModulePatch) (Module, error) {
+	fmt.Printf("Starting the patch\n")
 	if patch.ID == "" {
 		return Module{}, fmt.Errorf("missing module ID")
 	}
@@ -551,11 +577,13 @@ func PatchModule(patch ModulePatch) (Module, error) {
 	`, strings.Join(setClauses, ", "), argPos)
 	args = append(args, patch.ID)
 
+	fmt.Printf("Patching with: %+v\n", args)
 	var updated Module
 	err := mainDB.Get(&updated, query, args...)
 	if err != nil {
 		return Module{}, err
 	}
+	fmt.Printf("Patched: %+v\n", updated)
 	return updated, nil
 }
 

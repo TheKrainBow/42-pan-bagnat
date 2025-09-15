@@ -80,6 +80,10 @@
   min-height: 0;
 }
 
+/* .env key/value coloring */
+.cm-dotenv-key { color: #82aaff; }
+.cm-dotenv-value { color: #c3e88d; }
+
 /* IDE layout */
 .ide-root { display:flex; height: 100%; gap: 12px; min-height: 0; }
 .ide-tree { width: 280px; border:1px solid var(--border); border-radius:8px; overflow:auto; min-height:0; position: relative; display:flex; flex-direction:column; }
@@ -92,6 +96,9 @@
 .tree-row:hover { background: var(--light-background); }
 .tree-name { font-size:13px; }
 .unsaved-dot { display:inline-block; width:6px; height:6px; border-radius:50%; background:#fff; margin-left:6px; }
+.conflict-dot { display:inline-block; width:10px; height:16px; margin-left:6px; color:#e06c75; font-weight:bold; position: relative; }
+.conflict-dot::before { content: '!'; position:absolute; top:-1px; left:0; right:0; text-align:center; font-size:12px; }
+.modified-badge { display:inline-flex; align-items:center; justify-content:center; font-size:11px; color:#e5c07b; border:1px solid #e5c07b; border-radius:3px; padding:0 3px; margin-left:6px; height:14px; line-height:14px; }
 .tree-li.sel > .tree-row { background:#23304a; }
 .tree-children { margin-left: 8px; }
 /* Drag & drop target highlight */
@@ -154,6 +161,11 @@
 /* VS Code-like chevrons and icons */
 .tree-chevron { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; color: #9aa0a6; font-size: 12px; }
 .tree-chevron.spacer { opacity: 0; }
+
+/* Git mini panel */
+.git-actions { display:flex; align-items:center; gap:6px; margin-right:8px; }
+.git-meta { color: var(--text-muted); font-size: 12px; margin-right: 4px; }
+.conflict-pill { display:inline-flex; align-items:center; justify-content:center; background:#4b1f22; color:#ff9aa2; border:1px solid #6b2a2f; border-radius:12px; padding:1px 6px; margin-left:6px; font-size:11px; }
 .tree-icon { width: 16px; height: 16px; display: inline-flex; align-items: center; justify-content: center; }
 .tree-icon.spacer { opacity: 0; }
 

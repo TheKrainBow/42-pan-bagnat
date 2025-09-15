@@ -9,7 +9,8 @@ import ModuleSettings from 'Pages/Modules/Components/ModuleSettings/ModuleSettin
 import ModuleWarningSection from 'Pages/Modules/Components/ModuleWarningSection/ModuleWarningSection';
 import ModuleStatusBadge from 'Pages/Modules/Components/ModuleStatusBadge/ModuleStatusBadge';
 import ModuleDockerSection from '../Components/ModuleDockerSection/ModuleDockerSection';
-import { setModuleStatusUpdater } from 'Global/SocketService/SocketService';
+import ModuleGitSection from 'Pages/Modules/Components/ModuleGitSection/ModuleGitSection';
+import { setModuleStatusUpdater, socketService } from 'Global/SocketService/SocketService';
 import ModuleUninstallModal from 'Pages/Modules/Components/ModuleUninstallModal/ModuleUninstallModal';
 import { fetchWithAuth } from 'Global/utils/Auth';
 
@@ -25,6 +26,7 @@ const ModuleDetails = () => {
   const tab = searchParams.get('tab') || 'logs';
   const [activeTab, setActiveTab] = useState(tab);
   const fetchedRef = useRef(false);
+  const [hasConflicts, setHasConflicts] = useState(false)
 
   const retryButtonRef = useRef();
 
@@ -67,6 +69,22 @@ const ModuleDetails = () => {
     fetchedRef.current = true;
     fetchModule();
   }, [moduleId]);
+
+  // Poll git status for conflict indicator on IDE tab
+  useEffect(() => {
+    if (!moduleId) return
+    socketService.subscribeTopic(`module:${moduleId}`)
+    const unsub = socketService.subscribe((evt) => {
+      if (evt?.eventType === 'git_status' && evt?.module_id === moduleId) {
+        const p = evt.payload || {}
+        setHasConflicts(!!p.is_merging)
+        if (p.branch && p.branch !== 'HEAD') {
+          setModule(prev => prev ? { ...prev, git_branch: p.branch } : prev)
+        }
+      }
+    })
+    return () => { socketService.unsubscribeTopic(`module:${moduleId}`); unsub() }
+  }, [moduleId])
 
   const toggleModuleStatus = async () => {
     if (!module) return;
@@ -135,7 +153,15 @@ const ModuleDetails = () => {
               }}
             />
             <Button
-              label="IDE"
+              label={hasConflicts ? 'Git !' : 'Git'}
+              color={`${activeTab === 'git' ? 'blue' : 'gray'}`}
+              onClick={() => {
+                setActiveTab('git');
+                setSearchParams({ tab: 'git' });
+              }}
+            />
+            <Button
+              label={hasConflicts ? 'IDE !' : 'IDE'}
               color={`${activeTab === 'ide' ? 'blue' : 'gray'}`}
               onClick={() => {
                 setActiveTab('ide');
@@ -179,6 +205,9 @@ const ModuleDetails = () => {
 
           <div className="tab-content">
             {activeTab === 'logs' && <ModuleLogsPanel moduleId={module.id} />} 
+            {activeTab === 'git' && (
+              <ModuleGitSection moduleId={module.id} />
+            )}
             {activeTab === 'ide' && (
               <ModuleDockerSection
                 moduleId={module.id}

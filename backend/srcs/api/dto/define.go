@@ -103,10 +103,13 @@ type Module struct {
 	IsDeploying bool `json:"is_deploying" example:"false"`
 
 	// LastDeploy is the timestamp of the latest successful deployment
-	LastDeploy time.Time `json:"last_deploy" example:"2025-06-01T10:15:00Z"`
+    LastDeploy time.Time `json:"last_deploy" example:"2025-06-01T10:15:00Z"`
 
-	// LastDeployStatus is the status of the latest deployment ("success", "failed", or "")
-	LastDeployStatus string `json:"last_deploy_status" example:"success"`
+    // LastDeployStatus is the status of the latest deployment ("success", "failed", or "")
+    LastDeployStatus string `json:"last_deploy_status" example:"success"`
+
+    // Note: Git live details (current/ latest commit, behind, last fetch/pull)
+    // are provided by /git/status and are intentionally not duplicated here
 }
 
 type ModuleLog struct {

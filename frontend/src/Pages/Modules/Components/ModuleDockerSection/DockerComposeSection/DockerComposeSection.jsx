@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react'
 import './DockerComposeSection.css'
 import CodeMirror from '@uiw/react-codemirror'
+import { linter } from '@codemirror/lint'
+import { ViewPlugin, Decoration } from '@codemirror/view'
 import { yaml } from '@codemirror/lang-yaml'
 import { StreamLanguage } from '@codemirror/language'
 import '@vscode/codicons/dist/codicon.css'
@@ -8,6 +10,7 @@ import { getIconForFile, DEFAULT_FILE } from 'vscode-icons-ts'
 import { toast } from 'react-toastify'
 import Button from 'Global/Button/Button'
 import { fetchWithAuth } from 'Global/utils/Auth'
+import { socketService } from 'Global/SocketService/SocketService'
 
 export default function DockerComposeSection({ moduleId }) {
   const [currentPath, setCurrentPath] = useState('docker-compose.yml')
@@ -19,7 +22,14 @@ export default function DockerComposeSection({ moduleId }) {
   const [isBinary, setIsBinary] = useState(false)
   const [isDeploying, setIsDeploying] = useState(false)
   const [remoteDeploying, setRemoteDeploying] = useState(false)
+  const [repoRoot, setRepoRoot] = useState('')
+  const [composeLintExt, setComposeLintExt] = useState(null)
+  const [moduleSlug, setModuleSlug] = useState('')
   const editorRef = useRef(null)
+  const [gitStatus, setGitStatus] = useState({ is_merging: false, conflicts: [], modified: [], last_fetch: '', last_pull: '' })
+  const [gitBusy, setGitBusy] = useState(false)
+  const [conflicting, setConflicting] = useState(false)
+  const [isModified, setIsModified] = useState(false)
 
   // React to open-file events from tree
   useEffect(() => {
@@ -110,19 +120,56 @@ export default function DockerComposeSection({ moduleId }) {
       .catch(() => { setContent(''); setDirty(false) })
   }, [moduleId, currentPath])
 
-  // Poll module to know if a deployment is in progress (for button disable)
+  // Realtime deployment status via WebSocket (also git status)
   useEffect(() => {
-    let cancelled = false
-    const load = async () => {
-      const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}`)
-      if (!res || !res.ok) return
-      const j = await res.json().catch(() => null)
-      if (!cancelled && j) setRemoteDeploying(!!j.is_deploying)
-    }
-    load()
-    const id = setInterval(load, 3000)
-    return () => { cancelled = true; clearInterval(id) }
+    if (!moduleId) return
+    socketService.subscribeTopic(`module:${moduleId}`)
+    const unsubscribe = socketService.subscribe(msg => {
+      if (msg?.eventType === 'module_deploy_status' && msg?.module_id === moduleId) {
+        const p = msg.payload || {}
+        setRemoteDeploying(!!p.is_deploying)
+      }
+      if (msg?.eventType === 'git_status' && msg?.module_id === moduleId) {
+        const p = msg.payload || {}
+        const st = {
+          is_merging: !!p.is_merging,
+          conflicts: Array.isArray(p.conflicts) ? p.conflicts : [],
+          modified: Array.isArray(p.modified) ? p.modified : [],
+          last_fetch: p.last_fetch || '',
+          last_pull: p.last_pull || '',
+        }
+        setGitStatus(st)
+        setConflicting(st.conflicts.includes(currentPath))
+        setIsModified(st.modified.includes(currentPath))
+        try { const ev = new CustomEvent('ide:conflicts', { detail: { paths: st.conflicts } }); window.dispatchEvent(ev) } catch {}
+        try { const ev2 = new CustomEvent('ide:modified', { detail: { paths: st.modified } }); window.dispatchEvent(ev2) } catch {}
+      }
+    })
+    return () => { socketService.unsubscribeTopic(`module:${moduleId}`); unsubscribe() }
   }, [moduleId])
+
+  // Git status polling and broadcaster
+  const refreshGitStatus = async () => {
+    try {
+      const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/git/status`)
+      const js = await res.json().catch(() => ({}))
+      const st = js || { is_merging: false, conflicts: [], modified: [], last_fetch: '', last_pull: '' }
+      setGitStatus(st)
+      setConflicting(!!(st?.conflicts || []).includes(currentPath))
+      setIsModified(!!(st?.modified || []).includes(currentPath))
+      try { const ev = new CustomEvent('ide:conflicts', { detail: { paths: (st?.conflicts || []) } }); window.dispatchEvent(ev) } catch {}
+      try { const ev2 = new CustomEvent('ide:modified', { detail: { paths: (st?.modified || []) } }); window.dispatchEvent(ev2) } catch {}
+    } catch {
+      // ignore
+    }
+  }
+
+  useEffect(() => { if (moduleId) refreshGitStatus() }, [moduleId])
+  useEffect(() => {
+    setConflicting(!!(gitStatus?.conflicts || []).includes(currentPath))
+    setIsModified(!!(gitStatus?.modified || []).includes(currentPath))
+  }, [currentPath, gitStatus])
+  // Remove polls; status comes via WebSocket
 
   // Ctrl+S to save
   useEffect(() => {
@@ -166,6 +213,7 @@ export default function DockerComposeSection({ moduleId }) {
       }
       setUnsaved({})
       setDirty(false)
+      await refreshGitStatus()
     }
     const onBlur = () => { if (Object.keys(unsaved).length > 0) saveAll() }
     const onVis = () => { if (document.hidden && Object.keys(unsaved).length > 0) saveAll() }
@@ -181,6 +229,37 @@ export default function DockerComposeSection({ moduleId }) {
     })()
   }, [currentPath])
 
+  // Load repo root and attach linter when editing docker-compose.yml
+  useEffect(() => {
+    const isCompose = (currentPath || '').split('/').pop()?.toLowerCase() === 'docker-compose.yml'
+    if (!isCompose) { setComposeLintExt(null); return }
+    let cancelled = false
+    const load = async () => {
+      try {
+        const [resRoot, resMod] = await Promise.all([
+          fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/root`),
+          fetchWithAuth(`/api/v1/admin/modules/${moduleId}`)
+        ])
+        const j = await resRoot.json().catch(() => null)
+        const mod = await resMod.json().catch(() => null)
+        const root = j?.abs_path || ''
+        if (!cancelled) {
+          setRepoRoot(root)
+          setModuleSlug(mod?.slug || '')
+          setComposeLintExt(makeComposeLinter({ absRoot: root, moduleSlug: mod?.slug || '' }))
+        }
+      } catch {
+        if (!cancelled) {
+          setRepoRoot('')
+          setModuleSlug('')
+          setComposeLintExt(makeComposeLinter({ absRoot: '', moduleSlug: '' }))
+        }
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [moduleId, currentPath])
+
   const saveFile = async () => {
     if (!dirty) return
     await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/write`, {
@@ -190,9 +269,26 @@ export default function DockerComposeSection({ moduleId }) {
     })
     setDirty(false)
     setUnsaved(prev => { const { [currentPath]:_, ...rest } = prev; return rest })
+    await refreshGitStatus()
   }
 
   // (removed legacy openEntry/renderTree)
+  const reloadCurrentFile = async () => {
+    if (!currentPath || currentPath.endsWith('/')) return
+    const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/read?path=${encodeURIComponent(currentPath)}`)
+    const d = await res.json().catch(() => ({}))
+    const txt = d?.content || ''
+    setIsBinary(isProbablyBinary(txt))
+    setContent(txt)
+    setDirty(false)
+  }
+
+  const quickResolveBoth = () => {
+    const resolved = resolveConflictMarkers(content, 'both')
+    setContent(resolved)
+    setDirty(true)
+    setUnsaved(prev => ({ ...prev, [currentPath]: resolved }))
+  }
 
   return (
     <div className="ide-root">
@@ -201,8 +297,52 @@ export default function DockerComposeSection({ moduleId }) {
       </div>
       <div className="ide-editor">
         <div className="pane-header">
-          <span>{currentPath}</span>
+          <span>
+            {currentPath}
+            {gitStatus?.conflicts?.includes(currentPath) && (
+              <span className="conflict-dot" title="Merge conflict in this file" />
+            )}
+          </span>
           <div className="header-actions">
+            <div className="git-actions">
+              {isModified && (
+                <Button
+                  label="Checkout"
+                  color="gray"
+                  onClick={async () => {
+                    await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/git/file/checkout`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ path: currentPath, ref: '' }) })
+                    await reloadCurrentFile();
+                    await refreshGitStatus();
+                  }}
+                />
+              )}
+              {conflicting && (
+                <>
+                  <Button label="Accept current" color="gray" onClick={async ()=>{ await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/git/file/resolve/ours`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ path: currentPath }) }); await reloadCurrentFile(); await refreshGitStatus(); }} />
+                  <Button label="Accept incoming" color="gray" onClick={async ()=>{ await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/git/file/resolve/theirs`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ path: currentPath }) }); await reloadCurrentFile(); await refreshGitStatus(); }} />
+                  <Button label="Accept both" color="gray" onClick={()=>{ quickResolveBoth() }} />
+                  <Button label="Mark resolved" color="blue" onClick={async ()=>{ await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/git/add`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ paths: [currentPath] }) }); await refreshGitStatus(); }} />
+                  <Button label="Checkout file" color="red" onClick={async ()=>{ await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/git/file/checkout`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ path: currentPath, ref: '' }) }); await reloadCurrentFile(); await refreshGitStatus(); }} />
+                </>
+              )}
+              {gitStatus?.is_merging && (
+                <Button
+                  label="Finish merge"
+                  color="blue"
+                  onClick={async () => {
+                    try {
+                      // Stage all changes and try to commit using merge message
+                      await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/git/add`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ paths: [] }) })
+                      const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/git/merge/continue`, { method:'POST' })
+                      if (res && res.ok) { toast.success('Merge completed'); refreshGitStatus() }
+                      else { toast.error('Merge not completed. Resolve remaining conflicts.') }
+                    } catch {
+                      toast.error('Merge failed')
+                    }
+                  }}
+                />
+              )}
+            </div>
             {((currentPath || '').split('/').pop()?.toLowerCase() === 'docker-compose.yml') && (
               <Button
                 label={isDeploying ? 'Deploying…' : 'Deploy'}
@@ -226,7 +366,7 @@ export default function DockerComposeSection({ moduleId }) {
                     setIsDeploying(false)
                   }
                 }}
-                disabled={isBinary || isDeploying || remoteDeploying}
+                disabled={isBinary || isDeploying || remoteDeploying || gitStatus?.is_merging}
               />
             )}
             <Button label={dirty ? 'Save (Ctrl+S)' : 'Saved'} color="blue" onClick={saveFile} disabled={!dirty || isBinary} />
@@ -249,7 +389,7 @@ export default function DockerComposeSection({ moduleId }) {
         <div className="codemirror-wrapper">
           <CodeMirror
             value={content}
-            extensions={extensions}
+            extensions={[...extensions, ...(composeLintExt ? [composeLintExt] : []), ...(isEnvFile(currentPath) ? [dotenvColorizerExt()] : [])]}
             height="calc(100vh - 357px)"
             theme="dark"
             editable={!isBinary}
@@ -285,6 +425,8 @@ function TreeView({ moduleId, selectedPath, title }) {
   const [unsavedSet, setUnsavedSet] = useState(new Set())
   const [undoStack, setUndoStack] = useState([]) // array of actions
   const [redoStack, setRedoStack] = useState([])
+  const [conflictSet, setConflictSet] = useState(new Set())
+  const [modifiedSet, setModifiedSet] = useState(new Set())
 
   useEffect(() => { load('.') }, [])
 
@@ -296,6 +438,20 @@ function TreeView({ moduleId, selectedPath, title }) {
     }
     window.addEventListener('ide:unsaved', onUnsaved)
     return () => window.removeEventListener('ide:unsaved', onUnsaved)
+  }, [])
+
+  // Listen to conflict paths from Git status
+  useEffect(() => {
+    const onConf = (e) => { const paths = e.detail?.paths || []; setConflictSet(new Set(paths)) }
+    window.addEventListener('ide:conflicts', onConf)
+    return () => window.removeEventListener('ide:conflicts', onConf)
+  }, [])
+
+  // Listen to modified paths from Git status
+  useEffect(() => {
+    const onMod = (e) => { const paths = e.detail?.paths || []; setModifiedSet(new Set(paths)) }
+    window.addEventListener('ide:modified', onMod)
+    return () => window.removeEventListener('ide:modified', onMod)
   }, [])
 
   const load = async (p) => {
@@ -551,6 +707,18 @@ function TreeView({ moduleId, selectedPath, title }) {
     for (const up of unsavedSet) {
       if (up === p || up.startsWith(p + '/')) return true
     }
+    return false
+  }
+  const hasConflict = (p, isDir) => {
+    if (!conflictSet || conflictSet.size === 0) return false
+    if (!isDir) return conflictSet.has(p)
+    for (const cp of conflictSet) { if (cp === p || cp.startsWith(p + '/')) return true }
+    return false
+  }
+  const hasModified = (p, isDir) => {
+    if (!modifiedSet || modifiedSet.size === 0) return false
+    if (!isDir) return modifiedSet.has(p)
+    for (const mp of modifiedSet) { if (mp === p || mp.startsWith(p + '/')) return true }
     return false
   }
   const baseForNew = () => {
@@ -848,7 +1016,11 @@ function TreeView({ moduleId, selectedPath, title }) {
                   autoFocus
                 />
               ) : (
-                <span className="tree-name">{n.name}{hasUnsaved(n.path, n.is_dir) && (<span className="unsaved-dot" title="Unsaved changes" />)}</span>
+                <span className="tree-name">{n.name}
+                  {hasUnsaved(n.path, n.is_dir) && (<span className="unsaved-dot" title="Unsaved changes" />)}
+                  {hasConflict(n.path, n.is_dir) && (<span className="conflict-dot" title="Merge conflict" />)}
+                  {hasModified(n.path, n.is_dir) && (<span className="modified-badge" title="Modified">M</span>)}
+                </span>
               )}
             </div>
             {editing === n.path && editError && (
@@ -1021,6 +1193,14 @@ async function detectExtensionsDynamic(path) {
       return [mod.go()]
     }
 
+    // .env files (dotenv)
+    if (fname === '.env' || fname.startsWith('.env')) {
+      try {
+        const mod = await import('@codemirror/legacy-modes/mode/properties')
+        if (mod?.properties) return [StreamLanguage.define(mod.properties)]
+      } catch {}
+    }
+
     // Dockerfile (use legacy mode for accurate highlighting)
     if (fname === 'dockerfile') {
       try {
@@ -1054,4 +1234,451 @@ function isProbablyBinary(str) {
     bad++
   }
   return bad / total > 0.3
+}
+
+function isEnvFile(path) {
+  const fname = (path || '').split('/').pop() || ''
+  const lower = fname.toLowerCase()
+  return lower === '.env' || lower.startsWith('.env')
+}
+
+// Resolve conflict markers in text. mode: 'both' keeps both sides without markers.
+function resolveConflictMarkers(text, mode) {
+  if (!text) return text
+  const lines = text.split(/\n/)
+  let out = []
+  let state = 'normal'
+  let ours = []
+  let theirs = []
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    if (state === 'normal') {
+      if (line.startsWith('<<<<<<<')) { state = 'ours'; ours = []; theirs = []; continue }
+      out.push(line)
+      continue
+    }
+    if (state === 'ours') {
+      if (line.startsWith('=======')) { state = 'theirs'; continue }
+      ours.push(line)
+      continue
+    }
+    if (state === 'theirs') {
+      if (line.startsWith('>>>>>>>')) {
+        // end block
+        if (mode === 'both') {
+          out.push(...ours, ...theirs)
+        } else if (mode === 'theirs') {
+          out.push(...theirs)
+        } else { // 'ours'
+          out.push(...ours)
+        }
+        state = 'normal'
+        continue
+      }
+      theirs.push(line)
+      continue
+    }
+  }
+  return out.join('\n')
+}
+
+// Build a CodeMirror linter that flags relative volume host paths and "ports:" usage, with quick fixes
+function makeComposeLinter({ absRoot, moduleSlug }) {
+  const replacePrefix = (p) => {
+    if (!p) return p
+    const trimmed = p.replace(/^\.\/?/, '')
+    if (!absRoot) return p.replace(/^\.\//, '/abs/path/') // noop-ish fallback to avoid empty
+    const sep = absRoot.endsWith('/') ? '' : '/'
+    return `${absRoot}${sep}${trimmed}`
+  }
+  return linter(view => {
+    const text = view.state.doc.toString()
+    const lines = text.split(/\n/)
+    let diags = []
+    let offset = 0
+    let inVolumes = false
+    let volumesIndent = 0
+    let inServices = false
+    let servicesIndent = 0
+    let currentService = ''
+    let currentServiceIndent = 0
+    // Track top-level networks block for later diagnostics
+    let topNetworksIdx = -1
+    let topNetworksIndent = 0
+    let topNetworksNames = []
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      const indent = line.match(/^\s*/)[0].length
+      // Track top-level networks block and collect simple names under it
+      if (/^\s*networks\s*:\s*(#.*)?$/.test(line) && indent === 0) {
+        topNetworksIdx = i
+        topNetworksIndent = indent
+        // collect network keys directly under this block
+        let k = i + 1
+        topNetworksNames = []
+        while (k < lines.length) {
+          const l = lines[k]
+          const ind = l.match(/^\s*/)[0].length
+          if (l.trim() !== '' && ind <= topNetworksIndent) break
+          const m = l.match(/^\s*([A-Za-z0-9_.-]+)\s*:\s*$/)
+          if (m) topNetworksNames.push(m[1])
+          k++
+        }
+      }
+      // Track services and current service name
+      if (/^\s*services\s*:\s*(#.*)?$/.test(line)) {
+        inServices = true
+        servicesIndent = indent
+        currentService = ''
+        currentServiceIndent = 0
+        offset += line.length + 1
+        continue
+      }
+      if (inServices && indent <= servicesIndent && line.trim() !== '') {
+        inServices = false
+        currentService = ''
+      }
+      if (inServices) {
+        // Service declaration like "  backend:"
+        const mSvc = line.match(/^(\s*)([A-Za-z0-9_.-]+)\s*:\s*(#.*)?$/)
+        if (mSvc && indent > servicesIndent && (currentService === '' || indent <= currentServiceIndent)) {
+          currentService = mSvc[2]
+          currentServiceIndent = indent
+        }
+      }
+      // Track whether we are inside a volumes: block (top-level or service-level)
+      if (/^\s*volumes\s*:\s*(#.*)?$/.test(line)) {
+        inVolumes = true
+        volumesIndent = indent
+        offset += line.length + 1
+        continue
+      }
+      if (inVolumes && indent <= volumesIndent && line.trim() !== '') {
+        // left the volumes block
+        inVolumes = false
+      }
+
+      if (inVolumes) {
+        // Pattern 1: list item form: - ./host:/container[:...]
+        const m = line.match(/^\s*-\s*([^:#\s][^:]*?)\s*:\s*[^\s#]+/)
+        if (m) {
+          const host = m[1]
+          if (/^(\.\.?\/)/.test(host)) {
+            const startCol = line.indexOf(host)
+            const from = offset + startCol
+            const to = from + host.length
+            const replacement = replacePrefix(host)
+            diags.push({
+              from,
+              to,
+              severity: 'warning',
+              message: 'Relative path for volumes are not working correctly. Use absolute path instead',
+              actions: [{
+                name: 'Replace with absolute path',
+                apply: (v) => v.dispatch({ changes: { from, to, insert: replacement } })
+              }]
+            })
+          }
+        }
+        // Pattern 2: object form source: ./host
+        const m2 = line.match(/^\s*source\s*:\s*([^\s#]+)\s*(#.*)?$/)
+        if (m2) {
+          const host = m2[1]
+          if (/^(\.\.?\/)/.test(host)) {
+            const startCol = line.indexOf(host)
+            const from = offset + startCol
+            const to = from + host.length
+            const replacement = replacePrefix(host)
+            diags.push({
+              from,
+              to,
+              severity: 'warning',
+              message: 'Relative path for volumes are not working correctly. Use absolute path instead',
+              actions: [{
+                name: 'Replace with absolute path',
+                apply: (v) => v.dispatch({ changes: { from, to, insert: replacement } })
+              }]
+            })
+          }
+        }
+      }
+
+      // Lint for ports under a service
+      if (inServices && currentService && /^\s*ports\s*:\s*(#.*)?$/.test(line) && indent > currentServiceIndent) {
+        const from = offset + line.indexOf('ports')
+        const to = from + 'ports'.length
+        const serviceName = currentService
+        const portsIndent = indent
+        // Collect list item lines following
+        let j = i + 1
+        const portLines = [] // {i, line}
+        while (j < lines.length) {
+          const l = lines[j]
+          const ind = l.match(/^\s*/)[0].length
+          if (l.trim() === '') { portLines.push({ i: j, line: l }); j++; continue }
+          if (ind <= portsIndent) break
+          // list item or mapping line
+          if (/^\s*-\s*.+/.test(l)) portLines.push({ i: j, line: l })
+          else if (/^\s*[A-Za-z0-9_.-]+\s*:/.test(l)) break
+          else portLines.push({ i: j, line: l })
+          j++
+        }
+
+        diags.push({
+          from,
+          to,
+          severity: 'warning',
+          message: 'Please use Expose and add pan-bagnat-net to the module instead of openning a port',
+          actions: [{
+            name: 'Convert to expose + network',
+            apply: (v) => {
+              const doc = v.state.doc.toString()
+              const all = doc.split(/\n/)
+              // 1) replace ports: with expose:
+              const lineText = all[i]
+              const lineStart = doc.split(/\n/, i).join('\n').length + (i>0?1:0)
+              const portsKeyIndex = lineText.indexOf('ports')
+              const changes = []
+              changes.push({ from: lineStart + portsKeyIndex, to: lineStart + portsKeyIndex + 5, insert: 'expose' })
+              // 2) replace list items host:container -> container
+              const reHostMap = /^(\s*-\s*)("?)(\d+)(?:[^:\n]*?):(\d+)(?:\/(tcp|udp))?("?)(.*)$/
+              for (const pl of portLines) {
+                const lt = all[pl.i]
+                const m = lt.match(reHostMap)
+                if (m) {
+                  const before = m[1]
+                  const quoteL = m[2]
+                  const cont = m[4]
+                  const proto = m[5] ? '/' + m[5] : ''
+                  const quoteR = m[6]
+                  const after = m[7] || ''
+                  const replacement = `${before}${quoteL}${cont}${proto}${quoteR}${after}`
+                  const ls = doc.split(/\n/, pl.i).join('\n').length + (pl.i>0?1:0)
+                  changes.push({ from: ls, to: ls + lt.length, insert: replacement })
+                }
+              }
+              // 3) Ensure top-level networks include pan-bagnat-net external: true
+              const hasTopNetworksIdx = all.findIndex(l => /^networks\s*:\s*(#.*)?$/.test(l))
+              let needAppendTop = false
+              let insertPosDocEnd = doc.length
+              if (hasTopNetworksIdx === -1) {
+                needAppendTop = true
+              } else {
+                // Check if pan-bagnat-net exists under networks
+                let k = hasTopNetworksIdx + 1
+                let found = false
+                while (k < all.length && (all[k].trim() === '' || all[k].match(/^\s+/))) {
+                  if (/^\s*pan-bagnat-net\s*:\s*$/.test(all[k])) { found = true; break }
+                  k++
+                }
+                if (!found) needAppendTop = true
+              }
+              if (needAppendTop) {
+                const block = (all.length>0 && all[all.length-1].trim()!==''? '\n' : '') +
+                  'networks:\n' +
+                  '  pan-bagnat-net:\n' +
+                  '    external: true\n'
+                changes.push({ from: insertPosDocEnd, to: insertPosDocEnd, insert: block })
+              }
+              // 4) Add service networks with alias
+              // Find service block start and end
+              let sStart = i
+              // move up to service name line
+              while (sStart > 0 && !new RegExp(`^\\s*${serviceName}\\s*:`).test(all[sStart])) sStart--
+              let sIndent = all[sStart].match(/^\s*/)[0].length
+              // Determine if networks already present in service
+              let sEnd = sStart + 1
+              while (sEnd < all.length) {
+                const ind = all[sEnd].match(/^\s*/)[0].length
+                if (all[sEnd].trim()!=='' && ind <= sIndent) break
+                sEnd++
+              }
+              const hasNetworks = all.slice(sStart+1, sEnd).some(l => l.match(/^\s*networks\s*:/))
+              const alias = `${moduleSlug || 'module'}-${serviceName}`
+              if (!hasNetworks) {
+                const insertAfterLine = j-1 >= sStart ? j-1 : sStart
+                const insertAfterPos = doc.split(/\n/, insertAfterLine).join('\n').length + (insertAfterLine>0?1:0) + all[insertAfterLine].length
+                const indentStr = ' '.repeat(sIndent + 2)
+                const netBlock = `\n${indentStr}networks:\n${indentStr}  pan-bagnat-net:\n${indentStr}    aliases:\n${indentStr}      - ${alias}`
+                changes.push({ from: insertAfterPos, to: insertAfterPos, insert: netBlock })
+              } else {
+                // ensure network entry exists, else append minimal entry under networks
+                let nIdx = -1
+                for (let t = sStart+1; t < sEnd; t++) if (/^\s*networks\s*:\s*$/.test(all[t])) { nIdx = t; break }
+                if (nIdx !== -1) {
+                  let nIndent = all[nIdx].match(/^\s*/)[0].length
+                  let t = nIdx + 1
+                  let hasNet = false
+                  let pbnIdx = -1
+                  let hasAliases = false
+                  while (t < sEnd) {
+                    const ind = all[t].match(/^\s*/)[0].length
+                    if (all[t].trim()!=='' && ind <= nIndent) break
+                    if (/^\s*pan-bagnat-net\s*:\s*$/.test(all[t])) { hasNet = true; pbnIdx = t }
+                    if (pbnIdx !== -1 && /^\s*aliases\s*:\s*$/.test(all[t])) { hasAliases = true }
+                    t++
+                  }
+                  if (!hasNet) {
+                    const after = doc.split(/\n/, nIdx+1).join('\n').length + (nIdx+1>0?1:0)
+                    const indentStr = ' '.repeat(nIndent + 2)
+                    const block = `${indentStr}pan-bagnat-net:\n${indentStr}  aliases:\n${indentStr}    - ${alias}\n`
+                    changes.push({ from: after, to: after, insert: block })
+                  } else if (!hasAliases && pbnIdx !== -1) {
+                    const insertAt = doc.split(/\n/, pbnIdx+1).join('\n').length + (pbnIdx+1>0?1:0)
+                    const indentStr = ' '.repeat((all[pbnIdx].match(/^\s*/)[0].length) + 2)
+                    const block = `${indentStr}aliases:\n${indentStr}  - ${alias}\n`
+                    changes.push({ from: insertAt, to: insertAt, insert: block })
+                  }
+                }
+              }
+              v.dispatch({ changes })
+            }
+          }]
+        })
+      }
+
+      offset += line.length + 1
+    }
+
+    // Lint: only external network configured (pan-bagnat-net) → suggest adding module private network and attach to all services
+    if (topNetworksIdx !== -1) {
+      const onlyPbn = topNetworksNames.length === 1 && topNetworksNames[0] === 'pan-bagnat-net'
+      if (onlyPbn) {
+        const from = lines.slice(0, topNetworksIdx).join('\n').length + (topNetworksIdx>0?1:0)
+        const to = from + 'networks'.length
+        const moduleNet = `${moduleSlug || 'module'}-net`
+        diags.push({
+          from,
+          to,
+          severity: 'warning',
+          message: `Only external network configured. Add a dedicated \"${moduleNet}\" network to isolate this module and attach all services to it.`,
+          actions: [{
+            name: 'Add module network and attach services',
+            apply: (v) => {
+              const doc = v.state.doc.toString()
+              const all = doc.split(/\n/)
+              const moduleNet = `${moduleSlug || 'module'}-net`
+              const applyChanges = []
+              // Ensure top-level networks has moduleNet definition
+              let nIdx = -1
+              for (let t = 0; t < all.length; t++) {
+                if (/^\s*networks\s*:\s*(#.*)?$/.test(all[t]) && all[t].match(/^\s*/)[0].length === 0) { nIdx = t; break }
+              }
+              if (nIdx === -1) {
+                const block = (all.length>0 && all[all.length-1].trim()!==''? '\n' : '') +
+                  'networks:\n' +
+                  `  ${moduleNet}:\n` +
+                  `    name: ${moduleNet}\n` +
+                  '    driver: bridge\n'
+                applyChanges.push({ from: doc.length, to: doc.length, insert: block })
+              } else {
+                // check if moduleNet exists
+                let exists = false
+                let t = nIdx + 1
+                while (t < all.length) {
+                  const ind = all[t].match(/^\s*/)[0].length
+                  if (all[t].trim() !== '' && ind === 0) break
+                  if (new RegExp(`^\\s*${moduleNet}\\s*:`).test(all[t])) { exists = true; break }
+                  t++
+                }
+                if (!exists) {
+                  const insertAt = doc.split(/\n/, nIdx+1).join('\n').length + (nIdx+1>0?1:0)
+                  const block = `  ${moduleNet}:\n    name: ${moduleNet}\n    driver: bridge\n`
+                  applyChanges.push({ from: insertAt, to: insertAt, insert: block })
+                }
+              }
+              // Attach moduleNet to all services
+              // Find services block
+              let sIdx = -1
+              for (let t = 0; t < all.length; t++) { if (/^\s*services\s*:\s*$/.test(all[t])) { sIdx = t; break } }
+              if (sIdx !== -1) {
+                let t = sIdx + 1
+                const sIndent = all[sIdx].match(/^\s*/)[0].length
+                while (t < all.length) {
+                  const l = all[t]
+                  if (l.trim() !== '' && l.match(/^\s*/)[0].length <= sIndent) break
+                  const svcMatch = l.match(/^(\s*)([A-Za-z0-9_.-]+)\s*:\s*$/)
+                  if (svcMatch) {
+                    const svcIndent = svcMatch[1].length
+                    // find end of service block
+                    let u = t + 1
+                    while (u < all.length) {
+                      const ind = all[u].match(/^\s*/)[0].length
+                      if (all[u].trim() !== '' && ind <= svcIndent) break
+                      u++
+                    }
+                    // search for networks block
+                    let networksLine = -1
+                    for (let k = t+1; k < u; k++) if (/^\s*networks\s*:\s*$/.test(all[k])) { networksLine = k; break }
+                    if (networksLine === -1) {
+                      // insert networks with moduleNet
+                      const insertPos = doc.split(/\n/, u).join('\n').length + (u>0?1:0)
+                      const indentStr = ' '.repeat(svcIndent + 2)
+                      const block = `\n${indentStr}networks:\n${indentStr}  ${moduleNet}:\n`
+                      applyChanges.push({ from: insertPos, to: insertPos, insert: block })
+                    } else {
+                      // ensure mapping entry exists
+                      let hasModuleNet = false
+                      let k = networksLine + 1
+                      const nIndent = all[networksLine].match(/^\s*/)[0].length
+                      while (k < u) {
+                        const ind = all[k].match(/^\s*/)[0].length
+                        if (all[k].trim() !== '' && ind <= nIndent) break
+                        if (new RegExp(`^\\s*${moduleNet}\\s*:`).test(all[k])) { hasModuleNet = true; break }
+                        k++
+                      }
+                      if (!hasModuleNet) {
+                        const insertAt = doc.split(/\n/, networksLine+1).join('\n').length + (networksLine+1>0?1:0)
+                        const indentStr = ' '.repeat(nIndent + 2)
+                        applyChanges.push({ from: insertAt, to: insertAt, insert: `${indentStr}${moduleNet}:\n` })
+                      }
+                    }
+                    t = u - 1
+                  }
+                  t++
+                }
+              }
+              v.dispatch({ changes: applyChanges })
+            }
+          }]
+        })
+      }
+    }
+    return diags
+  })
+}
+
+// Simple colorizer for .env: add spans for KEY and VALUE around '='
+function dotenvColorizerExt() {
+  const keyMark = Decoration.mark({ class: 'cm-dotenv-key' })
+  const valMark = Decoration.mark({ class: 'cm-dotenv-value' })
+  return ViewPlugin.fromClass(class {
+    constructor(view) {
+      this.decorations = this.build(view)
+    }
+    update(update) {
+      if (update.docChanged || update.viewportChanged) {
+        this.decorations = this.build(update.view)
+      }
+    }
+    build(view) {
+      const builder = []
+      for (let { from, to } of view.visibleRanges) {
+        let text = view.state.doc.sliceString(from, to)
+        let pos = from
+        const lines = text.split('\n')
+        for (let i = 0; i < lines.length; i++) {
+          const l = lines[i]
+          if (!l || /^\s*#/.test(l)) { pos += l.length + 1; continue }
+          const idx = l.indexOf('=')
+          if (idx > 0) {
+            builder.push(keyMark.range(pos, pos + idx))
+            builder.push(valMark.range(pos + idx + 1, pos + l.length))
+          }
+          pos += l.length + 1
+        }
+      }
+      return Decoration.set(builder, true)
+    }
+  }, { decorations: v => v.decorations })
 }

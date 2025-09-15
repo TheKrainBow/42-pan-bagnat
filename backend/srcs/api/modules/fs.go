@@ -86,3 +86,14 @@ func MkdirFsPath(w http.ResponseWriter, r *http.Request) {
     if err := core.MkdirModule(mod, body.Path); err != nil { http.Error(w, err.Error(), http.StatusBadRequest); return }
     w.WriteHeader(http.StatusNoContent)
 }
+
+// GET /admin/modules/{moduleID}/fs/root
+func GetFsRoot(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    moduleID := chi.URLParam(r, "moduleID")
+    mod, err := core.GetModule(moduleID)
+    if err != nil { http.Error(w, "module not found", http.StatusNotFound); return }
+    root, err := core.HostModuleRepoRoot(mod)
+    if err != nil { http.Error(w, err.Error(), http.StatusInternalServerError); return }
+    json.NewEncoder(w).Encode(map[string]string{"abs_path": root})
+}

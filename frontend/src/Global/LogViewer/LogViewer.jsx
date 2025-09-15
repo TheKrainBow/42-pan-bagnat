@@ -75,7 +75,7 @@ const LogViewer = forwardRef(({ logType = 'module', moduleId = "", containerName
       if (logType === 'module') {
         params.set('order', '-created_at');
         if (token) params.set('next_page_token', token);
-        else params.set('limit', 50);
+        else params.set('limit', 100);
       }
 
       const url = logType === 'module' ? `${source}?${params}` : source;

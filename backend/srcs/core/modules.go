@@ -39,6 +39,12 @@ type Module struct {
     IsDeploying   bool         `json:"is_deploying"`
     LastDeploy    time.Time    `json:"last_deploy"`
     LastDeployStatus string    `json:"last_deploy_status"`
+    GitLastFetch time.Time     `json:"git_last_fetch"`
+    GitLastPull  time.Time     `json:"git_last_pull"`
+    CurrentCommitHash    string `json:"current_commit_hash"`
+    CurrentCommitSubject string `json:"current_commit_subject"`
+    LatestCommitHash     string `json:"latest_commit_hash"`
+    LatestCommitSubject  string `json:"latest_commit_subject"`
 }
 
 type ModulePostInput struct {
@@ -60,6 +66,13 @@ type ModulePatch struct {
     Name      *string `json:"name,omitempty"`
     GitURL    *string `json:"git_url,omitempty"`
     GitBranch *string `json:"git_branch,omitempty"`
+    GitLastFetch *time.Time `json:"git_last_fetch,omitempty"`
+    GitLastPull  *time.Time `json:"git_last_pull,omitempty"`
+    LateCommits  *int       `json:"late_commits,omitempty"`
+    CurrentCommitHash    *string `json:"current_commit_hash,omitempty"`
+    CurrentCommitSubject *string `json:"current_commit_subject,omitempty"`
+    LatestCommitHash     *string `json:"latest_commit_hash,omitempty"`
+    LatestCommitSubject  *string `json:"latest_commit_subject,omitempty"`
 }
 
 type ModulePagination struct {
@@ -132,6 +145,8 @@ type AllContainer struct {
     Networks   []string        `json:"networks"`
     ModuleID   string          `json:"module_id,omitempty"`
     ModuleName string          `json:"module_name,omitempty"`
+    Missing    bool            `json:"missing,omitempty"`
+    Orphan     bool            `json:"orphan,omitempty"`
 }
 
 func GenerateModuleOrderBy(order string) (dest []database.ModuleOrder) {

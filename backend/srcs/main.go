@@ -223,6 +223,7 @@ func main() {
 			r.Route("/integrations", integrations.RegisterRoutes)
 			r.Route("/modules", modules.RegisterRoutes)
 			r.Get("/docker/ls", modules.GetAllContainers)
+			r.Delete("/docker/{containerName}/delete", modules.DeleteContainerGlobal)
 			r.Route("/users", users.RegisterRoutes)
 			r.Route("/roles", roles.RegisterRoutes)
 		})
