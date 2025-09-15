@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import Button from 'Global/Button/Button';
 import LogViewer from '../../../../../Global/LogViewer/LogViewer';
+import ContainersGraph from '../ContainersGraph/ContainersGraph';
 import './DockerContainersSection.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
 import { socketService } from 'Global/SocketService/SocketService';
@@ -48,7 +49,8 @@ export default function DockerContainers({ moduleId }) {
   };
   return (
     <div className="docker-containers">
-      <table className="container-table">
+      <ContainersGraph moduleId={moduleId} />
+      <table className="container-table" style={{ display: 'none' }}>
         <thead>
           <tr>
             <th>Name</th>

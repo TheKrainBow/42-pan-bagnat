@@ -116,10 +116,22 @@ const (
 )
 
 type ModuleContainer struct {
-	Name   string          `json:"name"`
-	Status ContainerStatus `json:"status"`
-	Reason string          `json:"reason"`
-	Since  string          `json:"since"`
+    Name   string          `json:"name"`
+    Status ContainerStatus `json:"status"`
+    Reason string          `json:"reason"`
+    Since  string          `json:"since"`
+}
+
+// AllContainer describes containers across all modules/projects
+type AllContainer struct {
+    Name       string          `json:"name"`
+    Status     ContainerStatus `json:"status"`
+    Reason     string          `json:"reason"`
+    Since      string          `json:"since"`
+    Project    string          `json:"project"`
+    Networks   []string        `json:"networks"`
+    ModuleID   string          `json:"module_id,omitempty"`
+    ModuleName string          `json:"module_name,omitempty"`
 }
 
 func GenerateModuleOrderBy(order string) (dest []database.ModuleOrder) {

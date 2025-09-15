@@ -1,19 +1,19 @@
 package modules
 
 import (
-	"backend/api/auth"
-	api "backend/api/dto"
-	"backend/core"
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
-	"net/http/httputil"
-	"net/url"
-	"strconv"
-	"strings"
+    "backend/api/auth"
+    api "backend/api/dto"
+    "backend/core"
+    "encoding/json"
+    "fmt"
+    "log"
+    "net/http"
+    "net/http/httputil"
+    "net/url"
+    "strconv"
+    "strings"
 
-	"github.com/go-chi/chi/v5"
+    "github.com/go-chi/chi/v5"
 )
 
 // @Security     SessionAuth
@@ -525,4 +525,22 @@ func PageRedirection(w http.ResponseWriter, r *http.Request) {
 	r.URL.Path = suffix
 
 	proxy.ServeHTTP(w, r)
+}
+
+// GetAllContainers returns all containers across modules with grouping hints.
+// @Security     SessionAuth
+// @Summary      List All Containers
+// @Description  Returns all Docker containers known to the host, enriched with compose project and module mapping when available.
+// @Tags         Docker
+// @Produce      json
+// @Success      200  {array}  core.AllContainer
+// @Router       /admin/docker/ls [get]
+func GetAllContainers(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    items, err := core.GetAllContainers()
+    if err != nil {
+        http.Error(w, fmt.Sprintf("failed to list containers: %v", err), http.StatusInternalServerError)
+        return
+    }
+    json.NewEncoder(w).Encode(items)
 }

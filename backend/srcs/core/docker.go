@@ -170,6 +170,95 @@ func GetModuleContainers(module Module) ([]ModuleContainer, error) {
 	return containers, nil
 }
 
+// GetAllContainers lists all containers, grouping info by compose project and networks.
+func GetAllContainers() ([]AllContainer, error) {
+    // Build a slug -> module map
+    mods, _, err := GetModules(ModulePagination{Limit: 10000})
+    if err != nil {
+        return nil, fmt.Errorf("failed to load modules: %w", err)
+    }
+    modBySlug := make(map[string]Module)
+    for _, m := range mods {
+        modBySlug[m.Slug] = m
+    }
+
+    cmd := exec.Command("docker", "ps", "-a",
+        "--format", `{{.Names}}|{{.Status}}|{{.Label "com.docker.compose.project"}}|{{.Networks}}`)
+    var stdout bytes.Buffer
+    cmd.Stdout = &stdout
+    if err := cmd.Run(); err != nil {
+        return nil, fmt.Errorf("docker ps failed: %w", err)
+    }
+    text := strings.TrimSpace(stdout.String())
+    if text == "" { return []AllContainer{}, nil }
+    lines := strings.Split(text, "\n")
+    var out []AllContainer
+    for _, line := range lines {
+        parts := strings.SplitN(line, "|", 4)
+        if len(parts) < 4 { continue }
+        fullName := parts[0]
+        rawStatus := parts[1]
+        project := parts[2]
+        nets := parts[3]
+
+        // Parse status
+        var status ContainerStatus
+        var reason, since string
+        lowered := strings.ToLower(rawStatus)
+        switch {
+        case strings.HasPrefix(lowered, "up"):
+            status = ContainerRunning
+            reason = "Up"
+            since = strings.TrimPrefix(rawStatus, "Up ")
+        case strings.HasPrefix(lowered, "exited"):
+            status = ContainerExited
+            p := strings.SplitN(rawStatus, " ", 2)
+            reason = p[0]
+            if len(p) > 1 { since = p[1] }
+        case strings.HasPrefix(lowered, "paused"):
+            status = ContainerPaused
+            reason = "Paused"
+            since = strings.TrimPrefix(rawStatus, "Paused ")
+        case strings.HasPrefix(lowered, "created"):
+            status = ContainerCreated
+            reason = "Created"
+            since = strings.TrimPrefix(rawStatus, "Created ")
+        case strings.HasPrefix(lowered, "restarting"):
+            status = ContainerRestarting
+            reason = "Restarting"
+            since = strings.TrimPrefix(rawStatus, "Restarting ")
+        case strings.HasPrefix(lowered, "dead"):
+            status = ContainerDead
+            reason = "Dead"
+            since = strings.TrimPrefix(rawStatus, "Dead ")
+        default:
+            status = ContainerUnknown
+            reason = rawStatus
+        }
+
+        // Module mapping by project slug
+        var moduleID, moduleName string
+        if m, ok := modBySlug[project]; ok {
+            moduleID = m.ID
+            moduleName = m.Name
+        }
+        networks := []string{}
+        if nets != "" { networks = strings.Split(nets, ",") }
+
+        out = append(out, AllContainer{
+            Name: fullName,
+            Status: status,
+            Reason: reason,
+            Since: since,
+            Project: project,
+            Networks: networks,
+            ModuleID: moduleID,
+            ModuleName: moduleName,
+        })
+    }
+    return out, nil
+}
+
 func GetContainerLogs(module Module, containerName string, since string) ([]string, error) {
     fullName := fmt.Sprintf("%s-%s-1", module.Slug, containerName)
 

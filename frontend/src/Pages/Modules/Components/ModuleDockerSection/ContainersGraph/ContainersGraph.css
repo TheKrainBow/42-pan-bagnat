@@ -1,0 +1,27 @@
+.cg-root { display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-height: 0; }
+.cg-toolbar { display: flex; align-items: center; gap: 8px; }
+.cg-toolbar .spacer { flex: 1; }
+.cg-viewport { position: relative; flex: 1; min-height: 0; border: 1px solid var(--border); border-radius: 8px; background: #0f1116; overflow: hidden; cursor: grab; }
+.cg-canvas { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.cg-group { position: absolute; width: 360px; background: #151820; border: 1px solid #2b2f3a; border-radius: 8px; padding: 10px; }
+.cg-group.current { box-shadow: 0 0 0 2px rgba(77,163,255,0.25); }
+.cg-group-title { font-weight: 600; color: #e8eaed; margin-bottom: 8px; border-bottom: 1px dashed rgba(255,255,255,0.06); padding-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.cg-group-title.link { cursor: pointer; color: #8ab4f8; }
+.cg-group-title.link:hover { text-decoration: underline; }
+.cg-primary-net { font-size: 11px; padding: 1px 8px; border-radius: 999px; border: 1px solid; }
+.cg-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.cg-card { border: 1px solid #2b2f3a; border-radius: 8px; padding: 6px; background: #0f1116; }
+.cg-card-name { font-size: 12px; color: #e8eaed; margin-bottom: 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cg-networks { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 6px; }
+.cg-networks .chip { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: rgba(255,255,255,0.06); color: #c7cbd1; border: 1px solid #2b2f3a; }
+.cg-networks .chip.net-internal { background: rgba(76,175,80,0.10); border-color: rgba(76,175,80,0.45); color: #cde8d1; }
+.cg-networks .chip.net-shared { background: rgba(255,193,7,0.10); border-color: rgba(255,193,7,0.55); color: #ffe082; }
+.cg-networks .chip.net-primary { box-shadow: 0 0 0 2px rgba(138,180,248,0.25) inset; }
+.cg-card-actions { display: flex; flex-wrap: wrap; gap: 4px; }
+.cg-card .mini { font-size: 11px; padding: 2px 6px; border-radius: 6px; border: 1px solid #2b2f3a; background: #151820; color: #e8eaed; cursor: pointer; }
+.cg-card .mini:hover { background: rgba(255,255,255,0.06); }
+.cg-card .mini.danger { border-color: #5c2b2b; color: #ff9e9e; }
+.status-running { box-shadow: 0 0 0 1px rgba(76, 175, 80, 0.25) inset; }
+.status-exited { box-shadow: 0 0 0 1px rgba(189, 189, 189, 0.25) inset; }
+.status-restarting { box-shadow: 0 0 0 1px rgba(255, 193, 7, 0.25) inset; }
+.status-unknown { box-shadow: 0 0 0 1px rgba(158, 158, 158, 0.25) inset; }
