@@ -1,14 +1,14 @@
 package main
 
 import (
-    "context"
-    "encoding/json"
-    "fmt"
-    "log"
-    "net/http"
-    "os"
-    "strings"
-    "time"
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 
 	"backend/api/auth"
 	"backend/api/integrations"
@@ -28,7 +28,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/joho/godotenv"
 
-    _ "github.com/lib/pq"
+	_ "github.com/lib/pq"
 )
 
 // @title Pan Bagnat API
@@ -122,7 +122,7 @@ func InjectPageNameMiddleware(next http.Handler) http.Handler {
 }
 
 func main() {
-    port := getPort()
+	port := getPort()
 
 	if os.Getenv("BUILD_MODE") == "" {
 		err := godotenv.Load("../.env")
@@ -242,7 +242,6 @@ func main() {
 	r.Post("/webhooks/events", websocket.WebhookHandler(websocket.Secret))
 	log.Printf("Backend listening on port %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, r))
-}
 }
 
 func getPort() string {
