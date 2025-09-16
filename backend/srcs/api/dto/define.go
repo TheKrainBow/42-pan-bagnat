@@ -122,12 +122,26 @@ type ModuleLog struct {
 }
 
 type ModulePage struct {
-	ID       string `json:"id" example:"page_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
-	Name     string `json:"name"`
-	Slug     string `json:"slug"`
-	URL      string `json:"url"`
-	IsPublic bool   `json:"is_public"`
-	ModuleID string `json:"module_id"`
+    ID       string `json:"id" example:"page_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+    Name     string `json:"name"`
+    Slug     string `json:"slug"`
+    URL      string `json:"url"`
+    IsPublic bool   `json:"is_public"`
+    ModuleID string `json:"module_id"`
+    IconURL  string `json:"icon_url,omitempty"`
+}
+
+// Session represents a user session (device) in the system
+// swagger:model Session
+type Session struct {
+    ID          string    `json:"id" example:"eyJhbGciOiJIUz..."`
+    UserAgent   string    `json:"user_agent" example:"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)..."`
+    IP          string    `json:"ip" example:"192.168.0.12"`
+    DeviceLabel string    `json:"device_label" example:"MacBook Pro"`
+    CreatedAt   time.Time `json:"created_at"`
+    LastSeen    time.Time `json:"last_seen"`
+    ExpiresAt   time.Time `json:"expires_at"`
+    IsCurrent   bool      `json:"is_current"`
 }
 
 type ModuleContainer struct {

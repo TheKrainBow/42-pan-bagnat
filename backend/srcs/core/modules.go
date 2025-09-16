@@ -66,6 +66,7 @@ type ModulePatch struct {
     Name      *string `json:"name,omitempty"`
     GitURL    *string `json:"git_url,omitempty"`
     GitBranch *string `json:"git_branch,omitempty"`
+    IconURL   *string `json:"icon_url,omitempty"`
     GitLastFetch *time.Time `json:"git_last_fetch,omitempty"`
     GitLastPull  *time.Time `json:"git_last_pull,omitempty"`
     LateCommits  *int       `json:"late_commits,omitempty"`
@@ -100,12 +101,13 @@ type ModuleLogsPagination struct {
 }
 
 type ModulePage struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Slug     string `json:"slug"`
-	URL      string `json:"url"`
-	IsPublic bool   `json:"is_public"`
-	ModuleID string `json:"module_id"`
+    ID       string `json:"id"`
+    Name     string `json:"name"`
+    Slug     string `json:"slug"`
+    URL      string `json:"url"`
+    IsPublic bool   `json:"is_public"`
+    ModuleID string `json:"module_id"`
+    IconURL  string `json:"icon_url"`
 }
 
 type ModulePagesPagination struct {
@@ -472,6 +474,7 @@ func PatchModule(patch ModulePatch) (*Module, error) {
         ID:        patch.ID,
         Name:      patch.Name,
         GitURL:    patch.GitURL,
+        IconURL:   patch.IconURL,
         // Note: database.ModulePatch doesn't currently expose git_branch,
         // but it can be supported by adding it there. For now, keep to fields allowed.
     }
@@ -651,12 +654,12 @@ func DeleteModulePage(pageID string) error {
 
 func UpdateModulePage(pageID string, name, url *string, isPublic *bool) (ModulePage, error) {
 	// Build the patch struct for the DB layer
-	patch := database.ModulePagePatch{
-		ID:       pageID,
-		Name:     name,
-		URL:      url,
-		IsPublic: isPublic,
-	}
+    patch := database.ModulePagePatch{
+        ID:       pageID,
+        Name:     name,
+        URL:      url,
+        IsPublic: isPublic,
+    }
 
 	if name != nil {
 		newSlug := GeneratePageSlug(*name)

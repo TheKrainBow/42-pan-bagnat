@@ -15,6 +15,7 @@ export default function ModuleSettings({
   onUpdate,
   onUninstall
 }) {
+
   // Local state for the roles assigned to this module
   const [moduleRoles, setModuleRoles] = useState(module.roles || []);
 
@@ -101,6 +102,8 @@ export default function ModuleSettings({
   return (
     <div className="module-settings-container">
       <ModuleAboutSection module={module} />
+
+      {/* Icon editor moved to header modal (click icon) */}
 
       <div className="module-settings-actions">
         <Button

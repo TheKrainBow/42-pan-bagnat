@@ -357,6 +357,15 @@ func RemoveRoleFromUser(roleID, userIdentifier string) error {
 	return err
 }
 
+// DeleteAllRolesForUser removes all role links for a given user ID.
+func DeleteAllRolesForUser(userID string) error {
+    _, err := mainDB.Exec(`
+        DELETE FROM user_roles
+        WHERE user_id = $1
+    `, userID)
+    return err
+}
+
 func AssignRoleToModule(roleID, moduleID string) error {
 	fmt.Printf("Adding module_roles for module (%s) and role (%s)\n", moduleID, roleID)
 	_, err := mainDB.Exec(`

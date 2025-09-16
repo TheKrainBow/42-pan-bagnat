@@ -50,6 +50,7 @@ services:
       - db
     volumes:
       - ./repos:/data/repos
+      - ./assets:/app/assets
       - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - pan-bagnat-net

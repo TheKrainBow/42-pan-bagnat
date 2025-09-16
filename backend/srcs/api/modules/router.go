@@ -22,7 +22,7 @@ func RegisterRoutes(r chi.Router) {
     r.Get("/{moduleID}/git/status", GitStatus)
     r.Post("/{moduleID}/git/fetch", GitFetch)
     r.Post("/{moduleID}/git/add", GitAdd)
-    r.Post("/{moduleID}/git/merge/continue", GitMergeContinueHandler)
+	r.Post("/{moduleID}/git/merge/continue", GitMergeContinueHandler)
     r.Post("/{moduleID}/git/merge/abort", GitMergeAbortHandler)
     r.Get("/{moduleID}/git/commits", GitCommits)
     r.Get("/{moduleID}/git/branches", GitBranches)
@@ -62,4 +62,15 @@ func RegisterRoutes(r chi.Router) {
     r.Post("/{moduleID}/fs/rename", RenameFsPath)
     r.Post("/{moduleID}/fs/delete", DeleteFsPath)
     r.Post("/{moduleID}/fs/mkdir", MkdirFsPath)
+
+    // Icon management
+    r.Post("/{moduleID}/icon/upload", SetModuleIconUpload)
+    r.Post("/{moduleID}/icon/url", SetModuleIconFromURL)
+    r.Post("/{moduleID}/icon/from-repo", SetModuleIconFromRepo)
+
+    // Page icon management
+    r.Post("/{moduleID}/pages/{pageID}/icon/upload", SetPageIconUpload)
+    r.Post("/{moduleID}/pages/{pageID}/icon/url", SetPageIconFromURL)
+    r.Post("/{moduleID}/pages/{pageID}/icon/from-repo", SetPageIconFromRepo)
+    r.Post("/{moduleID}/pages/{pageID}/icon/clear", SetPageIconClear)
 }

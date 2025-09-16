@@ -204,6 +204,9 @@ func main() {
 	fs := http.FileServer(http.Dir("./docs/swagger-ui"))
 	r.Handle("/api/v1/docs/*", http.StripPrefix("/api/v1/docs/", fs))
 
+	// Serve public assets (icons, etc.)
+	r.Handle("/assets/*", http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
+
 	// r.Get("/swagger/*", httpSwagger.WrapHandler)
 
 	r.Route("/auth", func(r chi.Router) {
@@ -214,6 +217,13 @@ func main() {
 
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/users/me", users.GetUserMe)
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/users/me/pages", users.GetContextUserPages)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/users/me/roles", users.GetUserMeRoles)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Delete("/api/v1/users/me", users.DeleteUserMe)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/users/me/prefs/sidebar", users.GetSidebarPrefs)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Put("/api/v1/users/me/prefs/sidebar", users.PutSidebarPrefs)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/users/me/sessions", users.GetUserSessions)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Delete("/api/v1/users/me/sessions", users.DeleteUserSessions)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Delete("/api/v1/users/me/sessions/{sessionID}", users.DeleteUserSession)
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/ping", ping.Ping)
 
 	r.Route("/api/v1/admin", func(r chi.Router) {

@@ -1,14 +1,15 @@
 package auth
 
 import (
-	"backend/core"
-	"context"
-	"net/http"
-	"os"
-	"strings"
-	"time"
+    "backend/core"
+    "backend/database"
+    "context"
+    "net/http"
+    "os"
+    "strings"
+    "time"
 
-	"golang.org/x/oauth2"
+    "golang.org/x/oauth2"
 )
 
 func getOAuthConf() *oauth2.Config {
@@ -73,4 +74,15 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 	core.WriteSessionCookie(w, sessionID, 24*time.Hour, isHTTPS)
 
 	redirectHome()
+}
+
+// POST /auth/logout
+// Clears the current session cookie and deletes the server-side session.
+func Logout(w http.ResponseWriter, r *http.Request) {
+    sid := core.ReadSessionIDFromCookie(r)
+    if sid != "" {
+        _ = database.DeleteSession(sid)
+    }
+    core.ClearSessionCookie(w)
+    w.WriteHeader(http.StatusNoContent)
 }

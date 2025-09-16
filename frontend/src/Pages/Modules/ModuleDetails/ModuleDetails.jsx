@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useSearchParams, useParams, Link } from 'react-router-dom';
 import './ModuleDetails.css';
 import AppIcon from 'Global/AppIcon/AppIcon';
+import ModuleIconModal from 'Pages/Modules/Components/ModuleIconModal/ModuleIconModal';
 import Button from 'Global/Button/Button';
 import ModuleLogsPanel from 'Pages/Modules/Components/ModuleLogsPanel/ModuleLogsPanel';
 import ModuleSettings from 'Pages/Modules/Components/ModuleSettings/ModuleSettings';
@@ -22,6 +23,7 @@ const ModuleDetails = () => {
   const [showWarning, setShowWarning] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
   const [showConfirmUninstall, setShowConfirmUninstall] = useState(false);
+  const [showIconModal, setShowIconModal] = useState(false);
 
   const tab = searchParams.get('tab') || 'logs';
   const [activeTab, setActiveTab] = useState(tab);
@@ -123,7 +125,9 @@ const ModuleDetails = () => {
         </Link>
 
         <div className="module-header">
-          <AppIcon app={{ icon_url: module.icon_url, name: module.name }} fallback="/icons/modules.png" />
+          <div onClick={()=> setShowIconModal(true)} style={{ cursor:'pointer' }} title="Change icon">
+            <AppIcon app={{ icon_url: module.icon_url, name: module.name }} fallback="/icons/modules.png" />
+          </div>
           <h2>{module.name}</h2>
           <ModuleStatusBadge status={module.status} />
         </div>
@@ -220,6 +224,7 @@ const ModuleDetails = () => {
                 statusUpdating={statusUpdating}
                 onToggleStatus={toggleModuleStatus}
                 onUninstall={() => setShowConfirmUninstall(true)}
+                onUpdate={fetchModule}
               />}
             {activeTab === 'containers' && (
               <ModuleDockerSection
@@ -245,6 +250,15 @@ const ModuleDetails = () => {
               )}
           </div>
         </div>
+
+        {showIconModal && (
+          <ModuleIconModal
+            moduleId={module.id}
+            currentIcon={module.icon_url}
+            onClose={()=> setShowIconModal(false)}
+            onUpdated={fetchModule}
+          />
+        )}
       </div>
   );
 };

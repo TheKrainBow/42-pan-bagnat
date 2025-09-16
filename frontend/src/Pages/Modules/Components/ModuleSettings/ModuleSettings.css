@@ -5,6 +5,16 @@
   padding: 16px;
 }
 
+.module-settings-icon { display:flex; gap:12px; align-items:flex-start; border:1px solid var(--border); border-radius:12px; padding:12px; }
+.msi-left { width:90px; display:flex; align-items:center; justify-content:center; }
+.msi-preview { width:64px; height:64px; object-fit: contain; border-radius:8px; border:1px solid var(--border); background: var(--light-background); }
+.msi-right { flex:1; display:flex; flex-direction:column; gap:8px; }
+.msi-row { display:flex; gap:8px; align-items:center; }
+.msi-row input[type="text"] { flex:1; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background: var(--light-background); color: var(--text-primary); }
+.msi-row button { padding:6px 10px; border-radius:8px; border:1px solid var(--border); background: var(--light-background); color: var(--text-primary); cursor:pointer; }
+.msi-row button:disabled { opacity: .6; cursor: not-allowed; }
+.msi-drop { border:1px dashed var(--border); border-radius:10px; padding:10px; text-align:center; color: var(--text-secondary, #9aa0a6); }
+
 .module-settings-actions {
   display: flex;
   flex-wrap: wrap;

@@ -2,11 +2,13 @@ import React, { useEffect, useState } from 'react';
 import Button from 'Global/Button/Button';
 import './DockerPageSection.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
+import PageIconModal from 'Pages/Modules/Components/ModuleIconModal/ModuleIconModal';
 
 export default function ModulePageSection({ moduleId }) {
   const [pages, setPages] = useState([]);            // holds both existing & new rows
   const [edits, setEdits] = useState({});            // keyed by row.id
   const [isSaving, setIsSaving] = useState(false);
+  const [iconTarget, setIconTarget] = useState(null);
   const hasUnsaved = Object.values(edits).some(e => e.dirty);
 
   // load existing pages
@@ -21,6 +23,7 @@ export default function ModulePageSection({ moduleId }) {
         name: p.name,
         url: p.url,
         isPublic: p.is_public,
+        icon_url: p.icon_url,
         isNew: false
       }));
       setPages(list);
@@ -45,7 +48,7 @@ export default function ModulePageSection({ moduleId }) {
   // begin a new blank row
   const handleAddRow = () => {
     const tempId = `new-${Date.now()}`;
-    const newRow = { id: tempId, name: '', url: '', isPublic: false, isNew: true };
+    const newRow = { id: tempId, name: '', url: '', isPublic: false, icon_url: '', isNew: true };
 
     setPages(ps => [...ps, newRow]);
     setEdits(e => ({
@@ -159,6 +162,7 @@ export default function ModulePageSection({ moduleId }) {
                 className={`page-item${edit.dirty ? ' dirty' : ''}`}
               >
                 <div className="page-info">
+                  <img src={edit.icon_url || '/icons/modules.png'} className="page-icon-preview" alt="icon" title="Click to change icon" onClick={()=> setIconTarget(id)} />
                   <input
                     type="text"
                     placeholder="Name"
@@ -198,6 +202,15 @@ export default function ModulePageSection({ moduleId }) {
             );
           })}
         </ul>
+      )}
+      {iconTarget && (
+        <PageIconModal
+          moduleId={moduleId}
+          pageId={iconTarget}
+          currentIcon={(edits[iconTarget] && edits[iconTarget].icon_url) || ''}
+          onClose={()=> setIconTarget(null)}
+          onUpdated={()=> { setIconTarget(null); fetchPages(); }}
+        />
       )}
     </div>
   );

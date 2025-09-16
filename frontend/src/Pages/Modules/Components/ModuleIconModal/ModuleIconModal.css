@@ -1,0 +1,8 @@
+.mi-body { display:flex; gap:12px; }
+.mi-preview img { width:64px; height:64px; object-fit: contain; border:1px solid var(--border); border-radius:8px; background: var(--light-background); }
+.mi-controls { flex:1; display:flex; flex-direction:column; gap:8px; }
+.mi-row { display:flex; gap:8px; align-items:center; }
+.mi-row input[type="text"] { flex:1; padding:6px 8px; border:1px solid var(--border); border-radius:8px; background: var(--light-background); color: var(--text-primary); }
+.mi-row select { padding:6px 8px; border:1px solid var(--border); border-radius:8px; background: var(--light-background); color: var(--text-primary); }
+.mi-row button { padding:6px 10px; border-radius:8px; border:1px solid var(--border); background: var(--light-background); color: var(--text-primary); cursor:pointer; }
+.mi-drop { border:1px dashed var(--border); border-radius:10px; padding:10px; text-align:center; color: var(--text-secondary, #9aa0a6); }

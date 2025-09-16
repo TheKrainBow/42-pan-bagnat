@@ -1,18 +1,19 @@
 package users
 
 import (
-	"backend/api/auth"
-	api "backend/api/dto"
-	"backend/core"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"log"
-	"net/http"
-	"strconv"
-	"strings"
+    "backend/api/auth"
+    api "backend/api/dto"
+    "backend/core"
+    "backend/database"
+    "encoding/json"
+    "errors"
+    "fmt"
+    "log"
+    "net/http"
+    "strconv"
+    "strings"
 
-	"github.com/go-chi/chi/v5"
+    "github.com/go-chi/chi/v5"
 )
 
 // @Security     AdminAuth
@@ -229,4 +230,82 @@ func GetContextUserPages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(destJSON))
+}
+
+// GetUserMeRoles returns the roles for the current authenticated user.
+// @Summary      Get Current User Roles
+// @Description  Lists roles for the authenticated user
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Success      200  {array}   api.Role
+// @Failure      401  {string}  string    "Unauthorized"
+// @Failure      500  {string}  string    "Internal server error"
+// @Router       /users/me/roles [get]
+func GetUserMeRoles(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+
+    u, ok := r.Context().Value(auth.UserCtxKey).(*core.User)
+    if !ok || u == nil {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
+
+    roles, err := database.GetUserRoles(u.ID)
+    if err != nil {
+        log.Printf("error getting roles for user %s: %v", u.ID, err)
+        http.Error(w, "Internal server error", http.StatusInternalServerError)
+        return
+    }
+    apiRoles := api.RolesToAPIRoles(core.DatabaseRolesToRoles(roles))
+    if err := json.NewEncoder(w).Encode(apiRoles); err != nil {
+        http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+        return
+    }
+}
+
+// GetUserSessions returns the list of sessions (devices) for the current user
+// @Summary      Get Current User Sessions
+// @Description  Lists sessions (devices) for the authenticated user
+// @Tags         Users
+// @Accept       json
+// @Produce      json
+// @Success      200  {array}   api.Session
+// @Failure      401  {string}  string    "Unauthorized"
+// @Failure      500  {string}  string    "Internal server error"
+// @Router       /users/me/sessions [get]
+func GetUserSessions(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+
+    u, ok := r.Context().Value(auth.UserCtxKey).(*core.User)
+    if !ok || u == nil {
+        http.Error(w, "Unauthorized", http.StatusUnauthorized)
+        return
+    }
+
+    sessions, err := database.ListSessionsByUserID(r.Context(), u.ID)
+    if err != nil {
+        log.Printf("error listing sessions for user %s: %v\n", u.ID, err)
+        http.Error(w, "Internal server error", http.StatusInternalServerError)
+        return
+    }
+    cur := core.ReadSessionIDFromCookie(r)
+    out := make([]api.Session, 0, len(sessions))
+    for _, s := range sessions {
+        out = append(out, api.Session{
+            ID:          s.SessionID,
+            UserAgent:   s.UserAgent,
+            IP:          s.IP,
+            DeviceLabel: s.DeviceLabel,
+            CreatedAt:   s.CreatedAt,
+            LastSeen:    s.LastSeen,
+            ExpiresAt:   s.ExpiresAt,
+            IsCurrent:   cur != "" && s.SessionID == cur,
+        })
+    }
+
+    if err := json.NewEncoder(w).Encode(out); err != nil {
+        http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+        return
+    }
 }

@@ -102,14 +102,15 @@ func ModuleLogsToAPIModuleLogs(logs []core.ModuleLog) (dest []ModuleLog) {
 }
 
 func ModulePageToAPIModulePage(modulePage core.ModulePage) ModulePage {
-	return ModulePage{
-		ID:       modulePage.ID,
-		ModuleID: modulePage.ModuleID,
-		Name:     modulePage.Name,
-		Slug:     modulePage.Slug,
-		URL:      modulePage.URL,
-		IsPublic: modulePage.IsPublic,
-	}
+    return ModulePage{
+        ID:       modulePage.ID,
+        ModuleID: modulePage.ModuleID,
+        Name:     modulePage.Name,
+        Slug:     modulePage.Slug,
+        URL:      modulePage.URL,
+        IsPublic: modulePage.IsPublic,
+        IconURL:  modulePage.IconURL,
+    }
 }
 
 func ModulePagesToAPIModulePages(pages []core.ModulePage) (dest []ModulePage) {

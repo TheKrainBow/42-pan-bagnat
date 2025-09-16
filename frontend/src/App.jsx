@@ -22,6 +22,7 @@ import UserDetail from './Pages/Users/UserDetail';
 import ModulePage from './Pages/Modules/ModulePage/ModulePage';
 import LoginPage from "./Pages/Login/Login";
 import Sidebar from 'Global/Sidebar/Sidebar';
+import UserSettingsPage from 'Pages/UserSettings/UserSettingsPage';
 import { TourProvider } from 'Global/Tour/TourProvider';
 import { socketService } from 'Global/SocketService/SocketService';
 import { ToastContainer, toast } from 'react-toastify';
@@ -115,6 +116,7 @@ function Main() {
         <Routes>
           <Route path="/modules" element={<ModulePage pages={pages} user={user} />} />
           <Route path="/modules/:slug" element={<ModulePage pages={pages} user={user} />} />
+          <Route path="/settings" element={<UserSettingsPage pages={pages} user={user} />} />
           <Route path="/admin/modules" element={<Modules onSort="name" />} />
           <Route path="/admin/modules/:moduleId" element={<ModuleDetails />} />
           <Route path="/admin/roles" element={<Roles onSort="name" />} />

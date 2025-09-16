@@ -109,20 +109,22 @@ type ModuleLogPagination struct {
 }
 
 type ModulePagePatch struct {
-	ID       string  `json:"id"`
-	Name     *string `json:"name"`
-	Slug     *string `json:"slug"`
-	URL      *string `json:"url"`
-	IsPublic *bool   `json:"is_public"`
+    ID       string  `json:"id"`
+    Name     *string `json:"name"`
+    Slug     *string `json:"slug"`
+    URL      *string `json:"url"`
+    IsPublic *bool   `json:"is_public"`
+    IconURL  *string `json:"icon_url"`
 }
 
 type ModulePage struct {
-	ID       string `json:"id" db:"id"`
-	Name     string `json:"name" db:"name"`
-	Slug     string `json:"slug" db:"slug"`
-	URL      string `json:"url" db:"url"`
-	IsPublic bool   `json:"is_public" db:"is_public"`
-	ModuleID string `json:"module_id" db:"module_id"`
+    ID       string `json:"id" db:"id"`
+    Name     string `json:"name" db:"name"`
+    Slug     string `json:"slug" db:"slug"`
+    URL      string `json:"url" db:"url"`
+    IsPublic bool   `json:"is_public" db:"is_public"`
+    ModuleID string `json:"module_id" db:"module_id"`
+    IconURL  string `json:"icon_url" db:"icon_url"`
 }
 
 type ModulePagesOrderField string
@@ -220,34 +222,46 @@ func IsPageSlugTaken(slug string) (bool, error) {
 }
 
 func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
-	row := mainDB.QueryRow(`
-		UPDATE module_page
-		SET
-		name      = COALESCE($1, name),
-		slug      = COALESCE($2, slug),
-		url       = COALESCE($3, url),
-		is_public = COALESCE($4, is_public)
-		WHERE id = $5
-		RETURNING id, name, slug, url, is_public, module_id;
-	`, p.Name, p.Slug, p.URL, p.IsPublic,
-		p.ID,
-	)
+    row := mainDB.QueryRow(`
+        UPDATE module_page
+        SET
+        name      = COALESCE($1, name),
+        slug      = COALESCE($2, slug),
+        url       = COALESCE($3, url),
+        is_public = COALESCE($4, is_public),
+        icon_url  = CASE WHEN ($5)::text IS NULL THEN icon_url
+                         WHEN ($5)::text = ''  THEN NULL
+                         ELSE ($5)::text END
+        WHERE id = $6
+        RETURNING id, name, slug, url, is_public, module_id, icon_url;
+    `, p.Name, p.Slug, p.URL, p.IsPublic, p.IconURL,
+        p.ID,
+    )
 
 	var out ModulePage
-	if err := row.Scan(
-		&out.ID,
-		&out.Name,
-		&out.Slug,
-		&out.URL,
-		&out.IsPublic,
-		&out.ModuleID,
-	); err != nil {
+    if err := row.Scan(
+        &out.ID,
+        &out.Name,
+        &out.Slug,
+        &out.URL,
+        &out.IsPublic,
+        &out.ModuleID,
+        &out.IconURL,
+    ); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ModulePage{}, fmt.Errorf("ModulePage %s doesn't exist", p.ID)
 		}
 		return ModulePage{}, fmt.Errorf("PatchModulePage scan: %w", err)
 	}
 	return out, nil
+}
+
+// SetPageIconURL updates icon_url for a page; pass nil to set SQL NULL.
+func SetPageIconURL(pageID string, url *string) error {
+    _, err := mainDB.Exec(`
+        UPDATE module_page SET icon_url = $1 WHERE id = $2
+    `, url, pageID)
+    return err
 }
 
 func IsModuleSlugTaken(slug string) (bool, error) {
@@ -802,10 +816,11 @@ func GetModulePages(p ModulePagesPagination) ([]ModulePage, error) {
 	}
 
 	// 4) Assemble SQL
-	var sb strings.Builder
-	sb.WriteString(`
-SELECT id, name, slug, url, is_public, module_id
-  FROM module_page`)
+    var sb strings.Builder
+    sb.WriteString(`
+SELECT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.icon_url, m.icon_url) AS icon_url
+  FROM module_page mp
+  JOIN modules m ON m.id = mp.module_id`)
 	if len(whereConds) > 0 {
 		sb.WriteString("\nWHERE ")
 		sb.WriteString(strings.Join(whereConds, " AND "))
@@ -825,34 +840,36 @@ SELECT id, name, slug, url, is_public, module_id
 	}
 	defer rows.Close()
 
-	var out []ModulePage
-	for rows.Next() {
-		var pg ModulePage
-		if err := rows.Scan(
-			&pg.ID,
-			&pg.Name,
-			&pg.Slug,
-			&pg.URL,
-			&pg.IsPublic,
-			&pg.ModuleID,
-		); err != nil {
-			return nil, err
-		}
-		out = append(out, pg)
-	}
+    var out []ModulePage
+    for rows.Next() {
+        var pg ModulePage
+        if err := rows.Scan(
+            &pg.ID,
+            &pg.Name,
+            &pg.Slug,
+            &pg.URL,
+            &pg.IsPublic,
+            &pg.ModuleID,
+            &pg.IconURL,
+        ); err != nil {
+            return nil, err
+        }
+        out = append(out, pg)
+    }
 
 	return out, nil
 }
 
 func GetUserPages(identifier string) ([]ModulePage, error) {
-	rows, err := mainDB.Query(`
-		SELECT DISTINCT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id
-		FROM users u
-		JOIN user_roles ur ON u.id = ur.user_id
-		JOIN module_roles mr ON ur.role_id = mr.role_id
-		JOIN module_page mp ON mp.module_id = mr.module_id
-		WHERE u.id = $1 OR u.ft_login = $1
-	`, identifier)
+    rows, err := mainDB.Query(`
+        SELECT DISTINCT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.icon_url, m.icon_url) AS icon_url
+        FROM users u
+        JOIN user_roles ur ON u.id = ur.user_id
+        JOIN module_roles mr ON ur.role_id = mr.role_id
+        JOIN module_page mp ON mp.module_id = mr.module_id
+        JOIN modules m ON m.id = mp.module_id
+        WHERE u.id = $1 OR u.ft_login = $1
+    `, identifier)
 	if err != nil {
 		return nil, err
 	}
@@ -861,18 +878,19 @@ func GetUserPages(identifier string) ([]ModulePage, error) {
 	var pages []ModulePage
 	for rows.Next() {
 		var page ModulePage
-		if err := rows.Scan(
-			&page.ID,
-			&page.Name,
-			&page.Slug,
-			&page.URL,
-			&page.IsPublic,
-			&page.ModuleID,
-		); err != nil {
-			return nil, err
-		}
-		pages = append(pages, page)
-	}
+        if err := rows.Scan(
+            &page.ID,
+            &page.Name,
+            &page.Slug,
+            &page.URL,
+            &page.IsPublic,
+            &page.ModuleID,
+            &page.IconURL,
+        ); err != nil {
+            return nil, err
+        }
+        pages = append(pages, page)
+    }
 
 	if err := rows.Err(); err != nil {
 		return nil, err

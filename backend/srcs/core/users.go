@@ -308,6 +308,23 @@ func PatchUser(patch UserPatch) (*User, error) {
 }
 
 func TouchUserLastSeen(userID string) {
-	now := time.Now().UTC()
-	_ = database.UpdateUserLastSeen(userID, now) // ignore error
+    now := time.Now().UTC()
+    _ = database.UpdateUserLastSeen(userID, now) // ignore error
+}
+
+// DeleteUserAndAssociations deletes a user and their associated data (sessions, role links).
+func DeleteUserAndAssociations(ctx context.Context, userID string) error {
+    // Revoke all sessions for this user
+    _, _ = database.DeleteUserSessions(ctx, userID)
+    // Remove role links
+    if err := database.DeleteAllRolesForUser(userID); err != nil {
+        return err
+    }
+    // Remove user preferences
+    _ = database.DeleteUserPrefs(ctx, userID)
+    // Finally delete the user row
+    if err := database.DeleteUser(userID); err != nil {
+        return err
+    }
+    return nil
 }

@@ -1,0 +1,56 @@
+.user-settings-page { padding: 18px; display: grid; grid-template-columns: 1fr; gap: 16px; }
+@media (min-width: 980px) {
+  .user-settings-page { grid-template-columns: 1.1fr 1fr; }
+  .user-settings-page > .usp-card:nth-of-type(1) { grid-column: 1; }
+  .user-settings-page > .usp-card:nth-of-type(2),
+  .user-settings-page > .usp-card:nth-of-type(3) { grid-column: 2; }
+}
+
+.usp-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 2px solid var(--border); grid-column: 1 / -1; }
+.usp-header-left { display: flex; align-items: center; gap: 12px; }
+.usp-avatar { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
+.usp-identity { display: flex; align-items: center; gap: 10px; }
+.usp-login { font-size: 1.2rem; font-weight: 600; }
+.usp-roles-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.role-chip { font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.15); white-space: nowrap; }
+.usp-header-actions { display: flex; align-items: center; }
+
+.usp-card { background: var(--background); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
+.usp-card-title { font-weight: 600; font-size: 1rem; }
+.usp-card-sub { color: var(--text-secondary, #9aa0a6); font-size: 0.9rem; }
+
+.usp-pages { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.usp-page { display: flex; align-items: center; gap: 10px; background: var(--light-background); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+.usp-page:hover { border-color: var(--active); }
+.usp-page.is-hidden { opacity: 0.6; background: rgba(255,255,255,0.04); }
+.usp-handle { cursor: grab; color: var(--text-secondary, #9aa0a6); user-select: none; font-size: 1.2rem; }
+.usp-eye { margin-left: auto; background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 4px 8px; cursor: pointer; }
+.usp-eye.on { color: var(--text-primary); }
+.usp-eye.off { opacity: 0.7; }
+.usp-page-name { font-size: 0.95rem; }
+.usp-page-name.hidden { opacity: 0.6; text-decoration: line-through; }
+.usp-chip { border-radius: 999px; padding: 2px 8px; font-size: 0.75rem; border: 1px solid var(--border); margin-left: 6px; }
+.usp-chip-hidden { color: var(--red-text, #e57373); border-color: var(--red-border, #a63636); background: var(--light-red-background, rgba(166,54,54,0.15)); }
+
+.usp-actions { display: flex; gap: 8px; align-items: center; }
+.usp-actions-spacer { flex: 1; }
+.usp-save-indicator { font-size: 0.85rem; color: var(--text-secondary, #9aa0a6); }
+.usp-save-indicator.saved { color: #72e0a8; }
+
+.btn-primary { background: var(--button-green); color: #111; border: 1px solid var(--button-green); padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.btn-secondary { background: var(--light-background); color: var(--text-primary); border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.btn-danger { background: var(--button-red, #a63636); color: #fff; border: 1px solid var(--button-red, #a63636); padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.btn-outline-danger { background: transparent; color: var(--button-red, #a63636); border: 1px solid var(--button-red, #a63636); padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+
+.usp-account-actions { display: flex; gap: 8px; }
+/* account roles removed */
+
+.usp-sessions { display: flex; flex-direction: column; gap: 8px; }
+.usp-session { display: flex; gap: 12px; align-items: center; justify-content: space-between; background: var(--light-background); border: 1px solid var(--border); border-radius: 10px; padding: 8px 10px; }
+.usp-session.current { border-color: var(--active); }
+.usp-session-main { display: flex; flex-direction: column; gap: 6px; }
+.usp-session-ua { font-size: 0.95rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 56vw; }
+.usp-session-meta { display: flex; gap: 12px; color: var(--text-secondary, #9aa0a6); font-size: 0.85rem; }
+.usp-session-actions { display: flex; align-items: center; gap: 8px; }
+.usp-current-badge { font-size: 0.8rem; color: var(--text-primary); background: var(--border); border: 1px solid var(--border); padding: 2px 6px; border-radius: 999px; }
+.usp-muted { color: var(--text-secondary, #9aa0a6); }

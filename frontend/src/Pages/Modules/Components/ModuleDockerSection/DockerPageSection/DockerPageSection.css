@@ -58,6 +58,7 @@
   gap: 0.75rem;
   min-width: 0;
 }
+.page-icon-preview { width: 24px; height: 24px; object-fit: contain; border-radius: 4px; cursor: pointer; }
 
 .page-info input[type="text"] {
   background: #111;

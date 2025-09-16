@@ -1,0 +1,19 @@
+.user-settings { max-width: 640px; }
+
+.us-section { margin-top: 12px; }
+.us-section-title { margin: 0 0 6px; font-weight: 600; font-size: 1rem; }
+.us-section-hint { margin: 0 0 8px; font-size: 0.9rem; color: var(--text-secondary, #aaa); }
+
+.us-pages { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; }
+.us-page-row { display: flex; align-items: center; gap: 10px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 8px; }
+.us-page-controls { display: flex; flex-direction: column; gap: 4px; }
+.us-btn { background: var(--light-background); border: 1px solid var(--border); color: var(--text-primary); border-radius: 6px; padding: 2px 6px; cursor: pointer; }
+.us-page-label { display: inline-flex; align-items: center; gap: 8px; }
+.us-page-name { font-size: 0.95rem; }
+
+.us-actions { display: flex; gap: 8px; }
+.us-primary { background: var(--button-green); color: #111; border: 1px solid var(--button-green); padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.us-secondary { background: var(--light-background); color: var(--text-primary); border: 1px solid var(--border); padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.us-danger { background: var(--button-red, #a63636); color: #fff; border: 1px solid var(--button-red, #a63636); padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.us-danger-outline { background: transparent; color: var(--button-red, #a63636); border: 1px solid var(--button-red, #a63636); padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+
