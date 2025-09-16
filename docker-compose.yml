@@ -30,6 +30,7 @@ services:
     user: "root:root"
     build:
       context: ./backend
+    init: true
     expose:
       - "8080"
     environment:
