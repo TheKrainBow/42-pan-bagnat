@@ -16,12 +16,22 @@ type FileEntry struct {
     Size  int64  `json:"size"`
 }
 
+// isSafeSlug ensures the slug contains only [a-z0-9-] and is non-empty.
+func isSafeSlug(s string) bool {
+    if s == "" { return false }
+    for _, r := range s {
+        if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' {
+            continue
+        }
+        return false
+    }
+    return true
+}
+
 func moduleRepoPath(mod Module) (string, error) {
     base := os.Getenv("REPO_BASE_PATH")
     if base == "" { base = "../../repos" }
-    if mod.Slug == "" {
-        return "", errors.New("invalid module slug")
-    }
+    if !isSafeSlug(mod.Slug) { return "", errors.New("invalid module slug") }
     return filepath.Join(base, mod.Slug), nil
 }
 
@@ -39,6 +49,9 @@ func repoRootReal(mod Module) (string, error) {
 func ModuleRepoRoot(mod Module) (string, error) {
     return repoRootReal(mod)
 }
+
+// ModuleRepoPath returns the repo path constructed from base and slug with validation.
+func ModuleRepoPath(mod Module) (string, error) { return moduleRepoPath(mod) }
 
 // HostModuleRepoRoot returns the absolute repo path as seen from the host/VM running Docker.
 // When Pan Bagnat runs inside a container, REPO_HOST_BASE_PATH should point to the host's

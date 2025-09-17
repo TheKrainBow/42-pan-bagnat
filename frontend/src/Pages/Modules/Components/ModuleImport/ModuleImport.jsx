@@ -33,12 +33,14 @@ const ModuleImport = ({ onClose }) => {
     if (!validate()) return;
 
     setIsSubmitting(true);
-    const finalBranch = gitBranch.trim() === '' ? 'main' : gitBranch;
     try {
+      const payload = { name: moduleName, git_url: gitUrl };
+      const trimmed = gitBranch.trim();
+      if (trimmed !== '') payload.git_branch = trimmed;
       const res = await fetchWithAuth('/api/v1/admin/modules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: moduleName, git_url: gitUrl, git_branch: finalBranch }),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error('Failed to import module');

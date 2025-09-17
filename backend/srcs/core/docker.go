@@ -17,11 +17,9 @@ import (
 // Compose now uses the repository's docker-compose.yml directly.
 
 func GetModuleConfig(module Module) (string, error) {
-    baseRepoPath := os.Getenv("REPO_BASE_PATH")
-    if baseRepoPath == "" {
-        baseRepoPath = "../../repos" // fallback for local dev
-    }
-    modPath := filepath.Join(baseRepoPath, module.Slug, "docker-compose.yml")
+    root, err := ModuleRepoPath(module)
+    if err != nil { return "", LogModule(module.ID, "ERROR", "invalid module slug", nil, err) }
+    modPath := filepath.Join(root, "docker-compose.yml")
 
     data, err := os.ReadFile(modPath)
     if err != nil {
@@ -33,11 +31,9 @@ func GetModuleConfig(module Module) (string, error) {
 
 func SaveModuleConfig(module Module, content string) error {
     LogModule(module.ID, "INFO", "Saving config to docker-compose.yml", nil, nil)
-    baseRepoPath := os.Getenv("REPO_BASE_PATH")
-    if baseRepoPath == "" {
-        baseRepoPath = "../../repos" // fallback for local dev
-    }
-    modPath := filepath.Join(baseRepoPath, module.Slug, "docker-compose.yml")
+    root, err := ModuleRepoPath(module)
+    if err != nil { return LogModule(module.ID, "ERROR", "invalid module slug", nil, err) }
+    modPath := filepath.Join(root, "docker-compose.yml")
 
     if err := os.WriteFile(modPath, []byte(content), 0o644); err != nil {
         return LogModule(
@@ -52,11 +48,8 @@ func SaveModuleConfig(module Module, content string) error {
 }
 
 func DeployModule(module Module) error {
-    baseRepoPath := os.Getenv("REPO_BASE_PATH")
-    if baseRepoPath == "" {
-        baseRepoPath = "../../repos" // fallback for local dev
-    }
-    dir := filepath.Join(baseRepoPath, module.Slug)
+    dir, err := ModuleRepoPath(module)
+    if err != nil { return LogModule(module.ID, "ERROR", "invalid module slug", nil, err) }
     file := "docker-compose.yml"
 
     // Mark deployment as in progress
@@ -69,7 +62,7 @@ func DeployModule(module Module) error {
     // Step 1: docker compose build
     cmdBuild := exec.Command("docker", "compose", "-f", file, "build")
     cmdBuild.Dir = dir
-    err := runAndLog(module.ID, cmdBuild)
+    err = runAndLog(module.ID, cmdBuild)
     if err != nil {
         _, _ = database.PatchModule(database.ModulePatch{ID: module.ID, IsDeploying: ptrBool(false), LastDeployStatus: strPtr("failed")})
         websocket.SendModuleDeployStatus(module.ID, false, "failed", "")
@@ -98,9 +91,8 @@ func DeployModule(module Module) error {
 
 // ComposeRebuild rebuilds images without cache and restarts containers.
 func ComposeRebuild(module Module) error {
-    baseRepoPath := os.Getenv("REPO_BASE_PATH")
-    if baseRepoPath == "" { baseRepoPath = "../../repos" }
-    dir := filepath.Join(baseRepoPath, module.Slug)
+    dir, err := ModuleRepoPath(module)
+    if err != nil { return err }
     file := "docker-compose.yml"
     LogModule(module.ID, "INFO", "docker compose build --no-cache", nil, nil)
     cmdBuild := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "build", "--no-cache")
@@ -116,9 +108,8 @@ func ComposeRebuild(module Module) error {
 
 // ComposeDown stops and removes the project's resources (without volumes).
 func ComposeDown(module Module) error {
-    baseRepoPath := os.Getenv("REPO_BASE_PATH")
-    if baseRepoPath == "" { baseRepoPath = "../../repos" }
-    dir := filepath.Join(baseRepoPath, module.Slug)
+    dir, err := ModuleRepoPath(module)
+    if err != nil { return err }
     file := "docker-compose.yml"
     LogModule(module.ID, "INFO", "docker compose down --remove-orphans", nil, nil)
     cmd := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "down", "--remove-orphans")
@@ -391,11 +382,8 @@ func GetContainerLogs(module Module, containerName string, since string) ([]stri
 }
 
 func CleanupModuleDockerResources(module Module) error {
-    baseRepoPath := os.Getenv("REPO_BASE_PATH")
-    if baseRepoPath == "" {
-        baseRepoPath = "../../repos" // fallback for local dev
-    }
-    dir := filepath.Join(baseRepoPath, module.Slug)
+    dir, err := ModuleRepoPath(module)
+    if err != nil { return LogModule(module.ID, "ERROR", "invalid module slug", nil, err) }
     file := "docker-compose.yml"
 
     cmdDown := exec.Command("docker", "compose", "-f", file, "down", "--volumes", "--remove-orphans", "--rmi", "all")
@@ -404,9 +392,9 @@ func CleanupModuleDockerResources(module Module) error {
         return LogModule(module.ID, "ERROR", "Failed to docker compose down", nil, err)
 	}
 
-	cmdPrune := exec.Command("docker", "image", "prune", "-a", "-f")
-	cmdPrune.Dir = dir
-	if err := runAndLog(module.ID, cmdPrune); err != nil {
+    cmdPrune := exec.Command("docker", "image", "prune", "-a", "-f")
+    cmdPrune.Dir = dir
+    if err := runAndLog(module.ID, cmdPrune); err != nil {
 		return LogModule(module.ID, "ERROR", "Failed to docker compose down", nil, err)
 	}
 

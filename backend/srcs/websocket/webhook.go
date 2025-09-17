@@ -13,20 +13,26 @@ import (
 
 // WebhookHandler verifies the HMAC, parses the Event, and pushes it onto Events.
 func WebhookHandler(secret []byte) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		body, err := io.ReadAll(r.Body)
-		r.Body.Close()
-		if err != nil {
-			log.Printf("webhook read error: %v", err)
-			http.Error(w, "bad request", http.StatusBadRequest)
-			return
-		}
+    return func(w http.ResponseWriter, r *http.Request) {
+        body, err := io.ReadAll(r.Body)
+        r.Body.Close()
+        if err != nil {
+            log.Printf("webhook read error: %v", err)
+            http.Error(w, "bad request", http.StatusBadRequest)
+            return
+        }
+
+        if len(secret) == 0 {
+            log.Printf("webhook refused: missing secret (set WEBHOOK_SECRET)")
+            http.Error(w, "service unavailable", http.StatusServiceUnavailable)
+            return
+        }
 
 		sig := r.Header.Get("X-Hook-Signature")
 		if !verifySignature(body, sig, secret) {
 			log.Printf("webhook invalid signature: %q", sig)
 			http.Error(w, "unauthorized", http.StatusUnauthorized)
-			log.Printf("Continuing for testing puprose")
+			return
 		}
 
 		var evt Event

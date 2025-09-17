@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 	"strings"
 	"time"
 
@@ -217,12 +216,15 @@ func ApplyRoleRulesForNewUser(userID string, evalPayload any) error {
 }
 
 func HandleUser42Connection(ctx context.Context, token *oauth2.Token, meta DeviceMeta) (string, error) {
-	req, _ := http.NewRequest("GET", "https://api.intra.42.fr/v2/me", nil)
-	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
-
-	resp, err := http.DefaultClient.Do(req)
+	// Use an OAuth2-aware client for the token to avoid subtle header/refresh issues
+	httpClient := oauth2.NewClient(ctx, oauth2.StaticTokenSource(token))
+	resp, err := httpClient.Get("https://api.intra.42.fr/v2/me")
 	if err != nil || resp.StatusCode != 200 {
-		return "", fmt.Errorf("failed to fetch user")
+		status := 0
+		if resp != nil {
+			status = resp.StatusCode
+		}
+		return "", fmt.Errorf("failed to fetch user (status %d)", status)
 	}
 	defer resp.Body.Close()
 
@@ -308,23 +310,23 @@ func PatchUser(patch UserPatch) (*User, error) {
 }
 
 func TouchUserLastSeen(userID string) {
-    now := time.Now().UTC()
-    _ = database.UpdateUserLastSeen(userID, now) // ignore error
+	now := time.Now().UTC()
+	_ = database.UpdateUserLastSeen(userID, now) // ignore error
 }
 
 // DeleteUserAndAssociations deletes a user and their associated data (sessions, role links).
 func DeleteUserAndAssociations(ctx context.Context, userID string) error {
-    // Revoke all sessions for this user
-    _, _ = database.DeleteUserSessions(ctx, userID)
-    // Remove role links
-    if err := database.DeleteAllRolesForUser(userID); err != nil {
-        return err
-    }
-    // Remove user preferences
-    _ = database.DeleteUserPrefs(ctx, userID)
-    // Finally delete the user row
-    if err := database.DeleteUser(userID); err != nil {
-        return err
-    }
-    return nil
+	// Revoke all sessions for this user
+	_, _ = database.DeleteUserSessions(ctx, userID)
+	// Remove role links
+	if err := database.DeleteAllRolesForUser(userID); err != nil {
+		return err
+	}
+	// Remove user preferences
+	_ = database.DeleteUserPrefs(ctx, userID)
+	// Finally delete the user row
+	if err := database.DeleteUser(userID); err != nil {
+		return err
+	}
+	return nil
 }

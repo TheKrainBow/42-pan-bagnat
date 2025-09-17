@@ -14,6 +14,64 @@
 .usp-roles-chips { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .role-chip { font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; border: 1px solid rgba(255,255,255,0.15); white-space: nowrap; }
 .usp-header-actions { display: flex; align-items: center; }
+.usp-header-actions { gap: 8px; }
+
+/* Theme switch (flipper) */
+.theme-switch { position: relative; display: inline-flex; align-items: center; cursor: pointer; }
+.theme-switch input { position: absolute; opacity: 0; pointer-events: none; }
+.theme-switch .track {
+  width: 64px; height: 32px; border-radius: 999px;
+  display: inline-flex; align-items: center; justify-content: space-between;
+  padding: 0 8px; box-sizing: border-box;
+  background: var(--light-background); border: 1px solid var(--border);
+  position: relative;
+}
+.theme-switch .icon {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  pointer-events: none; font-size: 14px;
+  transition: opacity 160ms ease;
+}
+.theme-switch .thumb .sun { opacity: 1; }
+.theme-switch .thumb .moon { opacity: 0; }
+.theme-switch .thumb {
+  position: absolute; top: 50%; left: 3px; transform: translateY(-50%);
+  width: 26px; height: 26px; border-radius: 50%;
+  background: var(--button-blue, var(--active)); /* light sky */
+  box-shadow: 0 2px 6px var(--shadow-medium);
+  transition: left 180ms ease, background 180ms ease;
+  z-index: 1;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+/* Checked → dark mode */
+.theme-switch input:checked + .track .thumb { left: 35px; }
+.theme-switch input:checked + .track .thumb { background: var(--button-dark-gray); } /* dark sky */
+.theme-switch input:checked + .track .thumb .sun { opacity: 0; }
+.theme-switch input:checked + .track .thumb .moon { opacity: 1; }
+
+/* Stars for dark mode */
+.theme-switch .stars { position: absolute; inset: 0; opacity: 0; transition: opacity 200ms ease; }
+.theme-switch .star { position: absolute; width: 2px; height: 2px; background: #fff; border-radius: 50%; opacity: .85; animation: twinkle 1.8s infinite ease-in-out; }
+.theme-switch .star.s1 { top: 6px; left: 7px; animation-delay: 0s; }
+.theme-switch .star.s2 { top: 12px; right: 6px; animation-delay: .4s; }
+.theme-switch .star.s3 { bottom: 7px; left: 12px; animation-delay: .8s; }
+.theme-switch input:checked + .track .thumb .stars { opacity: 1; }
+
+@keyframes twinkle { 0%, 100% { opacity: .4 } 50% { opacity: 1 } }
+
+/* Clouds for light mode */
+.theme-switch .clouds { position: absolute; inset: 0; opacity: 1; transition: opacity 200ms ease; }
+.theme-switch .cloud { position: absolute; background: var(--surface-light, #fff); border-radius: 999px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.08)); }
+.theme-switch .cloud.c1 { width: 8px; height: 5px; left: 6px; top: 12px; }
+.theme-switch .cloud.c2 { width: 10px; height: 6px; left: 10px; top: 10px; }
+.theme-switch .cloud.c3 { width: 6px; height: 4px; left: 15px; top: 13px; }
+.theme-switch input:checked + .track .thumb .clouds { opacity: 0; }
+
+/* Light mode accents */
+.theme-light .theme-switch .track { background: var(--bg-light-theme); }
+.theme-light .theme-switch .thumb { background: var(--button-blue, var(--active)); }
+/* Dark mode accents */
+.theme-dark .theme-switch .track { background: var(--button-dark-gray); }
+.theme-dark .theme-switch .thumb { background: var(--button-blue, var(--active)); }
 
 .usp-card { background: var(--background); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.2); }
 .usp-card-title { font-weight: 600; font-size: 1rem; }

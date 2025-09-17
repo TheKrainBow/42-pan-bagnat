@@ -2,7 +2,7 @@
   background: var(--background);
   display: flex;
   height: 100vh;
-  color: white;
+  color: var(--text-primary);
 }
 
 .main-content {

@@ -58,19 +58,20 @@
   --bg-light: #252525;
   --bg-dark: #111;
 
-  --bg-theme: #ffffff;
-  --bg-light-theme: #f9f9f9;
-  --bg-dark-theme: #f0f0f0;
+  /* Light backgrounds softened to reduce stark white */
+  --bg-theme: #f7f7fa;          /* main page background */
+  --bg-light-theme: #f0f2f5;    /* card/surfaces */
+  --bg-dark-theme: #e7e9ee;     /* subtle darker pane */
 
   /* Text */
   --text-white: #fff;
   --text-red-light: #f8d7da;
   --text-gray: #666;
 
-  --text-black: #000;
+  --text-black: #0a0a0a;
   --text-dark: #111111;
-  --text-muted-light: #333333;
-  --text-gray-light-theme: #666;
+  --text-muted-light: #2a2a2a;
+  --text-gray-light-theme: #555;
 
   /* Loader */
   --loader-gray: #999;

@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# 1) Shared secret (must match what your backend is using)
-SECRET="MokkoIsNotFat"
+# 1) Shared secret (must match backend WEBHOOK_SECRET env)
+: "${WEBHOOK_SECRET:?Set WEBHOOK_SECRET environment variable}"
+SECRET="$WEBHOOK_SECRET"
+
+# Backend URL (default to localhost)
+BACKEND_URL="${BACKEND_URL:-http://localhost:8080}"
 
 # 2) Determine payload: use first arg if given, otherwise default
 if [ $# -eq 0 ]; then
@@ -20,7 +24,7 @@ signature=$(printf '%s' "$payload" \
   | awk '{print $NF}')
 
 # 4) Send the webhook
-curl -v /webhooks/events \
+curl -v "$BACKEND_URL/webhooks/events" \
   -H "Content-Type: application/json" \
   -H "X-Hook-Signature: $signature" \
   --data "$payload"

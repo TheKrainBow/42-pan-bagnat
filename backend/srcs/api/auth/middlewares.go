@@ -1,14 +1,15 @@
 package auth
 
 import (
-	"backend/core"
-	"backend/database"
-	"context"
-	"encoding/json"
-	"fmt"
-	"log"
-	"net/http"
-	"time"
+    "backend/core"
+    "backend/database"
+    "context"
+    "encoding/json"
+    "database/sql"
+    "fmt"
+    "log"
+    "net/http"
+    "time"
 )
 
 type contextKey string
@@ -44,18 +45,26 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		session, err := database.GetSession(sid)
-		if err != nil || session.ExpiresAt.Before(time.Now()) {
-			if err != nil {
-				log.Println("[auth] error while getting the session: %w", err)
-			} else {
-				log.Println("[auth] expired session")
-			}
-			go database.PurgeExpiredSessions()
-			core.ClearSessionCookie(w)
-			http.Error(w, "Unauthorized", http.StatusUnauthorized)
-			return
-		}
+        session, err := database.GetSession(sid)
+        if err != nil {
+            // Only clear cookie if session definitely doesn't exist; for transient DB errors keep cookie
+            if err == sql.ErrNoRows {
+                log.Println("[auth] no such session, clearing cookie")
+                core.ClearSessionCookie(w)
+            } else {
+                log.Printf("[auth] session lookup error: %v", err)
+            }
+            go database.PurgeExpiredSessions()
+            http.Error(w, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
+        if session.ExpiresAt.Before(time.Now()) {
+            log.Println("[auth] expired session")
+            go database.PurgeExpiredSessions()
+            core.ClearSessionCookie(w)
+            http.Error(w, "Unauthorized", http.StatusUnauthorized)
+            return
+        }
 
 		user, err := core.GetUser(session.Login)
 		if err != nil {

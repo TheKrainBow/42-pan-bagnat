@@ -13,16 +13,17 @@ import (
 )
 
 func getOAuthConf() *oauth2.Config {
-	return &oauth2.Config{
-		ClientID:     os.Getenv("FT_CLIENT_ID"),
-		ClientSecret: os.Getenv("FT_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("FT_CALLBACK_URL"),
-		Scopes:       []string{},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://api.intra.42.fr/oauth/authorize",
-			TokenURL: "https://api.intra.42.fr/oauth/token",
-		},
-	}
+    return &oauth2.Config{
+        ClientID:     os.Getenv("FT_CLIENT_ID"),
+        ClientSecret: os.Getenv("FT_CLIENT_SECRET"),
+        RedirectURL:  os.Getenv("FT_CALLBACK_URL"),
+        // Request the minimal scope required to read /v2/me
+        Scopes:       []string{"public"},
+        Endpoint: oauth2.Endpoint{
+            AuthURL:  "https://api.intra.42.fr/oauth/authorize",
+            TokenURL: "https://api.intra.42.fr/oauth/token",
+        },
+    }
 }
 
 // GET /auth/42/login

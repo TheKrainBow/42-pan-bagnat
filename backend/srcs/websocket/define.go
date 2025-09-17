@@ -1,6 +1,9 @@
 package websocket
 
-import "encoding/json"
+import (
+    "encoding/json"
+    "os"
+)
 
 // Event is what your modules POST via the webhook.
 type Event struct {
@@ -28,11 +31,19 @@ type ControlMessage struct {
 
 // For convenience, allow marshalling a ControlMessage.
 func (c ControlMessage) Bytes() []byte {
-	b, _ := json.Marshal(c)
-	return b
+    b, _ := json.Marshal(c)
+    return b
 }
 
-var Secret []byte = []byte("MokkoIsNotFat")
+// Secret is the HMAC secret used to verify webhook signatures.
+// It is populated from the WEBHOOK_SECRET environment variable at startup.
+var Secret []byte
+
+func init() {
+    if s := os.Getenv("WEBHOOK_SECRET"); s != "" {
+        Secret = []byte(s)
+    }
+}
 
 // Lightweight container payload for WS updates
 type ContainerPayload struct {

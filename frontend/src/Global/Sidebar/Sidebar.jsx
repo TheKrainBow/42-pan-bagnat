@@ -56,6 +56,7 @@ export default function Sidebar({ currentPage, user, pages }) {
     return () => window.removeEventListener('pb:prefs:sidebarChanged', onPrefsChanged);
   }, [user?.ft_login]);
 
+
   // Load remote prefs on first login (cross-device persistence)
   useEffect(() => {
     if (!user?.ft_login) return;

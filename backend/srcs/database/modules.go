@@ -224,16 +224,15 @@ func IsPageSlugTaken(slug string) (bool, error) {
 func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
     row := mainDB.QueryRow(`
         UPDATE module_page
-        SET
-        name      = COALESCE($1, name),
-        slug      = COALESCE($2, slug),
-        url       = COALESCE($3, url),
-        is_public = COALESCE($4, is_public),
-        icon_url  = CASE WHEN ($5)::text IS NULL THEN icon_url
-                         WHEN ($5)::text = ''  THEN NULL
-                         ELSE ($5)::text END
-        WHERE id = $6
-        RETURNING id, name, slug, url, is_public, module_id, icon_url;
+           SET name      = COALESCE($1, name),
+               slug      = COALESCE($2, slug),
+               url       = COALESCE($3, url),
+               is_public = COALESCE($4, is_public),
+               icon_url  = CASE WHEN ($5)::text IS NULL THEN icon_url
+                                 WHEN ($5)::text = ''  THEN NULL
+                                 ELSE ($5)::text END
+         WHERE id = $6
+     RETURNING id, name, slug, url, is_public, module_id, COALESCE(icon_url, '') as icon_url;
     `, p.Name, p.Slug, p.URL, p.IsPublic, p.IconURL,
         p.ID,
     )
@@ -541,7 +540,6 @@ func InsertModuleLog(l ModuleLog) (ModuleLog, error) {
 }
 
 func PatchModule(patch ModulePatch) (Module, error) {
-	fmt.Printf("Starting the patch\n")
 	if patch.ID == "" {
 		return Module{}, fmt.Errorf("missing module ID")
 	}
@@ -591,14 +589,12 @@ func PatchModule(patch ModulePatch) (Module, error) {
 	`, strings.Join(setClauses, ", "), argPos)
 	args = append(args, patch.ID)
 
-	fmt.Printf("Patching with: %+v\n", args)
-	var updated Module
-	err := mainDB.Get(&updated, query, args...)
-	if err != nil {
-		return Module{}, err
-	}
-	fmt.Printf("Patched: %+v\n", updated)
-	return updated, nil
+    var updated Module
+    err := mainDB.Get(&updated, query, args...)
+    if err != nil {
+        return Module{}, err
+    }
+    return updated, nil
 }
 
 // GetModuleLogs pages through module_log for one module,
@@ -818,7 +814,7 @@ func GetModulePages(p ModulePagesPagination) ([]ModulePage, error) {
 	// 4) Assemble SQL
     var sb strings.Builder
     sb.WriteString(`
-SELECT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.icon_url, m.icon_url) AS icon_url
+SELECT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.icon_url, m.icon_url, '') AS icon_url
   FROM module_page mp
   JOIN modules m ON m.id = mp.module_id`)
 	if len(whereConds) > 0 {
@@ -862,7 +858,7 @@ SELECT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.
 
 func GetUserPages(identifier string) ([]ModulePage, error) {
     rows, err := mainDB.Query(`
-        SELECT DISTINCT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.icon_url, m.icon_url) AS icon_url
+        SELECT DISTINCT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.icon_url, m.icon_url, '') AS icon_url
         FROM users u
         JOIN user_roles ur ON u.id = ur.user_id
         JOIN module_roles mr ON ur.role_id = mr.role_id

@@ -8,6 +8,16 @@
     <meta name="description" content="Pan Bagnat Web App" />
     <link rel="manifest" href="/manifest.json" />
     <title>Pan Bagnat</title>
+    <script>
+      (function(){
+        try {
+          var t = localStorage.getItem('theme');
+          var cls = (t === 'light') ? 'theme-light' : 'theme-dark';
+          document.documentElement.classList.add(cls);
+          // body may not exist yet; App will also enforce on body
+        } catch(e) {}
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

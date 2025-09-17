@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import './UserSettingsPage.css';
+import { getStoredTheme, setTheme, toggleTheme } from 'Global/Theme/theme';
 import { fetchWithAuth } from 'Global/utils/Auth';
 import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import { getReadableStyles } from 'Global/utils/ColorUtils';
@@ -29,6 +30,7 @@ export default function UserSettingsPage({ pages: initialPages, user: initialUse
   const saveTimerRef = useRef(null);
   const [roles, setRoles] = useState([]);
   const [loadingRoles, setLoadingRoles] = useState(false);
+  const [theme, setThemeState] = useState(() => getStoredTheme());
 
   // Fetch user if missing
   useEffect(() => {
@@ -175,6 +177,11 @@ export default function UserSettingsPage({ pages: initialPages, user: initialUse
     window.location.assign('/login');
   };
 
+  const switchTheme = (t) => {
+    setTheme(t);
+    setThemeState(t);
+  };
+
   const parseUA = (ua) => {
     if (!ua) return { label: 'Unknown device' };
     const OS = /Windows|Mac OS X|Linux|Android|iPhone|iPad/.exec(ua)?.[0] || '';
@@ -205,6 +212,31 @@ export default function UserSettingsPage({ pages: initialPages, user: initialUse
               </div>
             </div>
             <div className="usp-header-actions">
+              <label className="theme-switch" title={`Switch to ${theme==='light' ? 'dark' : 'light'} mode`}>
+                <input
+                  type="checkbox"
+                  checked={theme === 'dark'}
+                  onChange={(e) => switchTheme(e.target.checked ? 'dark' : 'light')}
+                  aria-label="Toggle dark mode"
+                />
+                <span className="track">
+                  <span className="thumb" aria-hidden>
+                    <span className="icon sun" aria-hidden>☀️</span>
+                    <span className="icon moon" aria-hidden>🌙</span>
+                    {/* Decorative sky elements */}
+                    <span className="stars" aria-hidden>
+                      <span className="star s1" />
+                      <span className="star s2" />
+                      <span className="star s3" />
+                    </span>
+                    <span className="clouds" aria-hidden>
+                      <span className="cloud c1" />
+                      <span className="cloud c2" />
+                      <span className="cloud c3" />
+                    </span>
+                  </span>
+                </span>
+              </label>
               <button className="btn-danger" onClick={deleteAccount}>Delete account</button>
             </div>
           </>

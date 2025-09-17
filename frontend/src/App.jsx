@@ -28,6 +28,7 @@ import { socketService } from 'Global/SocketService/SocketService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "./Notifications.css";
+import { initTheme } from 'Global/Theme/theme';
 
 function Main() {
   const location = useLocation();
@@ -90,9 +91,9 @@ function Main() {
       .catch(console.error);
   }, [mode, user]);
 
+  // Initialize theme from localStorage ('dark' | 'light')
   useEffect(() => {
-    document.body.classList.add('theme-dark');
-    return () => document.body.classList.remove('theme-dark'); // optional cleanup
+    initTheme();
   }, []);
 
   // Redirect to login if unauthenticated user in user mode

@@ -398,23 +398,43 @@ func GeneratePageSlug(name string) string {
 	}
 }
 
-func GenerateModuleSlug(name, branch string) string {
-	slugBase := strings.ToLower(name)
-	slugBase = strings.TrimSpace(slugBase)
-	slugBase = regexp.MustCompile(`\s+`).ReplaceAllString(slugBase, "-")
-	slug := fmt.Sprintf("%s-%s", slugBase, strings.ToLower(branch))
-	attempt := ""
-	for {
-		isTaken, err := database.IsModuleSlugTaken(slug + attempt)
-		if err != nil {
-			log.Printf("error while generating slug `%s`: %s\n", slug+attempt, err)
-			return ""
-		}
-		if !isTaken {
-			return slug + attempt
-		}
-		attempt += "-"
-	}
+func GenerateModuleSlug(name, _ string) string {
+    sanitize := func(s string) string {
+        s = strings.ToLower(strings.TrimSpace(s))
+        out := make([]rune, 0, len(s))
+        lastDash := false
+        for _, r := range s {
+            ok := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
+            if ok {
+                out = append(out, r)
+                lastDash = false
+                continue
+            }
+            // normalize any other char to '-'
+            if !lastDash {
+                out = append(out, '-')
+                lastDash = true
+            }
+        }
+        // trim leading/trailing '-'
+        for len(out) > 0 && out[0] == '-' { out = out[1:] }
+        for len(out) > 0 && out[len(out)-1] == '-' { out = out[:len(out)-1] }
+        if len(out) == 0 { return "module" }
+        return string(out)
+    }
+    slug := sanitize(name)
+    attempt := ""
+    for {
+        isTaken, err := database.IsModuleSlugTaken(slug + attempt)
+        if err != nil {
+            log.Printf("error while generating slug `%s`: %s\n", slug+attempt, err)
+            return ""
+        }
+        if !isTaken {
+            return slug + attempt
+        }
+        attempt += "-"
+    }
 }
 
 func ImportModule(name string, gitURL string, gitBranch string) (Module, error) {
@@ -443,9 +463,9 @@ func ImportModule(name string, gitURL string, gitBranch string) (Module, error) 
 		SSHPrivateKey: privKey,
 	}
 
-	if dest.Slug == "" {
-		return Module{}, fmt.Errorf("failed to generate a valid slug: %w", err)
-	}
+    if dest.Slug == "" {
+        return Module{}, fmt.Errorf("failed to generate a valid slug: %w", err)
+    }
 
 	// Insert into DB
 	if err := database.InsertModule(database.Module{
