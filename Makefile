@@ -1,8 +1,13 @@
 #########################################################################################
 #                                       CONFIG                                          #
 #########################################################################################
+ENV_FILE ?= .env
+ifneq (,$(wildcard $(ENV_FILE)))
+	COMPOSE_ENV_FILE := --env-file $(ENV_FILE)
+endif
+
 NETWORK := pan-bagnat-net
-DOCKER_COMPOSE := docker compose
+DOCKER_COMPOSE := docker compose $(COMPOSE_ENV_FILE)
 POSTGRES_USER := ${POSTGRES_USER}
 POSTGRES_PASSWORD := ${POSTGRES_PASSWORD}
 POSTGRES_URL := postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost/panbagnat?sslmode=disable
