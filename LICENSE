@@ -1,0 +1,78 @@
+Pan Bagnat Community License (PBCL)
+Version 1.0 – January 2026
+
+Copyright (c) 2026 Mathieu Agostini
+All rights reserved.
+
+This license governs the use, modification, and distribution of the Pan Bagnat software
+(the “Software”).
+
+────────────────────────────────────────────────────────────
+1. GRANT OF RIGHTS
+────────────────────────────────────────────────────────────
+
+You are granted a non-exclusive, non-transferable, revocable right to:
+- View, study, and modify the Software
+- Run the Software for personal, educational, or internal organizational use
+- Submit contributions to the official repository via Pull Request
+
+────────────────────────────────────────────────────────────
+2. NON-COMMERCIAL USE ONLY
+────────────────────────────────────────────────────────────
+
+The Software may NOT be used, directly or indirectly, for commercial purposes.
+
+Commercial use includes, but is not limited to:
+- Selling the Software or services based on it
+- Offering the Software as a paid or free SaaS
+- Using the Software in a product or service generating revenue
+- Consulting, hosting, or monetizing access to the Software
+
+Any commercial use requires a separate written license granted by the copyright holder.
+
+────────────────────────────────────────────────────────────
+3. NO COMMERCIAL FORKS
+────────────────────────────────────────────────────────────
+
+You may fork the Software for personal or internal use only.
+
+You may NOT:
+- Distribute a fork as a product or service
+- Rebrand, market, or promote a fork
+- Offer a hosted or managed version of a fork
+
+────────────────────────────────────────────────────────────
+4. CONTRIBUTIONS
+────────────────────────────────────────────────────────────
+
+Any contribution submitted via Pull Request is subject to the Contributor License Agreement (CLA).
+By submitting a contribution, you agree that your contribution becomes part of the Software
+and that all necessary rights are granted to the copyright holder.
+
+────────────────────────────────────────────────────────────
+5. OWNERSHIP
+────────────────────────────────────────────────────────────
+
+The Software is and remains the exclusive property of the copyright holder.
+Nothing in this license grants ownership or authorship rights beyond the terms stated herein.
+
+────────────────────────────────────────────────────────────
+6. TERMINATION
+────────────────────────────────────────────────────────────
+
+This license is automatically terminated if you violate any of its terms.
+Upon termination, you must cease all use of the Software.
+
+────────────────────────────────────────────────────────────
+7. DISCLAIMER
+────────────────────────────────────────────────────────────
+
+THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND.
+IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY CLAIM OR DAMAGES.
+
+────────────────────────────────────────────────────────────
+8. CONTACT
+────────────────────────────────────────────────────────────
+
+For commercial licensing or special permissions:
+contact: mathieu.agostini0@gmail.com
