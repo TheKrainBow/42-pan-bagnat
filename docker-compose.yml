@@ -47,6 +47,7 @@ services:
       WEBHOOK_SECRET: ${WEBHOOK_SECRET}
       REPO_BASE_PATH: ${REPO_BASE_PATH}
       REPO_HOST_BASE_PATH: ${REPO_HOST_BASE_PATH}
+      GIT_SSH_KNOWN_HOSTS: ${GIT_SSH_KNOWN_HOSTS}
     depends_on:
       - db
     volumes:
