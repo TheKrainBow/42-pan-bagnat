@@ -219,13 +219,15 @@ const ModuleDetails = () => {
                 setDockerTab={() => {}}
               />
             )}
-            {activeTab === 'settings' && <ModuleSettings
+            {activeTab === 'settings' && (
+              <ModuleSettings
                 module={module}
                 statusUpdating={statusUpdating}
                 onToggleStatus={toggleModuleStatus}
                 onUninstall={() => setShowConfirmUninstall(true)}
                 onUpdate={fetchModule}
-              />}
+              />
+            )}
             {activeTab === 'containers' && (
               <ModuleDockerSection
                 moduleId={module.id}

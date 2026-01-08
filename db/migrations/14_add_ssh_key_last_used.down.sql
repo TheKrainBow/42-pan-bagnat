@@ -1,0 +1,5 @@
+BEGIN;
+
+ALTER TABLE ssh_keys DROP COLUMN IF EXISTS last_used_at;
+
+COMMIT;

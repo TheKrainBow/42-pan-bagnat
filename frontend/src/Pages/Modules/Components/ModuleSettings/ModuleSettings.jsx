@@ -4,6 +4,7 @@ import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import Button from 'Global/Button/Button';
 import { fetchWithAuth } from "Global/utils/Auth";
 import ModuleAboutSection from '../ModuleAboutSection/ModuleAboutSection';
+import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom'
 import './ModuleSettings.css';
 
@@ -21,6 +22,8 @@ export default function ModuleSettings({
 
   // All possible roles for the picker
   const [availableRoles, setAvailableRoles] = useState([]);
+  const [sshKeys, setSshKeys] = useState([]);
+  const [sshKeysLoading, setSshKeysLoading] = useState(true);
 
   // Search/dropdown state
   const [showRoleSearch, setShowRoleSearch] = useState(false);
@@ -34,6 +37,24 @@ export default function ModuleSettings({
       .then(res => res.json())
       .then(data => setAvailableRoles(data.roles || []))
       .catch(console.error);
+  }, [module.id]);
+
+  useEffect(() => {
+    const loadSSHKeys = async () => {
+      setSshKeysLoading(true);
+      try {
+        const res = await fetchWithAuth('/api/v1/admin/ssh-keys');
+        if (!res.ok) throw new Error('Failed to fetch SSH keys');
+        const data = await res.json();
+        setSshKeys(Array.isArray(data?.ssh_keys) ? data.ssh_keys : []);
+      } catch (err) {
+        console.error(err);
+        setSshKeys([]);
+      } finally {
+        setSshKeysLoading(false);
+      }
+    };
+    loadSSHKeys();
   }, [module.id]);
 
   // Close dropdown if clicking outside
@@ -86,6 +107,8 @@ export default function ModuleSettings({
   };
 
   // Remove a role from this module
+
+  // Remove a role from this module
   const handleRoleRemove = async role => {
     try {
       const res = await fetchWithAuth(
@@ -99,9 +122,33 @@ export default function ModuleSettings({
     }
   };
 
+  const handleSSHKeyChange = async (sshKeyId) => {
+    if (!sshKeyId || sshKeyId === module.ssh_key_id) return;
+    try {
+      const res = await fetchWithAuth(`/api/v1/admin/modules/${module.id}/git/ssh-key`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ssh_key_id: sshKeyId })
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(text || 'Failed to update SSH key');
+      }
+      toast.success('SSH key updated');
+      onUpdate?.();
+    } catch (err) {
+      toast.error(err.message || 'Unable to update SSH key');
+    }
+  };
+
   return (
     <div className="module-settings-container">
-      <ModuleAboutSection module={module} />
+      <ModuleAboutSection
+        module={module}
+        sshKeys={sshKeys}
+        sshKeysLoading={sshKeysLoading}
+        onSSHKeyChange={handleSSHKeyChange}
+      />
 
       {/* Icon editor moved to header modal (click icon) */}
 

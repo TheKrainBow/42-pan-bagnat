@@ -1,8 +1,8 @@
 package core
 
 import (
-    "backend/database"
-    "time"
+	"backend/database"
+	"time"
 )
 
 func DatabaseRoleToRole(dbRoles database.Role) (dest Role) {
@@ -41,30 +41,55 @@ func DatabaseUsersToUsers(dbUsers []database.User) (dest []User) {
 }
 
 func DatabaseModuleToModule(dbModule database.Module) Module {
-    return Module{
-        ID:            dbModule.ID,
-        SSHPublicKey:  dbModule.SSHPublicKey,
-        SSHPrivateKey: dbModule.SSHPrivateKey,
-        Name:          dbModule.Name,
-        Slug:          dbModule.Slug,
-        Version:       dbModule.Version,
-        Status:        ModuleStatus(dbModule.Status),
-        GitURL:        dbModule.GitURL,
-        GitBranch:     dbModule.GitBranch,
-        IconURL:       dbModule.IconURL,
-        LatestVersion: dbModule.LatestVersion,
-        LateCommits:   dbModule.LateCommits,
-        LastUpdate:    dbModule.LastUpdate,
-        IsDeploying:   dbModule.IsDeploying,
-        LastDeploy:    func() (t time.Time) { if dbModule.LastDeploy.Valid { return dbModule.LastDeploy.Time }; return t }(),
-        LastDeployStatus: dbModule.LastDeployStatus,
-        GitLastFetch: func() (t time.Time) { if dbModule.GitLastFetch.Valid { return dbModule.GitLastFetch.Time }; return t }(),
-        GitLastPull:  func() (t time.Time) { if dbModule.GitLastPull.Valid { return dbModule.GitLastPull.Time }; return t }(),
-        CurrentCommitHash: dbModule.CurrentCommitHash,
-        CurrentCommitSubject: dbModule.CurrentCommitSubject,
-        LatestCommitHash: dbModule.LatestCommitHash,
-        LatestCommitSubject: dbModule.LatestCommitSubject,
-    }
+	return Module{
+		ID:            dbModule.ID,
+		SSHPublicKey:  dbModule.SSHPublicKey,
+		SSHPrivateKey: dbModule.SSHPrivateKey,
+		SSHKeyID:      dbModule.SSHKeyID,
+		Name:          dbModule.Name,
+		Slug:          dbModule.Slug,
+		Version:       dbModule.Version,
+		Status:        ModuleStatus(dbModule.Status),
+		GitURL:        dbModule.GitURL,
+		GitBranch:     dbModule.GitBranch,
+		IconURL:       dbModule.IconURL,
+		LatestVersion: dbModule.LatestVersion,
+		LateCommits:   dbModule.LateCommits,
+		LastUpdate:    dbModule.LastUpdate,
+		IsDeploying:   dbModule.IsDeploying,
+		LastDeploy: func() (t time.Time) {
+			if dbModule.LastDeploy.Valid {
+				return dbModule.LastDeploy.Time
+			}
+			return t
+		}(),
+		LastDeployStatus: dbModule.LastDeployStatus,
+		GitLastFetch: func() (t time.Time) {
+			if dbModule.GitLastFetch.Valid {
+				return dbModule.GitLastFetch.Time
+			}
+			return t
+		}(),
+		GitLastPull: func() (t time.Time) {
+			if dbModule.GitLastPull.Valid {
+				return dbModule.GitLastPull.Time
+			}
+			return t
+		}(),
+		CurrentCommitHash:    dbModule.CurrentCommitHash,
+		CurrentCommitSubject: dbModule.CurrentCommitSubject,
+		LatestCommitHash:     dbModule.LatestCommitHash,
+		LatestCommitSubject:  dbModule.LatestCommitSubject,
+	}
+}
+
+func DatabaseModuleSummaryToModuleSummary(dbModule database.ModuleSummary) ModuleSummary {
+	return ModuleSummary{
+		ID:      dbModule.ID,
+		Name:    dbModule.Name,
+		Slug:    dbModule.Slug,
+		IconURL: dbModule.IconURL,
+	}
 }
 
 func DatabaseModulesToModules(dbModules []database.Module) (dest []Module) {
@@ -93,15 +118,15 @@ func DatabaseModuleLogsToModuleLogs(dbLogs []database.ModuleLog) (dest []ModuleL
 }
 
 func DatabaseModulePageToModulePage(dbPage database.ModulePage) ModulePage {
-    return ModulePage{
-        ID:       dbPage.ID,
-        ModuleID: dbPage.ModuleID,
-        Name:     dbPage.Name,
-        Slug:     dbPage.Slug,
-        URL:      dbPage.URL,
-        IsPublic: dbPage.IsPublic,
-        IconURL:  dbPage.IconURL,
-    }
+	return ModulePage{
+		ID:       dbPage.ID,
+		ModuleID: dbPage.ModuleID,
+		Name:     dbPage.Name,
+		Slug:     dbPage.Slug,
+		URL:      dbPage.URL,
+		IsPublic: dbPage.IsPublic,
+		IconURL:  dbPage.IconURL,
+	}
 }
 
 func DatabaseModulePagesToModulePages(dbPages []database.ModulePage) (dest []ModulePage) {

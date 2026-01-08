@@ -31,6 +31,7 @@ func DeleteModule(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		fmt.Printf("Error while deleting module: %s\n", err.Error())
 		http.Error(w, "error while deleting module", http.StatusInternalServerError)
+		return
 	}
 
 	fmt.Fprint(w, "OK")

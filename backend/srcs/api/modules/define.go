@@ -73,6 +73,8 @@ type ModuleGitInput struct {
 	GitURL string `json:"git_url"   example:"https://github.com/some-user/some-repo"`
 	// GitBranch is the branch to check out. Defaults to "main" if omitted.
 	GitBranch string `json:"git_branch,omitempty" example:"main"`
+	// SSHKeyID allows reusing an existing SSH key managed by Pan Bagnat. Leave empty to generate a new one.
+	SSHKeyID string `json:"ssh_key_id,omitempty" example:"ssh-key_01H..."`
 }
 
 // ModuleRemoteUpdateInput describes the payload for updating a module’s Git remote.

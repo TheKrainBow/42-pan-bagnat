@@ -26,7 +26,7 @@ import (
 // @Failure      500       {string}  string              "Internal server error"
 // @Router       /admin/modules/{moduleID} [patch]
 func PatchModule(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/json")
 
 	// 1️⃣ Path parameter
 	moduleID := chi.URLParam(r, "moduleID")
@@ -51,25 +51,25 @@ func PatchModule(w http.ResponseWriter, r *http.Request) {
 		*input.GitBranch = strings.TrimSpace(*input.GitBranch)
 	}
 
-    // 3️⃣ Perform the patch via core
-    updated, err := core.PatchModule(core.ModulePatch{
-        ID:        moduleID,
-        Name:      input.Name,
-        GitURL:    input.GitURL,
-        GitBranch: input.GitBranch,
-    })
-    if err != nil || updated == nil {
-        log.Printf("error patching module %s: %v\n", moduleID, err)
-        http.Error(w, "Failed to update module", http.StatusInternalServerError)
-        return
-    }
+	// 3️⃣ Perform the patch via core
+	updated, err := core.PatchModule(core.ModulePatch{
+		ID:        moduleID,
+		Name:      input.Name,
+		GitURL:    input.GitURL,
+		GitBranch: input.GitBranch,
+	})
+	if err != nil || updated == nil {
+		log.Printf("error patching module %s: %v\n", moduleID, err)
+		http.Error(w, "Failed to update module", http.StatusInternalServerError)
+		return
+	}
 
-    // 4️⃣ Map to API and respond
-    resp := api.ModuleToAPIModule(*updated)
-    if err := json.NewEncoder(w).Encode(resp); err != nil {
-        log.Printf("error encoding updated module %s: %v\n", moduleID, err)
-        http.Error(w, "Failed to encode response", http.StatusInternalServerError)
-    }
+	// 4️⃣ Map to API and respond
+	resp := api.ModuleToAPIModule(*updated)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		log.Printf("error encoding updated module %s: %v\n", moduleID, err)
+		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+	}
 }
 
 // PatchModulePage updates an existing front-page of a module.

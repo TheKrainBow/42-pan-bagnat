@@ -1,29 +1,29 @@
 package auth
 
 import (
-    "backend/core"
-    "backend/database"
-    "context"
-    "net/http"
-    "os"
-    "strings"
-    "time"
+	"backend/core"
+	"backend/database"
+	"context"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 
-    "golang.org/x/oauth2"
+	"golang.org/x/oauth2"
 )
 
 func getOAuthConf() *oauth2.Config {
-    return &oauth2.Config{
-        ClientID:     os.Getenv("FT_CLIENT_ID"),
-        ClientSecret: os.Getenv("FT_CLIENT_SECRET"),
-        RedirectURL:  os.Getenv("FT_CALLBACK_URL"),
-        // Request the minimal scope required to read /v2/me
-        Scopes:       []string{"public"},
-        Endpoint: oauth2.Endpoint{
-            AuthURL:  "https://api.intra.42.fr/oauth/authorize",
-            TokenURL: "https://api.intra.42.fr/oauth/token",
-        },
-    }
+	return &oauth2.Config{
+		ClientID:     os.Getenv("FT_CLIENT_ID"),
+		ClientSecret: os.Getenv("FT_CLIENT_SECRET"),
+		RedirectURL:  os.Getenv("FT_CALLBACK_URL"),
+		// Request the minimal scope required to read /v2/me
+		Scopes: []string{"public"},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://api.intra.42.fr/oauth/authorize",
+			TokenURL: "https://api.intra.42.fr/oauth/token",
+		},
+	}
 }
 
 // GET /auth/42/login
@@ -80,10 +80,10 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 // POST /auth/logout
 // Clears the current session cookie and deletes the server-side session.
 func Logout(w http.ResponseWriter, r *http.Request) {
-    sid := core.ReadSessionIDFromCookie(r)
-    if sid != "" {
-        _ = database.DeleteSession(sid)
-    }
-    core.ClearSessionCookie(w)
-    w.WriteHeader(http.StatusNoContent)
+	sid := core.ReadSessionIDFromCookie(r)
+	if sid != "" {
+		_ = database.DeleteSession(sid)
+	}
+	core.ClearSessionCookie(w)
+	w.WriteHeader(http.StatusNoContent)
 }

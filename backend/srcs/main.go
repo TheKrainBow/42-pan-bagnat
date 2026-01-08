@@ -15,6 +15,7 @@ import (
 	"backend/api/modules"
 	"backend/api/ping"
 	"backend/api/roles"
+	"backend/api/sshkeys"
 	"backend/api/users"
 	"backend/core"
 	"backend/database"
@@ -232,6 +233,7 @@ func main() {
 
 			r.Route("/integrations", integrations.RegisterRoutes)
 			r.Route("/modules", modules.RegisterRoutes)
+			r.Route("/ssh-keys", sshkeys.RegisterRoutes)
 			r.Get("/docker/ls", modules.GetAllContainers)
 			r.Delete("/docker/{containerName}/delete", modules.DeleteContainerGlobal)
 			r.Route("/users", users.RegisterRoutes)

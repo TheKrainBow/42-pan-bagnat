@@ -66,6 +66,9 @@ type Module struct {
 	// SSHPublicKey is the RSA public key used for module deployments
 	SSHPublicKey string `json:"ssh_public_key" example:"ssh-rsa AAAA..."`
 
+	// SSHKeyID is the identifier of the SSH key stored in Pan Bagnat
+	SSHKeyID string `json:"ssh_key_id" example:"ssh-key_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+
 	// Name is the human-readable title of the module
 	Name string `json:"name" example:"Captain Hook"`
 
@@ -103,13 +106,13 @@ type Module struct {
 	IsDeploying bool `json:"is_deploying" example:"false"`
 
 	// LastDeploy is the timestamp of the latest successful deployment
-    LastDeploy time.Time `json:"last_deploy" example:"2025-06-01T10:15:00Z"`
+	LastDeploy time.Time `json:"last_deploy" example:"2025-06-01T10:15:00Z"`
 
-    // LastDeployStatus is the status of the latest deployment ("success", "failed", or "")
-    LastDeployStatus string `json:"last_deploy_status" example:"success"`
+	// LastDeployStatus is the status of the latest deployment ("success", "failed", or "")
+	LastDeployStatus string `json:"last_deploy_status" example:"success"`
 
-    // Note: Git live details (current/ latest commit, behind, last fetch/pull)
-    // are provided by /git/status and are intentionally not duplicated here
+	// Note: Git live details (current/ latest commit, behind, last fetch/pull)
+	// are provided by /git/status and are intentionally not duplicated here
 }
 
 type ModuleLog struct {
@@ -122,26 +125,26 @@ type ModuleLog struct {
 }
 
 type ModulePage struct {
-    ID       string `json:"id" example:"page_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
-    Name     string `json:"name"`
-    Slug     string `json:"slug"`
-    URL      string `json:"url"`
-    IsPublic bool   `json:"is_public"`
-    ModuleID string `json:"module_id"`
-    IconURL  string `json:"icon_url,omitempty"`
+	ID       string `json:"id" example:"page_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	Name     string `json:"name"`
+	Slug     string `json:"slug"`
+	URL      string `json:"url"`
+	IsPublic bool   `json:"is_public"`
+	ModuleID string `json:"module_id"`
+	IconURL  string `json:"icon_url,omitempty"`
 }
 
 // Session represents a user session (device) in the system
 // swagger:model Session
 type Session struct {
-    ID          string    `json:"id" example:"eyJhbGciOiJIUz..."`
-    UserAgent   string    `json:"user_agent" example:"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)..."`
-    IP          string    `json:"ip" example:"192.168.0.12"`
-    DeviceLabel string    `json:"device_label" example:"MacBook Pro"`
-    CreatedAt   time.Time `json:"created_at"`
-    LastSeen    time.Time `json:"last_seen"`
-    ExpiresAt   time.Time `json:"expires_at"`
-    IsCurrent   bool      `json:"is_current"`
+	ID          string    `json:"id" example:"eyJhbGciOiJIUz..."`
+	UserAgent   string    `json:"user_agent" example:"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)..."`
+	IP          string    `json:"ip" example:"192.168.0.12"`
+	DeviceLabel string    `json:"device_label" example:"MacBook Pro"`
+	CreatedAt   time.Time `json:"created_at"`
+	LastSeen    time.Time `json:"last_seen"`
+	ExpiresAt   time.Time `json:"expires_at"`
+	IsCurrent   bool      `json:"is_current"`
 }
 
 type ModuleContainer struct {

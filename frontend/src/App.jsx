@@ -29,6 +29,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "./Notifications.css";
 import { initTheme } from 'Global/Theme/theme';
+import SSHKeys from './Pages/SSHKeys/SSHKeys';
 
 function Main() {
   const location = useLocation();
@@ -125,6 +126,7 @@ function Main() {
           <Route path="/admin/roles/:roleId/rule-builder" element={<RoleRuleBuilder />} />
           <Route path="/admin/users" element={<Users onSort="-last_seen" />} />
           <Route path="/admin/users/:identifier" element={<UserDetail />} />
+          <Route path="/admin/ssh-keys" element={<SSHKeys />} />
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="*"

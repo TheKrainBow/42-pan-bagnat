@@ -50,24 +50,25 @@ func UsersToAPIUsers(users []core.User) (dest []User) {
 }
 
 func ModuleToAPIModule(module core.Module) Module {
-    return Module{
-        ID:            module.ID,
-        SSHPublicKey:  module.SSHPublicKey,
-        Name:          module.Name,
-        Slug:          module.Slug,
-        Version:       module.Version,
-        LatestVersion: module.LatestVersion,
-        LateCommits:   module.LateCommits,
-        LastUpdate:    module.LastUpdate,
-        GitURL:        module.GitURL,
-        GitBranch:     module.GitBranch,
-        IconURL:       module.IconURL,
-        Status:        ModuleStatus(module.Status),
-        Roles:         RolesToAPIRoles(module.Roles),
-        IsDeploying:   module.IsDeploying,
-        LastDeploy:    module.LastDeploy,
-        LastDeployStatus: module.LastDeployStatus,
-    }
+	return Module{
+		ID:               module.ID,
+		SSHPublicKey:     module.SSHPublicKey,
+		SSHKeyID:         module.SSHKeyID,
+		Name:             module.Name,
+		Slug:             module.Slug,
+		Version:          module.Version,
+		LatestVersion:    module.LatestVersion,
+		LateCommits:      module.LateCommits,
+		LastUpdate:       module.LastUpdate,
+		GitURL:           module.GitURL,
+		GitBranch:        module.GitBranch,
+		IconURL:          module.IconURL,
+		Status:           ModuleStatus(module.Status),
+		Roles:            RolesToAPIRoles(module.Roles),
+		IsDeploying:      module.IsDeploying,
+		LastDeploy:       module.LastDeploy,
+		LastDeployStatus: module.LastDeployStatus,
+	}
 }
 
 func ModulesToAPIModules(modules []core.Module) (dest []Module) {
@@ -102,15 +103,15 @@ func ModuleLogsToAPIModuleLogs(logs []core.ModuleLog) (dest []ModuleLog) {
 }
 
 func ModulePageToAPIModulePage(modulePage core.ModulePage) ModulePage {
-    return ModulePage{
-        ID:       modulePage.ID,
-        ModuleID: modulePage.ModuleID,
-        Name:     modulePage.Name,
-        Slug:     modulePage.Slug,
-        URL:      modulePage.URL,
-        IsPublic: modulePage.IsPublic,
-        IconURL:  modulePage.IconURL,
-    }
+	return ModulePage{
+		ID:       modulePage.ID,
+		ModuleID: modulePage.ModuleID,
+		Name:     modulePage.Name,
+		Slug:     modulePage.Slug,
+		URL:      modulePage.URL,
+		IsPublic: modulePage.IsPublic,
+		IconURL:  modulePage.IconURL,
+	}
 }
 
 func ModulePagesToAPIModulePages(pages []core.ModulePage) (dest []ModulePage) {

@@ -35,16 +35,16 @@ type RolePatch struct {
 }
 
 func GenerateRoleOrderBy(order string) (dest []database.RoleOrder) {
-    if order == "" {
-        return nil
-    }
-    args := strings.Split(order, ",")
-    for _, arg := range args {
-        var direction database.OrderDirection
-        if arg[0] == '-' {
-            direction = database.Desc
-            arg = arg[1:]
-        } else {
+	if order == "" {
+		return nil
+	}
+	args := strings.Split(order, ",")
+	for _, arg := range args {
+		var direction database.OrderDirection
+		if arg[0] == '-' {
+			direction = database.Desc
+			arg = arg[1:]
+		} else {
 			direction = database.Asc
 		}
 
