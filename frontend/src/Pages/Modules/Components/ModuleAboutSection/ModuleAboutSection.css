@@ -5,3 +5,25 @@
   gap: 24px;
   flex-wrap: wrap;
 }
+
+
+.module-ssh-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.module-ssh-select select {
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--light-background, #11151d);
+  color: var(--text-primary);
+  min-width: 200px;
+}
+
+.module-ssh-select select:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

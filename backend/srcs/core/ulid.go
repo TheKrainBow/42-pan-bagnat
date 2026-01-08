@@ -16,11 +16,12 @@ const (
 	RoleKind   EntityKind = "role"
 	ModuleKind EntityKind = "module"
 	PageKind   EntityKind = "page"
+	SSHKeyKind EntityKind = "ssh-key"
 )
 
 func GenerateULID(kind EntityKind) (string, error) {
 	switch kind {
-	case UserKind, RoleKind, ModuleKind, PageKind:
+	case UserKind, RoleKind, ModuleKind, PageKind, SSHKeyKind:
 		// valid
 	default:
 		return "", fmt.Errorf("invalid entity kind: %s", kind)

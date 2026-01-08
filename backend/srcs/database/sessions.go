@@ -20,25 +20,25 @@ type Session struct {
 
 // New/updated queries
 func ListSessionsByUserID(ctx context.Context, userID string) ([]Session, error) {
-    rows, err := mainDB.QueryContext(ctx, `
+	rows, err := mainDB.QueryContext(ctx, `
         SELECT s.session_id, s.ft_login, s.created_at, s.expires_at, s.user_agent, s.ip, s.device_label, s.last_seen
           FROM sessions s
          WHERE s.ft_login = (SELECT ft_login FROM users WHERE id = $1)
          ORDER BY COALESCE(s.last_seen, s.created_at) DESC
     `, userID)
-    if err != nil {
-        return nil, err
-    }
-    defer rows.Close()
-    var out []Session
-    for rows.Next() {
-        var s Session
-        if err := rows.Scan(&s.SessionID, &s.Login, &s.CreatedAt, &s.ExpiresAt, &s.UserAgent, &s.IP, &s.DeviceLabel, &s.LastSeen); err != nil {
-            return nil, err
-        }
-        out = append(out, s)
-    }
-    return out, nil
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []Session
+	for rows.Next() {
+		var s Session
+		if err := rows.Scan(&s.SessionID, &s.Login, &s.CreatedAt, &s.ExpiresAt, &s.UserAgent, &s.IP, &s.DeviceLabel, &s.LastSeen); err != nil {
+			return nil, err
+		}
+		out = append(out, s)
+	}
+	return out, nil
 }
 func FindActiveSessionForDevice(login, ua, ip string, now time.Time) (*Session, error) {
 	row := mainDB.QueryRow(`

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './ModuleImport.css';
 import Button from 'Global/Button/Button';
 import Field from 'Global/Field/Field';
@@ -16,6 +16,10 @@ const ModuleImport = ({ onClose }) => {
   const [moduleName, setModuleName] = useState('Hello World');
   const [gitUrl, setGitUrl] = useState('https://github.com/pan-bagnat/hello-world.git');
   const [gitBranch, setGitBranch] = useState('');
+  const [sshKeys, setSshKeys] = useState([]);
+  const [selectedSSHKey, setSelectedSSHKey] = useState('');
+  const [keysError, setKeysError] = useState('');
+  const [keysLoading, setKeysLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const sshUrlRegex = /^git@[^\s]+:[^\s]+\.git$/;
@@ -29,6 +33,25 @@ const ModuleImport = ({ onClose }) => {
     return isGitValid && isNameValid;
   };
 
+  const loadSSHKeys = async () => {
+    setKeysLoading(true);
+    setKeysError('');
+    try {
+      const res = await fetchWithAuth('/api/v1/admin/ssh-keys');
+      if (!res.ok) throw new Error('Failed to fetch SSH keys');
+      const data = await res.json();
+      setSshKeys(Array.isArray(data?.ssh_keys) ? data.ssh_keys : []);
+    } catch (err) {
+      setKeysError(err.message || 'Unable to load SSH keys');
+    } finally {
+      setKeysLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSSHKeys();
+  }, []);
+
   const handleSubmit = async () => {
     if (!validate()) return;
 
@@ -37,6 +60,7 @@ const ModuleImport = ({ onClose }) => {
       const payload = { name: moduleName, git_url: gitUrl };
       const trimmed = gitBranch.trim();
       if (trimmed !== '') payload.git_branch = trimmed;
+      if (selectedSSHKey) payload.ssh_key_id = selectedSSHKey;
       const res = await fetchWithAuth('/api/v1/admin/modules', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -100,6 +124,29 @@ const ModuleImport = ({ onClose }) => {
           required={false}
         />
         </div></TourAnchor>
+        <div className="mi-field">
+          <label>SSH Key</label>
+          <select
+            className="mi-select"
+            value={selectedSSHKey}
+            onChange={e => setSelectedSSHKey(e.target.value)}
+            disabled={keysLoading}
+          >
+            <option value="">
+              Generate a new key
+            </option>
+            {sshKeys.map(key => (
+              <option key={key.id} value={key.id}>
+                {key.name}
+              </option>
+            ))}
+          </select>
+          <p className="mi-select-hint">
+            {keysError
+              ? <span className="mi-error-text">{keysError}</span>
+              : 'Pick an existing key or let Pan Bagnat generate a new one for you.'}
+          </p>
+        </div>
 
         <div className="mi-actions">
           <Button label="Cancel" color="gray" onClick={onClose} />

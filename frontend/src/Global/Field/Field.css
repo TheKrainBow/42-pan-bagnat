@@ -11,11 +11,22 @@
   margin-bottom: 0.25rem;
   display: flex;
   align-items: center;
+  gap: 0.35rem;
+}
+
+.field-label-text {
+  display: inline-flex;
+  align-items: center;
 }
 
 .field-asterisk {
   color: var(--input-red);
-  margin-left: 0.25rem;
+  margin-left: 0;
+}
+
+.field-label-addon {
+  display: inline-flex;
+  align-items: center;
 }
 
 .field-input {

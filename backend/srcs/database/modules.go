@@ -36,6 +36,7 @@ type Module struct {
 	ID                   string       `json:"id" db:"id"`
 	SSHPublicKey         string       `json:"ssh_public_key" db:"ssh_public_key"`
 	SSHPrivateKey        string       `json:"ssh_private_key" db:"ssh_private_key"`
+	SSHKeyID             string       `json:"ssh_key_id" db:"ssh_key_id"`
 	Name                 string       `json:"name" db:"name"`
 	Slug                 string       `json:"slug" db:"slug"`
 	Version              string       `json:"version" db:"version"`
@@ -61,6 +62,7 @@ type ModulePatch struct {
 	ID                   string     `json:"id" example:"01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
 	SSHPublicKey         *string    `json:"ssh_public_key" example:"ssh-rsa AAAA..."`
 	SSHPrivateKey        *string    `json:"ssh_private_key" example:"-----BEGIN OPENSSH PRIVATE KEY-----..."`
+	SSHKeyID             *string    `json:"ssh_key_id" example:"ssh-key_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
 	Name                 *string    `json:"name" example:"captain-hook"`
 	Version              *string    `json:"version" example:"1.2"`
 	Status               *string    `json:"status" example:"enabled"`
@@ -90,6 +92,13 @@ type ModuleLog struct {
 	CreatedAt time.Time      `json:"created_at" db:"created_at"`
 }
 
+type ModuleSummary struct {
+	ID      string `json:"id" db:"id"`
+	Name    string `json:"name" db:"name"`
+	Slug    string `json:"slug" db:"slug"`
+	IconURL string `json:"icon_url" db:"icon_url"`
+}
+
 type ModuleOrder struct {
 	Field ModuleOrderField
 	Order OrderDirection
@@ -109,22 +118,22 @@ type ModuleLogPagination struct {
 }
 
 type ModulePagePatch struct {
-    ID       string  `json:"id"`
-    Name     *string `json:"name"`
-    Slug     *string `json:"slug"`
-    URL      *string `json:"url"`
-    IsPublic *bool   `json:"is_public"`
-    IconURL  *string `json:"icon_url"`
+	ID       string  `json:"id"`
+	Name     *string `json:"name"`
+	Slug     *string `json:"slug"`
+	URL      *string `json:"url"`
+	IsPublic *bool   `json:"is_public"`
+	IconURL  *string `json:"icon_url"`
 }
 
 type ModulePage struct {
-    ID       string `json:"id" db:"id"`
-    Name     string `json:"name" db:"name"`
-    Slug     string `json:"slug" db:"slug"`
-    URL      string `json:"url" db:"url"`
-    IsPublic bool   `json:"is_public" db:"is_public"`
-    ModuleID string `json:"module_id" db:"module_id"`
-    IconURL  string `json:"icon_url" db:"icon_url"`
+	ID       string `json:"id" db:"id"`
+	Name     string `json:"name" db:"name"`
+	Slug     string `json:"slug" db:"slug"`
+	URL      string `json:"url" db:"url"`
+	IsPublic bool   `json:"is_public" db:"is_public"`
+	ModuleID string `json:"module_id" db:"module_id"`
+	IconURL  string `json:"icon_url" db:"icon_url"`
 }
 
 type ModulePagesOrderField string
@@ -152,9 +161,32 @@ type ModulePagesPagination struct {
 
 func GetModule(moduleID string) (Module, error) {
 	row := mainDB.QueryRow(`
-		SELECT id, ssh_public_key, ssh_private_key, name, slug, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update, is_deploying, last_deploy, last_deploy_status, git_last_fetch, git_last_pull, current_commit_hash, current_commit_subject, latest_commit_hash, latest_commit_subject
-		FROM modules
-		WHERE id = $1
+		SELECT m.id,
+		       COALESCE(sk.public_key, '') AS ssh_public_key,
+		       COALESCE(sk.private_key, '') AS ssh_private_key,
+		       m.ssh_key_id,
+		       m.name,
+		       m.slug,
+		       m.version,
+		       m.status,
+		       m.git_url,
+		       m.git_branch,
+		       m.icon_url,
+		       m.latest_version,
+		       m.late_commits,
+		       m.last_update,
+		       m.is_deploying,
+		       m.last_deploy,
+		       m.last_deploy_status,
+		       m.git_last_fetch,
+		       m.git_last_pull,
+		       m.current_commit_hash,
+		       m.current_commit_subject,
+		       m.latest_commit_hash,
+		       m.latest_commit_subject
+		FROM modules m
+		LEFT JOIN ssh_keys sk ON sk.id = m.ssh_key_id
+		WHERE m.id = $1
     `, moduleID)
 
 	var module Module
@@ -162,6 +194,7 @@ func GetModule(moduleID string) (Module, error) {
 		&module.ID,
 		&module.SSHPublicKey,
 		&module.SSHPrivateKey,
+		&module.SSHKeyID,
 		&module.Name,
 		&module.Slug,
 		&module.Version,
@@ -222,7 +255,7 @@ func IsPageSlugTaken(slug string) (bool, error) {
 }
 
 func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
-    row := mainDB.QueryRow(`
+	row := mainDB.QueryRow(`
         UPDATE module_page
            SET name      = COALESCE($1, name),
                slug      = COALESCE($2, slug),
@@ -234,19 +267,19 @@ func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
          WHERE id = $6
      RETURNING id, name, slug, url, is_public, module_id, COALESCE(icon_url, '') as icon_url;
     `, p.Name, p.Slug, p.URL, p.IsPublic, p.IconURL,
-        p.ID,
-    )
+		p.ID,
+	)
 
 	var out ModulePage
-    if err := row.Scan(
-        &out.ID,
-        &out.Name,
-        &out.Slug,
-        &out.URL,
-        &out.IsPublic,
-        &out.ModuleID,
-        &out.IconURL,
-    ); err != nil {
+	if err := row.Scan(
+		&out.ID,
+		&out.Name,
+		&out.Slug,
+		&out.URL,
+		&out.IsPublic,
+		&out.ModuleID,
+		&out.IconURL,
+	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ModulePage{}, fmt.Errorf("ModulePage %s doesn't exist", p.ID)
 		}
@@ -257,10 +290,10 @@ func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
 
 // SetPageIconURL updates icon_url for a page; pass nil to set SQL NULL.
 func SetPageIconURL(pageID string, url *string) error {
-    _, err := mainDB.Exec(`
+	_, err := mainDB.Exec(`
         UPDATE module_page SET icon_url = $1 WHERE id = $2
     `, url, pageID)
-    return err
+	return err
 }
 
 func IsModuleSlugTaken(slug string) (bool, error) {
@@ -316,7 +349,7 @@ func GetAllModules(
 	var orderClauses []string
 	for _, ord := range *orderBy {
 		orderClauses = append(orderClauses,
-			fmt.Sprintf("%s %s", ord.Field, ord.Order),
+			fmt.Sprintf("m.%s %s", ord.Field, ord.Order),
 		)
 		if ord.Field == ModuleID {
 			hasID = true
@@ -326,7 +359,7 @@ func GetAllModules(
 	firstOrder := (*orderBy)[0].Order
 	if !hasID {
 		orderClauses = append(orderClauses,
-			fmt.Sprintf("id %s", firstOrder),
+			fmt.Sprintf("m.%s %s", ModuleID, firstOrder),
 		)
 	}
 
@@ -339,7 +372,7 @@ func GetAllModules(
 	if lastModule != nil {
 		var cols, placeholders []string
 		for _, ord := range *orderBy {
-			cols = append(cols, string(ord.Field))
+			cols = append(cols, fmt.Sprintf("m.%s", ord.Field))
 			placeholders = append(placeholders,
 				fmt.Sprintf("$%d", argPos),
 			)
@@ -368,7 +401,7 @@ func GetAllModules(
 			argPos++
 		}
 		if !hasID {
-			cols = append(cols, "id")
+			cols = append(cols, "m.id")
 			placeholders = append(placeholders,
 				fmt.Sprintf("$%d", argPos),
 			)
@@ -394,7 +427,7 @@ func GetAllModules(
 	// Text‐filter only on Name
 	if filter != "" {
 		whereConds = append(whereConds,
-			fmt.Sprintf("name ILIKE '%%' || $%d || '%%'", argPos),
+			fmt.Sprintf("m.name ILIKE '%%' || $%d || '%%'", argPos),
 		)
 		args = append(args, filter)
 		argPos++
@@ -403,8 +436,31 @@ func GetAllModules(
 	// 4) Assemble SQL
 	var sb strings.Builder
 	sb.WriteString(
-		`SELECT id, ssh_private_key, ssh_public_key, name, slug, version, status, git_url, git_branch, icon_url, latest_version, late_commits, last_update, is_deploying, last_deploy, last_deploy_status, git_last_fetch, git_last_pull, current_commit_hash, current_commit_subject, latest_commit_hash, latest_commit_subject
-FROM modules`,
+		`SELECT m.id,
+       COALESCE(sk.private_key, '') AS ssh_private_key,
+       COALESCE(sk.public_key, '')  AS ssh_public_key,
+       m.ssh_key_id,
+       m.name,
+       m.slug,
+       m.version,
+       m.status,
+       m.git_url,
+       m.git_branch,
+       m.icon_url,
+       m.latest_version,
+       m.late_commits,
+       m.last_update,
+       m.is_deploying,
+       m.last_deploy,
+       m.last_deploy_status,
+       m.git_last_fetch,
+       m.git_last_pull,
+       m.current_commit_hash,
+       m.current_commit_subject,
+       m.latest_commit_hash,
+       m.latest_commit_subject
+FROM modules m
+LEFT JOIN ssh_keys sk ON sk.id = m.ssh_key_id`,
 	)
 	if len(whereConds) > 0 {
 		sb.WriteString("\nWHERE ")
@@ -433,6 +489,7 @@ FROM modules`,
 			&m.ID,
 			&m.SSHPrivateKey,
 			&m.SSHPublicKey,
+			&m.SSHKeyID,
 			&m.Name,
 			&m.Slug,
 			&m.Version,
@@ -468,10 +525,26 @@ func InsertModule(m Module) error {
 	}
 
 	_, err := mainDB.Exec(`
-		INSERT INTO modules (id, name, slug, git_url, git_branch, ssh_public_key, ssh_private_key, last_update, status)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-	`, m.ID, m.Name, m.Slug, m.GitURL, m.GitBranch, m.SSHPublicKey, m.SSHPrivateKey, m.LastUpdate, status)
+		INSERT INTO modules (id, name, slug, git_url, git_branch, ssh_key_id, last_update, status)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+	`, m.ID, m.Name, m.Slug, m.GitURL, m.GitBranch, m.SSHKeyID, m.LastUpdate, status)
 	return err
+}
+
+func UpdateModuleSSHKey(moduleID, sshKeyID string) error {
+	res, err := mainDB.Exec(`
+		UPDATE modules
+		   SET ssh_key_id = $1,
+		       last_update = NOW()
+		 WHERE id = $2
+	`, sshKeyID, moduleID)
+	if err != nil {
+		return err
+	}
+	if rows, _ := res.RowsAffected(); rows == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }
 
 func InsertModulePage(m ModulePage) error {
@@ -589,12 +662,12 @@ func PatchModule(patch ModulePatch) (Module, error) {
 	`, strings.Join(setClauses, ", "), argPos)
 	args = append(args, patch.ID)
 
-    var updated Module
-    err := mainDB.Get(&updated, query, args...)
-    if err != nil {
-        return Module{}, err
-    }
-    return updated, nil
+	var updated Module
+	err := mainDB.Get(&updated, query, args...)
+	if err != nil {
+		return Module{}, err
+	}
+	return updated, nil
 }
 
 // GetModuleLogs pages through module_log for one module,
@@ -724,6 +797,29 @@ SELECT id, module_id, created_at, level, message, meta
 	return out, nil
 }
 
+func GetModulesBySSHKeyID(sshKeyID string) ([]ModuleSummary, error) {
+	rows, err := mainDB.Query(`
+		SELECT id, name, slug, icon_url
+		  FROM modules
+		 WHERE ssh_key_id = $1
+	  ORDER BY name ASC
+	`, sshKeyID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []ModuleSummary
+	for rows.Next() {
+		var m ModuleSummary
+		if err := rows.Scan(&m.ID, &m.Name, &m.Slug, &m.IconURL); err != nil {
+			return nil, err
+		}
+		out = append(out, m)
+	}
+	return out, nil
+}
+
 // GetModulePages pages through module_page for one module,
 // supporting ordering, filtering, and cursor-based pagination.
 func GetModulePages(p ModulePagesPagination) ([]ModulePage, error) {
@@ -812,8 +908,8 @@ func GetModulePages(p ModulePagesPagination) ([]ModulePage, error) {
 	}
 
 	// 4) Assemble SQL
-    var sb strings.Builder
-    sb.WriteString(`
+	var sb strings.Builder
+	sb.WriteString(`
 SELECT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.icon_url, m.icon_url, '') AS icon_url
   FROM module_page mp
   JOIN modules m ON m.id = mp.module_id`)
@@ -836,28 +932,28 @@ SELECT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.
 	}
 	defer rows.Close()
 
-    var out []ModulePage
-    for rows.Next() {
-        var pg ModulePage
-        if err := rows.Scan(
-            &pg.ID,
-            &pg.Name,
-            &pg.Slug,
-            &pg.URL,
-            &pg.IsPublic,
-            &pg.ModuleID,
-            &pg.IconURL,
-        ); err != nil {
-            return nil, err
-        }
-        out = append(out, pg)
-    }
+	var out []ModulePage
+	for rows.Next() {
+		var pg ModulePage
+		if err := rows.Scan(
+			&pg.ID,
+			&pg.Name,
+			&pg.Slug,
+			&pg.URL,
+			&pg.IsPublic,
+			&pg.ModuleID,
+			&pg.IconURL,
+		); err != nil {
+			return nil, err
+		}
+		out = append(out, pg)
+	}
 
 	return out, nil
 }
 
 func GetUserPages(identifier string) ([]ModulePage, error) {
-    rows, err := mainDB.Query(`
+	rows, err := mainDB.Query(`
         SELECT DISTINCT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.icon_url, m.icon_url, '') AS icon_url
         FROM users u
         JOIN user_roles ur ON u.id = ur.user_id
@@ -874,19 +970,19 @@ func GetUserPages(identifier string) ([]ModulePage, error) {
 	var pages []ModulePage
 	for rows.Next() {
 		var page ModulePage
-        if err := rows.Scan(
-            &page.ID,
-            &page.Name,
-            &page.Slug,
-            &page.URL,
-            &page.IsPublic,
-            &page.ModuleID,
-            &page.IconURL,
-        ); err != nil {
-            return nil, err
-        }
-        pages = append(pages, page)
-    }
+		if err := rows.Scan(
+			&page.ID,
+			&page.Name,
+			&page.Slug,
+			&page.URL,
+			&page.IsPublic,
+			&page.ModuleID,
+			&page.IconURL,
+		); err != nil {
+			return nil, err
+		}
+		pages = append(pages, page)
+	}
 
 	if err := rows.Err(); err != nil {
 		return nil, err

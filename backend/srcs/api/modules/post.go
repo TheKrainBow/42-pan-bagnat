@@ -1,6 +1,7 @@
 package modules
 
 import (
+	"backend/api/auth"
 	api "backend/api/dto"
 	"backend/core"
 	"encoding/json"
@@ -31,6 +32,7 @@ func PostModule(w http.ResponseWriter, r *http.Request) {
 		GitURL    string `json:"git_url"`
 		GitBranch string `json:"git_branch"`
 		Name      string `json:"name"`
+		SSHKeyID  string `json:"ssh_key_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid JSON input", http.StatusBadRequest)
@@ -41,7 +43,12 @@ func PostModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	module, err := core.ImportModule(input.Name, input.GitURL, input.GitBranch)
+	var actor *core.User
+	if u, ok := r.Context().Value(auth.UserCtxKey).(*core.User); ok && u != nil {
+		actor = u
+	}
+
+	module, err := core.ImportModule(actor, input.Name, input.GitURL, input.GitBranch, input.SSHKeyID)
 	if err != nil {
 		log.Printf("failed to import module: %v", err)
 		http.Error(w, "Failed to import module", http.StatusInternalServerError)
@@ -59,6 +66,7 @@ func PostModule(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Printf("error while cloning module %s: %s\n", module.ID, err.Error())
 	}
+	logSSHKeyUsage(r, module, "git clone")
 
 	fmt.Fprint(w, string(destJSON))
 }
@@ -108,6 +116,7 @@ func GitClone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logSSHKeyUsage(r, module, "git pull")
 	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte("Cloning module: " + moduleID))
 }
@@ -156,6 +165,7 @@ func GitPull(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logSSHKeyUsage(r, module, "git update remote")
 	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte("Cloning module: " + moduleID))
 }
@@ -207,8 +217,51 @@ func GitUpdateRemote(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	logSSHKeyUsage(r, module, "ssh key reassigned")
 	w.WriteHeader(http.StatusAccepted)
 	w.Write([]byte("Cloning module: " + moduleID))
+}
+
+// GitSetSSHKey assigns an existing SSH key to the module.
+// @Summary      Assign Module SSH Key
+// @Description  Replaces the module's SSH key reference with an existing Pan Bagnat SSH key.
+// @Tags         Modules,Git
+// @Accept       json
+// @Produce      json
+// @Param        moduleID  path      string  true  "Module ID"
+// @Param        input     body      struct{SSHKeyID string `json:"ssh_key_id"`}  true  "SSH key to assign"
+// @Success      200       {object}  api.Module
+// @Failure      400       {string}  string  "Invalid payload"
+// @Failure      404       {string}  string  "Module not found"
+// @Router       /admin/modules/{moduleID}/git/ssh-key [post]
+func GitSetSSHKey(w http.ResponseWriter, r *http.Request) {
+	moduleID := chi.URLParam(r, "moduleID")
+	var input struct {
+		SSHKeyID string `json:"ssh_key_id"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		http.Error(w, "Invalid JSON input", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(input.SSHKeyID) == "" {
+		http.Error(w, "Missing ssh_key_id", http.StatusBadRequest)
+		return
+	}
+	var actor *core.User
+	if u, ok := r.Context().Value(auth.UserCtxKey).(*core.User); ok && u != nil {
+		actor = u
+	}
+	module, err := core.AssignModuleSSHKey(moduleID, input.SSHKeyID, actor)
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	logSSHKeyUsage(r, module, "git import")
+	json.NewEncoder(w).Encode(api.ModuleToAPIModule(module))
 }
 
 // DeployConfig saves and deploys the configuration for a given module.
@@ -233,7 +286,7 @@ func DeployConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    module, err := core.GetModule(moduleID)
+	module, err := core.GetModule(moduleID)
 	if err != nil {
 		log.Printf("error while getting module %s: %s\n", moduleID, err.Error())
 		w.WriteHeader(http.StatusInternalServerError)
@@ -248,21 +301,21 @@ func DeployConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    if module.IsDeploying {
-        http.Error(w, "deployment already in progress", http.StatusConflict)
-        return
-    }
+	if module.IsDeploying {
+		http.Error(w, "deployment already in progress", http.StatusConflict)
+		return
+	}
 
-    var req ComposeRequest
+	var req ComposeRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, fmt.Sprintf("invalid request: %v", err), http.StatusBadRequest)
 		return
 	}
 
-    core.SaveModuleConfig(module, req.Config)
-    go core.DeployModule(module)
-    w.WriteHeader(http.StatusAccepted)
-    w.Write([]byte("Deployment started for module " + moduleID))
+	core.SaveModuleConfig(module, req.Config)
+	go core.DeployModule(module)
+	w.WriteHeader(http.StatusAccepted)
+	w.Write([]byte("Deployment started for module " + moduleID))
 }
 
 // PostModulePage creates a new front-page for a module.

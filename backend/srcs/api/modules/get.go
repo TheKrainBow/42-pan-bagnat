@@ -1,19 +1,19 @@
 package modules
 
 import (
-    "backend/api/auth"
-    api "backend/api/dto"
-    "backend/core"
-    "encoding/json"
-    "fmt"
-    "log"
-    "net/http"
-    "net/http/httputil"
-    "net/url"
-    "strconv"
-    "strings"
+	"backend/api/auth"
+	api "backend/api/dto"
+	"backend/core"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"net/http/httputil"
+	"net/url"
+	"strconv"
+	"strings"
 
-    "github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5"
 )
 
 // @Security     SessionAuth
@@ -104,16 +104,16 @@ func GetModule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    module, err := core.GetModule(id)
-    if err != nil {
-        log.Printf("Failed fetching module: %s\n", err.Error())
-        http.Error(w, "Failed fetching module info", http.StatusNotFound)
-        return
-    }
+	module, err := core.GetModule(id)
+	if err != nil {
+		log.Printf("Failed fetching module: %s\n", err.Error())
+		http.Error(w, "Failed fetching module info", http.StatusNotFound)
+		return
+	}
 
-    // Do not refresh git here to avoid blocking settings; use dedicated endpoints instead
+	// Do not refresh git here to avoid blocking settings; use dedicated endpoints instead
 
-    dest := api.ModuleToAPIModule(module)
+	dest := api.ModuleToAPIModule(module)
 	destJSON, err := json.Marshal(dest)
 	if err != nil {
 		http.Error(w, "Failed to convert struct to JSON", http.StatusInternalServerError)
@@ -348,8 +348,8 @@ func GetContainerLogs(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-    since := r.URL.Query().Get("since")
-    logs, err := core.GetContainerLogs(module, containerName, since)
+	since := r.URL.Query().Get("since")
+	logs, err := core.GetContainerLogs(module, containerName, since)
 	if err != nil {
 		log.Printf("Failed to get logs: %s\n", err.Error())
 		http.Error(w, fmt.Sprintf("Failed to get logs: %v", err), http.StatusInternalServerError)
@@ -538,13 +538,13 @@ func PageRedirection(w http.ResponseWriter, r *http.Request) {
 // @Success      200  {array}  core.AllContainer
 // @Router       /admin/docker/ls [get]
 func GetAllContainers(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "application/json")
-    items, err := core.GetAllContainers()
-    if err != nil {
-        http.Error(w, fmt.Sprintf("failed to list containers: %v", err), http.StatusInternalServerError)
-        return
-    }
-    json.NewEncoder(w).Encode(items)
+	w.Header().Set("Content-Type", "application/json")
+	items, err := core.GetAllContainers()
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to list containers: %v", err), http.StatusInternalServerError)
+		return
+	}
+	json.NewEncoder(w).Encode(items)
 }
 
 // ComposeDeploy triggers docker compose build && up using the repo's docker-compose.yml
@@ -555,11 +555,14 @@ func GetAllContainers(w http.ResponseWriter, r *http.Request) {
 // @Success      202        "Deployment started"
 // @Router       /admin/modules/{moduleID}/docker/compose/deploy [post]
 func ComposeDeploy(w http.ResponseWriter, r *http.Request) {
-    moduleID := chi.URLParam(r, "moduleID")
-    module, err := core.GetModule(moduleID)
-    if err != nil { http.Error(w, "module not found", http.StatusNotFound); return }
-    go core.DeployModule(module)
-    w.WriteHeader(http.StatusAccepted)
+	moduleID := chi.URLParam(r, "moduleID")
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		http.Error(w, "module not found", http.StatusNotFound)
+		return
+	}
+	go core.DeployModule(module)
+	w.WriteHeader(http.StatusAccepted)
 }
 
 // DeleteContainerGlobal removes a container by name regardless of module scope (for orphans management).
@@ -570,13 +573,16 @@ func ComposeDeploy(w http.ResponseWriter, r *http.Request) {
 // @Success      204           ""
 // @Router       /admin/docker/{containerName}/delete [delete]
 func DeleteContainerGlobal(w http.ResponseWriter, r *http.Request) {
-    name := chi.URLParam(r, "containerName")
-    if name == "" { http.Error(w, "container name required", http.StatusBadRequest); return }
-    if err := core.RemoveContainer(name); err != nil {
-        http.Error(w, fmt.Sprintf("failed to remove container: %v", err), http.StatusInternalServerError)
-        return
-    }
-    w.WriteHeader(http.StatusNoContent)
+	name := chi.URLParam(r, "containerName")
+	if name == "" {
+		http.Error(w, "container name required", http.StatusBadRequest)
+		return
+	}
+	if err := core.RemoveContainer(name); err != nil {
+		http.Error(w, fmt.Sprintf("failed to remove container: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ComposeRebuild triggers a build --no-cache and up -d for the module.
@@ -587,11 +593,17 @@ func DeleteContainerGlobal(w http.ResponseWriter, r *http.Request) {
 // @Success      204        ""
 // @Router       /admin/modules/{moduleID}/docker/compose/rebuild [post]
 func ComposeRebuild(w http.ResponseWriter, r *http.Request) {
-    moduleID := chi.URLParam(r, "moduleID")
-    module, err := core.GetModule(moduleID)
-    if err != nil { http.Error(w, "module not found", http.StatusNotFound); return }
-    if err := core.ComposeRebuild(module); err != nil { http.Error(w, fmt.Sprintf("rebuild failed: %v", err), http.StatusInternalServerError); return }
-    w.WriteHeader(http.StatusNoContent)
+	moduleID := chi.URLParam(r, "moduleID")
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		http.Error(w, "module not found", http.StatusNotFound)
+		return
+	}
+	if err := core.ComposeRebuild(module); err != nil {
+		http.Error(w, fmt.Sprintf("rebuild failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 // ComposeDown performs docker compose down --remove-orphans for the module project.
@@ -602,9 +614,15 @@ func ComposeRebuild(w http.ResponseWriter, r *http.Request) {
 // @Success      204        ""
 // @Router       /admin/modules/{moduleID}/docker/compose/down [post]
 func ComposeDown(w http.ResponseWriter, r *http.Request) {
-    moduleID := chi.URLParam(r, "moduleID")
-    module, err := core.GetModule(moduleID)
-    if err != nil { http.Error(w, "module not found", http.StatusNotFound); return }
-    if err := core.ComposeDown(module); err != nil { http.Error(w, fmt.Sprintf("down failed: %v", err), http.StatusInternalServerError); return }
-    w.WriteHeader(http.StatusNoContent)
+	moduleID := chi.URLParam(r, "moduleID")
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		http.Error(w, "module not found", http.StatusNotFound)
+		return
+	}
+	if err := core.ComposeDown(module); err != nil {
+		http.Error(w, fmt.Sprintf("down failed: %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }

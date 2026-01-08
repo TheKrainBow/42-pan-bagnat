@@ -4,6 +4,7 @@ import { getReadableStyles } from 'Global/utils/ColorUtils';
 
 const Field = forwardRef(({
   label,
+  labelAddon,
   value,
   onChange,
   placeholder = '',
@@ -71,8 +72,9 @@ const Field = forwardRef(({
   return (
     <div className="field-wrapper">
       <label className="field-label">
-        {label}
+        <span className="field-label-text">{label}</span>
         {required && <span className="field-asterisk">*</span>}
+        {labelAddon && <span className="field-label-addon">{labelAddon}</span>}
       </label>
 
       {multiline ? (

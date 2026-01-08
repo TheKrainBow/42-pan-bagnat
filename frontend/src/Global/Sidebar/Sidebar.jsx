@@ -167,6 +167,10 @@ export default function Sidebar({ currentPage, user, pages }) {
               <img src="/icons/users.png" alt="" className="sidebar-icon" />
               <span className="sidebar-label">Users</span>
             </li>
+            <li className={`sidebar-item ${isActive('/admin/ssh-keys')}`} onClick={() => navigate('/admin/ssh-keys')} title={collapsed ? 'SSH Keys' : undefined}>
+              <span className="sidebar-icon" role="img" aria-label="SSH Keys">🔑</span>
+              <span className="sidebar-label">SSH Keys</span>
+            </li>
           </ul>
           <div className="sidebar-footer">
             <div className="sidebar-sep" />

@@ -3,8 +3,10 @@ import './ModuleAboutSection.css';
 
 import { useEffect, useState } from 'react'
 import { fetchWithAuth } from 'Global/utils/Auth'
+import { useNavigate } from 'react-router-dom'
 
-const ModuleAboutSection = ({ module }) => {
+const ModuleAboutSection = ({ module, sshKeys = [], sshKeysLoading = false, onSSHKeyChange }) => {
+  const navigate = useNavigate();
   const isCloned = new Date(module.last_update).getFullYear() > 2000;
   const [current, setCurrent] = useState({ hash: module.current_commit_hash || '', subject: module.current_commit_subject || '' })
   const [latest, setLatest] = useState({ hash: module.latest_commit_hash || '', subject: module.latest_commit_subject || '' })
@@ -75,9 +77,35 @@ const ModuleAboutSection = ({ module }) => {
           <strong>🌿 Git Branch:</strong>{' '}
           {module.git_branch}
         </div>
-        <div>
-          <strong>🔑 SSH Key:</strong>{' '}
-          <Link url={module.ssh_public_key} shorten={42} />
+        <div className="module-ssh-row">
+          <strong>🔑 SSH Key:</strong>
+          <div className="module-ssh-select">
+            <select
+              value={module.ssh_key_id || ''}
+              onChange={e => {
+                const value = e.target.value;
+                if (value === '__configure__') {
+                  navigate('/admin/ssh-keys');
+                  return;
+                }
+                onSSHKeyChange?.(value);
+              }}
+              disabled={sshKeysLoading || sshKeys.length === 0}
+              title={sshKeys.find(k => k.id === module.ssh_key_id)?.public_key || ''}
+            >
+              {sshKeys.length === 0 ? (
+                <option value="" disabled>No SSH keys</option>
+              ) : (
+                sshKeys.map(key => (
+                  <option key={key.id} value={key.id} title={key.public_key}>
+                    {key.name}
+                  </option>
+                ))
+              )}
+              <option disabled>────────────</option>
+              <option value="__configure__">Configure SSH Keys</option>
+            </select>
+          </div>
         </div>
         <div className="module-last-deploy" style={{ margin: '8px 0', color: 'var(--text-muted)' }}>
           <strong>Last deploy:</strong>{' '}

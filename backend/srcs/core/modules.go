@@ -3,8 +3,10 @@ package core
 import (
 	"backend/database"
 	"backend/websocket"
+	"database/sql"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
 	"regexp"
@@ -22,29 +24,43 @@ const (
 )
 
 type Module struct {
-	ID            string       `json:"id"`
-	SSHPublicKey  string       `json:"ssh_public_key"`
-	SSHPrivateKey string       `json:"ssh_private_key"`
-	Name          string       `json:"name"`
-	Slug          string       `json:"slug"`
-	Version       string       `json:"version"`
-	Status        ModuleStatus `json:"status"`
-	GitURL        string       `json:"git_url"`
-	GitBranch     string       `json:"git_branch"`
-	IconURL       string       `json:"icon_url"`
-	LatestVersion string       `json:"latest_Version"`
-	LateCommits   int          `json:"late_commits"`
-    LastUpdate    time.Time    `json:"last_update"`
-    Roles         []Role       `json:"roles"`
-    IsDeploying   bool         `json:"is_deploying"`
-    LastDeploy    time.Time    `json:"last_deploy"`
-    LastDeployStatus string    `json:"last_deploy_status"`
-    GitLastFetch time.Time     `json:"git_last_fetch"`
-    GitLastPull  time.Time     `json:"git_last_pull"`
-    CurrentCommitHash    string `json:"current_commit_hash"`
-    CurrentCommitSubject string `json:"current_commit_subject"`
-    LatestCommitHash     string `json:"latest_commit_hash"`
-    LatestCommitSubject  string `json:"latest_commit_subject"`
+	ID                   string       `json:"id"`
+	SSHPublicKey         string       `json:"ssh_public_key"`
+	SSHPrivateKey        string       `json:"ssh_private_key"`
+	SSHKeyID             string       `json:"ssh_key_id"`
+	Name                 string       `json:"name"`
+	Slug                 string       `json:"slug"`
+	Version              string       `json:"version"`
+	Status               ModuleStatus `json:"status"`
+	GitURL               string       `json:"git_url"`
+	GitBranch            string       `json:"git_branch"`
+	IconURL              string       `json:"icon_url"`
+	LatestVersion        string       `json:"latest_Version"`
+	LateCommits          int          `json:"late_commits"`
+	LastUpdate           time.Time    `json:"last_update"`
+	Roles                []Role       `json:"roles"`
+	IsDeploying          bool         `json:"is_deploying"`
+	LastDeploy           time.Time    `json:"last_deploy"`
+	LastDeployStatus     string       `json:"last_deploy_status"`
+	GitLastFetch         time.Time    `json:"git_last_fetch"`
+	GitLastPull          time.Time    `json:"git_last_pull"`
+	CurrentCommitHash    string       `json:"current_commit_hash"`
+	CurrentCommitSubject string       `json:"current_commit_subject"`
+	LatestCommitHash     string       `json:"latest_commit_hash"`
+	LatestCommitSubject  string       `json:"latest_commit_subject"`
+}
+
+type ModuleSummary struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Slug    string `json:"slug"`
+	IconURL string `json:"icon_url"`
+}
+
+type UserSummary struct {
+	ID       string `json:"id"`
+	Login    string `json:"login"`
+	PhotoURL string `json:"photo_url"`
 }
 
 type ModulePostInput struct {
@@ -55,25 +71,25 @@ type ModulePostInput struct {
 }
 
 type ModulePatchInput struct {
-    Name      string `json:"name"`
-    GitURL    string `json:"git_url"`
-    GitBranch string `json:"git_branch"`
+	Name      string `json:"name"`
+	GitURL    string `json:"git_url"`
+	GitBranch string `json:"git_branch"`
 }
 
 // Core-level patch structure for modules
 type ModulePatch struct {
-    ID        string  `json:"id"`
-    Name      *string `json:"name,omitempty"`
-    GitURL    *string `json:"git_url,omitempty"`
-    GitBranch *string `json:"git_branch,omitempty"`
-    IconURL   *string `json:"icon_url,omitempty"`
-    GitLastFetch *time.Time `json:"git_last_fetch,omitempty"`
-    GitLastPull  *time.Time `json:"git_last_pull,omitempty"`
-    LateCommits  *int       `json:"late_commits,omitempty"`
-    CurrentCommitHash    *string `json:"current_commit_hash,omitempty"`
-    CurrentCommitSubject *string `json:"current_commit_subject,omitempty"`
-    LatestCommitHash     *string `json:"latest_commit_hash,omitempty"`
-    LatestCommitSubject  *string `json:"latest_commit_subject,omitempty"`
+	ID                   string     `json:"id"`
+	Name                 *string    `json:"name,omitempty"`
+	GitURL               *string    `json:"git_url,omitempty"`
+	GitBranch            *string    `json:"git_branch,omitempty"`
+	IconURL              *string    `json:"icon_url,omitempty"`
+	GitLastFetch         *time.Time `json:"git_last_fetch,omitempty"`
+	GitLastPull          *time.Time `json:"git_last_pull,omitempty"`
+	LateCommits          *int       `json:"late_commits,omitempty"`
+	CurrentCommitHash    *string    `json:"current_commit_hash,omitempty"`
+	CurrentCommitSubject *string    `json:"current_commit_subject,omitempty"`
+	LatestCommitHash     *string    `json:"latest_commit_hash,omitempty"`
+	LatestCommitSubject  *string    `json:"latest_commit_subject,omitempty"`
 }
 
 type ModulePagination struct {
@@ -101,13 +117,13 @@ type ModuleLogsPagination struct {
 }
 
 type ModulePage struct {
-    ID       string `json:"id"`
-    Name     string `json:"name"`
-    Slug     string `json:"slug"`
-    URL      string `json:"url"`
-    IsPublic bool   `json:"is_public"`
-    ModuleID string `json:"module_id"`
-    IconURL  string `json:"icon_url"`
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	Slug     string `json:"slug"`
+	URL      string `json:"url"`
+	IsPublic bool   `json:"is_public"`
+	ModuleID string `json:"module_id"`
+	IconURL  string `json:"icon_url"`
 }
 
 type ModulePagesPagination struct {
@@ -131,24 +147,24 @@ const (
 )
 
 type ModuleContainer struct {
-    Name   string          `json:"name"`
-    Status ContainerStatus `json:"status"`
-    Reason string          `json:"reason"`
-    Since  string          `json:"since"`
+	Name   string          `json:"name"`
+	Status ContainerStatus `json:"status"`
+	Reason string          `json:"reason"`
+	Since  string          `json:"since"`
 }
 
 // AllContainer describes containers across all modules/projects
 type AllContainer struct {
-    Name       string          `json:"name"`
-    Status     ContainerStatus `json:"status"`
-    Reason     string          `json:"reason"`
-    Since      string          `json:"since"`
-    Project    string          `json:"project"`
-    Networks   []string        `json:"networks"`
-    ModuleID   string          `json:"module_id,omitempty"`
-    ModuleName string          `json:"module_name,omitempty"`
-    Missing    bool            `json:"missing,omitempty"`
-    Orphan     bool            `json:"orphan,omitempty"`
+	Name       string          `json:"name"`
+	Status     ContainerStatus `json:"status"`
+	Reason     string          `json:"reason"`
+	Since      string          `json:"since"`
+	Project    string          `json:"project"`
+	Networks   []string        `json:"networks"`
+	ModuleID   string          `json:"module_id,omitempty"`
+	ModuleName string          `json:"module_name,omitempty"`
+	Missing    bool            `json:"missing,omitempty"`
+	Orphan     bool            `json:"orphan,omitempty"`
 }
 
 func GenerateModuleOrderBy(order string) (dest []database.ModuleOrder) {
@@ -196,16 +212,16 @@ func GenerateModuleOrderBy(order string) (dest []database.ModuleOrder) {
 }
 
 func GenerateModuleLogsOrderBy(order string) (dest []database.ModuleLogsOrder) {
-    if order == "" {
-        return nil
-    }
-    args := strings.Split(order, ",")
-    for _, arg := range args {
-        var direction database.OrderDirection
-        if arg[0] == '-' {
-            direction = database.Desc
-            arg = arg[1:]
-        } else {
+	if order == "" {
+		return nil
+	}
+	args := strings.Split(order, ",")
+	for _, arg := range args {
+		var direction database.OrderDirection
+		if arg[0] == '-' {
+			direction = database.Desc
+			arg = arg[1:]
+		} else {
 			direction = database.Asc
 		}
 
@@ -354,6 +370,54 @@ func GetModule(moduleID string) (Module, error) {
 	return dest, nil
 }
 
+func GetModulesBySSHKey(sshKeyID string) ([]ModuleSummary, error) {
+	if strings.TrimSpace(sshKeyID) == "" {
+		return nil, fmt.Errorf("missing ssh key id")
+	}
+	mods, err := database.GetModulesBySSHKeyID(sshKeyID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ModuleSummary, 0, len(mods))
+	for _, m := range mods {
+		out = append(out, DatabaseModuleSummaryToModuleSummary(m))
+	}
+	return out, nil
+}
+
+// AssignModuleSSHKey updates the module to use an existing SSH key
+func AssignModuleSSHKey(moduleID, sshKeyID string, actor *User) (Module, error) {
+	moduleID = strings.TrimSpace(moduleID)
+	sshKeyID = strings.TrimSpace(sshKeyID)
+	if moduleID == "" {
+		return Module{}, fmt.Errorf("missing module id")
+	}
+	if sshKeyID == "" {
+		return Module{}, fmt.Errorf("missing ssh key id")
+	}
+	if _, err := database.GetSSHKey(sshKeyID); err != nil {
+		return Module{}, err
+	}
+	module, err := GetModule(moduleID)
+	if err != nil {
+		return Module{}, err
+	}
+	oldKey := module.SSHKeyID
+	if err := database.UpdateModuleSSHKey(moduleID, sshKeyID); err != nil {
+		return Module{}, err
+	}
+	module, err = GetModule(moduleID)
+	if err != nil {
+		return Module{}, err
+	}
+	if oldKey != "" && oldKey != sshKeyID {
+		_ = AppendSSHKeyEvent(oldKey, actor, &module.ID, fmt.Sprintf("Key unassigned from module %s", module.Name))
+	}
+	msg := fmt.Sprintf("Key assigned to module %s", module.Name)
+	_ = AppendSSHKeyEvent(sshKeyID, actor, &module.ID, msg)
+	return module, nil
+}
+
 func GetUserPages(userIdentifier string) ([]ModulePage, error) {
 	var dest []ModulePage
 
@@ -399,45 +463,71 @@ func GeneratePageSlug(name string) string {
 }
 
 func GenerateModuleSlug(name, _ string) string {
-    sanitize := func(s string) string {
-        s = strings.ToLower(strings.TrimSpace(s))
-        out := make([]rune, 0, len(s))
-        lastDash := false
-        for _, r := range s {
-            ok := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
-            if ok {
-                out = append(out, r)
-                lastDash = false
-                continue
-            }
-            // normalize any other char to '-'
-            if !lastDash {
-                out = append(out, '-')
-                lastDash = true
-            }
-        }
-        // trim leading/trailing '-'
-        for len(out) > 0 && out[0] == '-' { out = out[1:] }
-        for len(out) > 0 && out[len(out)-1] == '-' { out = out[:len(out)-1] }
-        if len(out) == 0 { return "module" }
-        return string(out)
-    }
-    slug := sanitize(name)
-    attempt := ""
-    for {
-        isTaken, err := database.IsModuleSlugTaken(slug + attempt)
-        if err != nil {
-            log.Printf("error while generating slug `%s`: %s\n", slug+attempt, err)
-            return ""
-        }
-        if !isTaken {
-            return slug + attempt
-        }
-        attempt += "-"
-    }
+	sanitize := func(s string) string {
+		s = strings.ToLower(strings.TrimSpace(s))
+		out := make([]rune, 0, len(s))
+		lastDash := false
+		for _, r := range s {
+			ok := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
+			if ok {
+				out = append(out, r)
+				lastDash = false
+				continue
+			}
+			// normalize any other char to '-'
+			if !lastDash {
+				out = append(out, '-')
+				lastDash = true
+			}
+		}
+		// trim leading/trailing '-'
+		for len(out) > 0 && out[0] == '-' {
+			out = out[1:]
+		}
+		for len(out) > 0 && out[len(out)-1] == '-' {
+			out = out[:len(out)-1]
+		}
+		if len(out) == 0 {
+			return "module"
+		}
+		return string(out)
+	}
+	slug := sanitize(name)
+	attempt := ""
+	for {
+		isTaken, err := database.IsModuleSlugTaken(slug + attempt)
+		if err != nil {
+			log.Printf("error while generating slug `%s`: %s\n", slug+attempt, err)
+			return ""
+		}
+		if !isTaken {
+			return slug + attempt
+		}
+		attempt += "-"
+	}
 }
 
-func ImportModule(name string, gitURL string, gitBranch string) (Module, error) {
+func ensureModuleSSHKeyForSlug(slug string) (SSHKey, error) {
+	base := strings.TrimSpace(slug)
+	if base == "" {
+		base = "module"
+	}
+	name := base
+	suffix := 1
+	for {
+		_, err := database.GetSSHKeyByName(name)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return CreateSSHKey(name, "", nil, nil)
+			}
+			return SSHKey{}, err
+		}
+		suffix++
+		name = fmt.Sprintf("%s-%d", base, suffix)
+	}
+}
+
+func ImportModule(actor *User, name string, gitURL string, gitBranch string, sshKeyID string) (Module, error) {
 	var dest Module
 
 	// Generate a ULID for the module
@@ -446,39 +536,64 @@ func ImportModule(name string, gitURL string, gitBranch string) (Module, error) 
 		return Module{}, fmt.Errorf("failed to generate module ID: %w", err)
 	}
 
-	// Generate SSH keys
-	pubKey, privKey, err := GenerateSSHKeys()
-	if err != nil {
-		return Module{}, fmt.Errorf("failed to generate SSH keys: %w", err)
+	slug := GenerateModuleSlug(name, gitBranch)
+	if slug == "" {
+		return Module{}, fmt.Errorf("failed to generate a valid slug: %w", err)
+	}
+
+	// Determine SSH key to use
+	var (
+		key          SSHKey
+		trimmedKeyID = strings.TrimSpace(sshKeyID)
+		generatedKey bool
+	)
+	if trimmedKeyID == "" {
+		key, err = ensureModuleSSHKeyForSlug(slug)
+		if err != nil {
+			return Module{}, fmt.Errorf("failed to generate ssh key: %w", err)
+		}
+		generatedKey = true
+	} else {
+		key, err = GetSSHKey(trimmedKeyID)
+		if err != nil {
+			return Module{}, err
+		}
 	}
 
 	// Prepare module struct
 	dest = Module{
 		ID:            moduleID,
 		Name:          name,
-		Slug:          GenerateModuleSlug(name, gitBranch),
+		Slug:          slug,
 		GitURL:        gitURL,
 		GitBranch:     gitBranch,
-		SSHPublicKey:  pubKey,
-		SSHPrivateKey: privKey,
+		SSHPublicKey:  key.PublicKey,
+		SSHPrivateKey: key.PrivateKey,
+		SSHKeyID:      key.ID,
 	}
-
-    if dest.Slug == "" {
-        return Module{}, fmt.Errorf("failed to generate a valid slug: %w", err)
-    }
 
 	// Insert into DB
 	if err := database.InsertModule(database.Module{
-		ID:            dest.ID,
-		Name:          dest.Name,
-		Slug:          dest.Slug,
-		GitURL:        dest.GitURL,
-		GitBranch:     dest.GitBranch,
-		SSHPublicKey:  dest.SSHPublicKey,
-		SSHPrivateKey: dest.SSHPrivateKey,
-		LastUpdate:    dest.LastUpdate,
+		ID:         dest.ID,
+		Name:       dest.Name,
+		Slug:       dest.Slug,
+		GitURL:     dest.GitURL,
+		GitBranch:  dest.GitBranch,
+		SSHKeyID:   dest.SSHKeyID,
+		LastUpdate: dest.LastUpdate,
 	}); err != nil {
 		return Module{}, fmt.Errorf("failed to insert module in DB: %w", err)
+	}
+
+	if generatedKey {
+		if err := database.SetSSHKeyModuleOwner(key.ID, dest.ID); err != nil {
+			log.Printf("failed to set ssh key owner for %s: %v", key.ID, err)
+		} else {
+			_ = AppendSSHKeyEvent(key.ID, actor, &dest.ID, "ssh key generated")
+		}
+	} else {
+		msg := fmt.Sprintf("Key assigned to module %s", dest.Name)
+		_ = AppendSSHKeyEvent(sshKeyID, actor, &dest.ID, msg)
 	}
 
 	return dest, nil
@@ -486,31 +601,31 @@ func ImportModule(name string, gitURL string, gitBranch string) (Module, error) 
 
 // PatchModule updates selected fields on a module and returns the updated module.
 func PatchModule(patch ModulePatch) (*Module, error) {
-    if patch.ID == "" {
-        return nil, fmt.Errorf("missing module id")
-    }
+	if patch.ID == "" {
+		return nil, fmt.Errorf("missing module id")
+	}
 
-    dbPatch := database.ModulePatch{
-        ID:        patch.ID,
-        Name:      patch.Name,
-        GitURL:    patch.GitURL,
-        IconURL:   patch.IconURL,
-        // Note: database.ModulePatch doesn't currently expose git_branch,
-        // but it can be supported by adding it there. For now, keep to fields allowed.
-    }
-    // Support git_branch when available in DB patch structure
-    // via reflection-less assignment if the field exists in the type.
-    if patch.GitBranch != nil {
-        // database.ModulePatch has GitBranch? Check by assigning via helper when upstream adds it.
-        // For now, update by calling a dedicated DB method if needed. No-op otherwise.
-    }
+	dbPatch := database.ModulePatch{
+		ID:      patch.ID,
+		Name:    patch.Name,
+		GitURL:  patch.GitURL,
+		IconURL: patch.IconURL,
+		// Note: database.ModulePatch doesn't currently expose git_branch,
+		// but it can be supported by adding it there. For now, keep to fields allowed.
+	}
+	// Support git_branch when available in DB patch structure
+	// via reflection-less assignment if the field exists in the type.
+	if patch.GitBranch != nil {
+		// database.ModulePatch has GitBranch? Check by assigning via helper when upstream adds it.
+		// For now, update by calling a dedicated DB method if needed. No-op otherwise.
+	}
 
-    updated, err := database.PatchModule(dbPatch)
-    if err != nil {
-        return nil, fmt.Errorf("failed to patch module: %w", err)
-    }
-    m := DatabaseModuleToModule(updated)
-    return &m, nil
+	updated, err := database.PatchModule(dbPatch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to patch module: %w", err)
+	}
+	m := DatabaseModuleToModule(updated)
+	return &m, nil
 }
 
 func GetModuleLogs(pagination ModuleLogsPagination) ([]ModuleLog, string, error) {
@@ -643,6 +758,9 @@ func DeleteModule(moduleID string) error {
 	if err != nil {
 		return fmt.Errorf("module %s not found", moduleID)
 	}
+	if module.SSHKeyID != "" {
+		_ = AppendSSHKeyEvent(module.SSHKeyID, nil, &module.ID, fmt.Sprintf("Key unassigned from module %s", module.Name))
+	}
 	err = CleanupModuleDockerResources(module)
 	if err != nil {
 		LogModule(moduleID, "WARN", "couldn't clean docker ressources", nil, err)
@@ -674,12 +792,12 @@ func DeleteModulePage(pageID string) error {
 
 func UpdateModulePage(pageID string, name, url *string, isPublic *bool) (ModulePage, error) {
 	// Build the patch struct for the DB layer
-    patch := database.ModulePagePatch{
-        ID:       pageID,
-        Name:     name,
-        URL:      url,
-        IsPublic: isPublic,
-    }
+	patch := database.ModulePagePatch{
+		ID:       pageID,
+		Name:     name,
+		URL:      url,
+		IsPublic: isPublic,
+	}
 
 	if name != nil {
 		newSlug := GeneratePageSlug(*name)
