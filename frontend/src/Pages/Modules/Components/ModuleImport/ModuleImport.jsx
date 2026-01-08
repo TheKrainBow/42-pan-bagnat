@@ -22,7 +22,7 @@ const ModuleImport = ({ onClose }) => {
   const [keysLoading, setKeysLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const sshUrlRegex = /^git@[^\s]+:[^\s]+\.git$/;
+  const sshUrlRegex = /^(?:ssh:\/\/)?git@[^\s:]+(?::\d+)?[:\/][^\s]+\.git$/;
   const httpUrlRegex = /^https?:\/\/[^\s/]+\/[^\s/]+\/[^\s/]+\.git$/;
 
   const validate = () => {
