@@ -1,0 +1,165 @@
+name: Sync Project fields to Issue labels
+
+on:
+  projects_v2_item:
+    types: [edited, converted, reordered]
+
+permissions:
+  issues: write
+  pull-requests: read
+  contents: read
+
+jobs:
+  sync-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sync labels
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const payload = context.payload;
+
+            // According to the event, this should exist:
+            const itemId = payload.projects_v2_item?.node_id;
+            if (!itemId) {
+              core.info("No projects_v2_item.node_id in payload, skipping.");
+              return;
+            }
+
+            // Fetch item content (issue) + field values (Status/Priority) via GraphQL
+            const query = `
+              query($itemId: ID!) {
+                node(id: $itemId) {
+                  ... on ProjectV2Item {
+                    id
+                    content {
+                      ... on Issue {
+                        id
+                        number
+                        title
+                        repository { owner { login } name }
+                      }
+                      ... on PullRequest {
+                        id
+                        number
+                        title
+                        repository { owner { login } name }
+                      }
+                    }
+                    fieldValues(first: 50) {
+                      nodes {
+                        ... on ProjectV2ItemFieldSingleSelectValue {
+                          name
+                          field { ... on ProjectV2SingleSelectField { name } }
+                        }
+                        ... on ProjectV2ItemFieldTextValue {
+                          text
+                          field { ... on ProjectV2FieldCommon { name } }
+                        }
+                        ... on ProjectV2ItemFieldNumberValue {
+                          number
+                          field { ... on ProjectV2FieldCommon { name } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const res = await github.graphql(query, { itemId });
+
+            const item = res.node;
+            if (!item?.content) {
+              core.info("Item has no content (maybe a draft note). Skipping.");
+              return;
+            }
+
+            // We only want Issues (and PRs won't have "labels" in the same way)
+            const isIssue = item.content.__typename === "Issue";
+            if (!isIssue) {
+              core.info(`Content is ${item.content.__typename}, skipping.`);
+              return;
+            }
+
+            const owner = item.content.repository.owner.login;
+            const repo  = item.content.repository.name;
+            const issue_number = item.content.number;
+
+            // Extract Status / Priority from fieldValues by field name
+            const values = item.fieldValues.nodes || [];
+            const singleSelect = values
+              .filter(v => v?.field?.name && typeof v.name === "string")
+              .map(v => ({ field: v.field.name, value: v.name }));
+
+            const getField = (fieldName) => {
+              const found = singleSelect.find(v => v.field === fieldName);
+              return found?.value || null;
+            };
+
+            const status   = getField("Status");    // must match your Project field name exactly
+            const priority = getField("Priority");  // must match your Project field name exactly
+
+            core.info(`Repo: ${owner}/${repo} #${issue_number}`);
+            core.info(`Project Status=${status} Priority=${priority}`);
+
+            // Desired labels logic
+            const PRIORITY_LABELS = ["HOT", "High", "Normal", "Low"];
+            const INPROGRESS_LABEL = "In progress";
+
+            const desired = new Set();
+
+            // Status -> only "In progress" label when Status == "In progress"
+            if (status === "In progress") desired.add(INPROGRESS_LABEL);
+
+            // Priority -> exactly one of HOT/High/Normal/Low, if set
+            if (PRIORITY_LABELS.includes(priority)) desired.add(priority);
+
+            // Read current labels
+            const current = await github.rest.issues.listLabelsOnIssue({
+              owner, repo, issue_number, per_page: 100
+            });
+
+            const currentNames = current.data.map(l => l.name);
+
+            // Remove: priority labels that are not the desired priority, and "In progress" if not desired
+            const toRemove = [];
+
+            for (const name of currentNames) {
+              // Priority group: keep only the selected one (or none if priority is null)
+              if (PRIORITY_LABELS.includes(name) && !desired.has(name)) toRemove.push(name);
+
+              // Status mirror label
+              if (name === INPROGRESS_LABEL && !desired.has(name)) toRemove.push(name);
+            }
+
+            // Add: missing desired labels
+            const toAdd = [];
+            for (const name of desired) {
+              if (!currentNames.includes(name)) toAdd.push(name);
+            }
+
+            // Apply removals
+            for (const name of toRemove) {
+              core.info(`Removing label: ${name}`);
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
+              } catch (e) {
+                // If label doesn't exist anymore, ignore
+                core.warning(`Could not remove label "${name}": ${e.message}`);
+              }
+            }
+
+            // Apply additions
+            if (toAdd.length > 0) {
+              core.info(`Adding labels: ${toAdd.join(", ")}`);
+              await github.rest.issues.addLabels({
+                owner, repo, issue_number,
+                labels: toAdd
+              });
+            } else {
+              core.info("No labels to add.");
+            }
+
+            core.info("Done.");
