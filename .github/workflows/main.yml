@@ -1,7 +1,7 @@
 name: Sync Project fields to Issue labels
 
 on:
-  projects_v2_item:
+  project_v2_item:
     types: [edited, converted, reordered]
 
 permissions:
