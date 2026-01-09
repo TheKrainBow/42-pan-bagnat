@@ -179,24 +179,24 @@ const SSHKeys = () => {
               <div className="ssh-card-header">
                 <div className="ssh-card-title">
                   <strong>{key.name}</strong>
-                  {key.created_by && (
-                    <div className="ssh-created-by">
-                      <span>Created by</span>
-                      {key.created_by.type === 'user' && key.created_by.user ? (
-                        <div className="ssh-creator" title={key.created_by.user.login}>
-                          <img src={key.created_by.user.photo_url || '/icons/users.png'} alt="" />
-                          <span>{key.created_by.user.login}</span>
-                        </div>
-                      ) : key.created_by.type === 'module' && key.created_by.module ? (
-                        <div className="ssh-creator" title={key.created_by.module.name}>
-                          <img src={key.created_by.module.icon_url || '/icons/modules.png'} alt="" />
-                          <span>{key.created_by.module.name}</span>
-                        </div>
-                      ) : (
-                        <div className="ssh-creator"><span>Unknown</span></div>
-                      )}
-                    </div>
-                  )}
+                  <div className="ssh-created-by">
+                    <span>Created by</span>
+                    {key.created_by?.type === 'user' && key.created_by?.user ? (
+                      <div className="ssh-creator" title={key.created_by.user.login}>
+                        <img src={key.created_by.user.photo_url || '/icons/users.png'} alt="" />
+                        <span>{key.created_by.user.login}</span>
+                      </div>
+                    ) : key.created_by?.type === 'module' && key.created_by?.module ? (
+                      <div className="ssh-creator" title={key.created_by.module.name}>
+                        <img src={key.created_by.module.icon_url || '/icons/modules.png'} alt="" />
+                        <span>{key.created_by.module.name}</span>
+                      </div>
+                    ) : (
+                      <div className="ssh-creator ssh-creator-deleted">
+                        <span><em>Deleted</em></span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <div className="ssh-card-actions">
                   <button className="ssh-usage-link" onClick={() => openModulesModal(key)}>
