@@ -104,13 +104,29 @@ func ModuleLogsToAPIModuleLogs(logs []core.ModuleLog) (dest []ModuleLog) {
 
 func ModulePageToAPIModulePage(modulePage core.ModulePage) ModulePage {
 	return ModulePage{
-		ID:       modulePage.ID,
-		ModuleID: modulePage.ModuleID,
-		Name:     modulePage.Name,
-		Slug:     modulePage.Slug,
-		URL:      modulePage.URL,
-		IsPublic: modulePage.IsPublic,
-		IconURL:  modulePage.IconURL,
+		ID:          modulePage.ID,
+		ModuleID:    modulePage.ModuleID,
+		Name:        modulePage.Name,
+		Slug:        modulePage.Slug,
+		URL:         modulePage.URL,
+		IsPublic:    modulePage.IsPublic,
+		IconURL:     modulePage.IconURL,
+		NetworkName: modulePage.NetworkName,
+		ModuleCheck: ModulePageCheckToAPI(modulePage.ModuleCheck),
+	}
+}
+
+func ModulePageCheckToAPI(check *core.ModulePageCheck) *ModulePageCheck {
+	if check == nil {
+		return nil
+	}
+	networks := make([]string, len(check.Networks))
+	copy(networks, check.Networks)
+	return &ModulePageCheck{
+		OK:       check.OK,
+		Details:  check.Details,
+		Networks: networks,
+		Target:   check.Target,
 	}
 }
 

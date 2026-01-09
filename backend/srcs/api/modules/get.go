@@ -266,6 +266,15 @@ func GetModulePages(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "ID not found", http.StatusBadRequest)
 		return
 	}
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		http.Error(w, "failed to load module", http.StatusInternalServerError)
+		return
+	}
+	if module.ID == "" {
+		http.Error(w, "module not found", http.StatusNotFound)
+		return
+	}
 
 	filter := r.URL.Query().Get("filter")
 	pageToken := r.URL.Query().Get("next_page_token")
@@ -301,6 +310,7 @@ func GetModulePages(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Failed in core.GetModules()", http.StatusInternalServerError)
 		return
 	}
+	pages = core.AnnotateModulePagesWithModuleChecks(module, pages)
 	dest.NextPage = nextToken
 	dest.ModulePages = api.ModulePagesToAPIModulePages(pages)
 
@@ -312,6 +322,41 @@ func GetModulePages(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, string(destJSON))
+}
+
+// GetModuleNetworks lists docker networks currently attached to the module's containers.
+// @Security     SessionAuth
+// @Summary      Get Module Networks
+// @Description  Returns the running docker networks detected for the given module.
+// @Tags         Modules,Pages
+// @Produce      json
+// @Param        moduleID  path  string  true  "Module ID"
+// @Success      200       {object} ModuleNetworksResponse
+// @Failure      404       {string} string "Module not found"
+// @Failure      500       {string} string "Failed to inspect networks"
+// @Router       /admin/modules/{moduleID}/networks [get]
+func GetModuleNetworks(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	moduleID := chi.URLParam(r, "moduleID")
+	if strings.TrimSpace(moduleID) == "" {
+		http.Error(w, "moduleID is required", http.StatusBadRequest)
+		return
+	}
+	module, err := core.GetModule(moduleID)
+	if err != nil || module.ID == "" {
+		http.Error(w, "module not found", http.StatusNotFound)
+		return
+	}
+	networks, err := core.ListModuleNetworks(module)
+	if err != nil {
+		log.Printf("failed to list networks for module %s: %v", moduleID, err)
+		http.Error(w, "failed to inspect networks", http.StatusInternalServerError)
+		return
+	}
+	resp := ModuleNetworksResponse{Networks: networks}
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+	}
 }
 
 // GetContainerLogs retrieves the logs for a specific container in a module.

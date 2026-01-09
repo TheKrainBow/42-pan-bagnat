@@ -44,6 +44,11 @@ type ModulePagesGetResponse struct {
 	NextPage    string           `json:"next_page_token" example:"BAD87as"`
 }
 
+// ModuleNetworksResponse lists docker networks detected for a module.
+type ModuleNetworksResponse struct {
+	Networks []string `json:"networks"`
+}
+
 // ConfigResponse is the wrapper for a module’s YAML config.
 // swagger:model ConfigResponse
 type ConfigResponse struct {
@@ -62,6 +67,9 @@ type ModulePageUpdateInput struct {
 
 	// IsPublic toggles whether the page is public.
 	IsPublic *bool `json:"is_public,omitempty" example:"true"`
+
+	// NetworkName is the docker network to which the reverse proxy must attach.
+	NetworkName *string `json:"network_name,omitempty" example:"piscine-monitor-net"`
 }
 
 // ModuleGitInput describes the payload for importing a new module.
@@ -100,4 +108,6 @@ type ModulePageInput struct {
 	URL string `json:"url"       example:"https://example.com/home"`
 	// IsPublic controls whether the page is publicly accessible
 	IsPublic bool `json:"is_public" example:"true"`
+	// NetworkName is the docker network the proxy should join for this page (optional)
+	NetworkName *string `json:"network_name,omitempty" example:"piscine-monitor-net"`
 }

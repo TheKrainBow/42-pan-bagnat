@@ -339,20 +339,11 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Parse input
-	var input struct {
-		ModuleID string `json:"module_id"`
-		Name     string `json:"name"`
-		URL      string `json:"url"`
-		IsPublic bool   `json:"is_public"`
-	}
-
+	var input ModulePageInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid JSON input", http.StatusBadRequest)
 		return
 	}
-
-	input.ModuleID = moduleID
 
 	if input.URL = strings.TrimSpace(input.URL); input.URL == "" {
 		http.Error(w, "Missing field url", http.StatusBadRequest)
@@ -364,12 +355,15 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.ModuleID = strings.TrimSpace(input.ModuleID); input.ModuleID == "" {
-		http.Error(w, "Missing field module_id", http.StatusBadRequest)
-		return
+	var network string
+	if input.NetworkName != nil {
+		trimmed := strings.TrimSpace(*input.NetworkName)
+		if trimmed != "" {
+			network = trimmed
+		}
 	}
 
-	modulePage, err := core.ImportModulePage(input.ModuleID, input.Name, input.URL, input.IsPublic)
+	modulePage, err := core.ImportModulePage(moduleID, input.Name, input.URL, input.IsPublic, network)
 	if err != nil {
 		core.LogModule(moduleID, "ERROR", "Couldn't add a module Page", nil, err)
 		http.Error(w, "Failed to import module page", http.StatusInternalServerError)

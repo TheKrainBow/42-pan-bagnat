@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 )
@@ -226,6 +227,102 @@ func GetModuleContainers(module Module) ([]ModuleContainer, error) {
 	}
 
 	return containers, nil
+}
+
+// CollectModuleNetworkAliases maps every known hostname/alias of the module containers
+// to the list of docker networks they are attached to, and returns all unique networks.
+func CollectModuleNetworkAliases(module Module) (map[string][]string, []string, error) {
+	slug := strings.TrimSpace(module.Slug)
+	if slug == "" {
+		return nil, nil, fmt.Errorf("missing module slug")
+	}
+	cmd := exec.Command("docker", "ps", "-a",
+		"--filter", fmt.Sprintf("label=com.docker.compose.project=%s", slug),
+		"--format", "{{.ID}}",
+	)
+	var psOut bytes.Buffer
+	cmd.Stdout = &psOut
+	if err := cmd.Run(); err != nil {
+		return nil, nil, fmt.Errorf("docker ps failed: %w", err)
+	}
+	lines := strings.Split(strings.TrimSpace(psOut.String()), "\n")
+	var ids []string
+	for _, line := range lines {
+		id := strings.TrimSpace(line)
+		if id != "" {
+			ids = append(ids, id)
+		}
+	}
+	aliases := make(map[string][]string)
+	if len(ids) == 0 {
+		return aliases, nil, nil
+	}
+	args := append([]string{"inspect"}, ids...)
+	inspectCmd := exec.Command("docker", args...)
+	var inspectOut bytes.Buffer
+	inspectCmd.Stdout = &inspectOut
+	if err := inspectCmd.Run(); err != nil {
+		return nil, nil, fmt.Errorf("docker inspect failed: %w", err)
+	}
+	var reports []struct {
+		ID     string `json:"Id"`
+		Name   string `json:"Name"`
+		Config struct {
+			Hostname string `json:"Hostname"`
+		} `json:"Config"`
+		NetworkSettings struct {
+			Networks map[string]struct {
+				Aliases  []string `json:"Aliases"`
+				DNSNames []string `json:"DNSNames"`
+			} `json:"Networks"`
+		} `json:"NetworkSettings"`
+	}
+	if err := json.Unmarshal(inspectOut.Bytes(), &reports); err != nil {
+		return nil, nil, err
+	}
+	networkSet := make(map[string]struct{})
+	for _, report := range reports {
+		containerName := strings.Trim(strings.TrimPrefix(report.Name, "/"), " ")
+		if containerName == "" {
+			containerName = report.ID
+		}
+		baseAliases := []string{}
+		if containerName != "" {
+			baseAliases = append(baseAliases, containerName)
+		}
+		if hn := strings.TrimSpace(report.Config.Hostname); hn != "" {
+			baseAliases = append(baseAliases, hn)
+		}
+		for netName, netInfo := range report.NetworkSettings.Networks {
+			networkSet[netName] = struct{}{}
+			names := append([]string{}, baseAliases...)
+			names = append(names, netInfo.Aliases...)
+			names = append(names, netInfo.DNSNames...)
+			for _, alias := range names {
+				alias = strings.ToLower(strings.TrimSpace(alias))
+				if alias == "" {
+					continue
+				}
+				list := aliases[alias]
+				already := false
+				for _, existing := range list {
+					if existing == netName {
+						already = true
+						break
+					}
+				}
+				if !already {
+					aliases[alias] = append(list, netName)
+				}
+			}
+		}
+	}
+	networks := make([]string, 0, len(networkSet))
+	for n := range networkSet {
+		networks = append(networks, n)
+	}
+	sort.Strings(networks)
+	return aliases, networks, nil
 }
 
 // GetAllContainers lists all containers, grouping info by compose project and networks.

@@ -124,16 +124,18 @@ type ModulePagePatch struct {
 	URL      *string `json:"url"`
 	IsPublic *bool   `json:"is_public"`
 	IconURL  *string `json:"icon_url"`
+	Network  *string `json:"network_name"`
 }
 
 type ModulePage struct {
-	ID       string `json:"id" db:"id"`
-	Name     string `json:"name" db:"name"`
-	Slug     string `json:"slug" db:"slug"`
-	URL      string `json:"url" db:"url"`
-	IsPublic bool   `json:"is_public" db:"is_public"`
-	ModuleID string `json:"module_id" db:"module_id"`
-	IconURL  string `json:"icon_url" db:"icon_url"`
+	ID          string `json:"id" db:"id"`
+	Name        string `json:"name" db:"name"`
+	Slug        string `json:"slug" db:"slug"`
+	URL         string `json:"url" db:"url"`
+	IsPublic    bool   `json:"is_public" db:"is_public"`
+	ModuleID    string `json:"module_id" db:"module_id"`
+	IconURL     string `json:"icon_url" db:"icon_url"`
+	NetworkName string `json:"network_name" db:"network_name"`
 }
 
 type ModulePagesOrderField string
@@ -222,7 +224,13 @@ func GetModule(moduleID string) (Module, error) {
 
 func GetPage(pageName string) (*ModulePage, error) {
 	row := mainDB.QueryRow(`
-		SELECT id, name, slug, module_id, is_public, url
+		SELECT id,
+		       name,
+		       slug,
+		       module_id,
+		       is_public,
+		       url,
+		       COALESCE(network_name, '') AS network_name
 		FROM module_page
 		WHERE slug = $1
 	`, pageName)
@@ -235,6 +243,7 @@ func GetPage(pageName string) (*ModulePage, error) {
 		&page.ModuleID,
 		&page.IsPublic,
 		&page.URL,
+		&page.NetworkName,
 	); err != nil {
 		return nil, err
 	}
@@ -261,13 +270,15 @@ func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
                slug      = COALESCE($2, slug),
                url       = COALESCE($3, url),
                is_public = COALESCE($4, is_public),
-               icon_url  = CASE WHEN ($5)::text IS NULL THEN icon_url
-                                 WHEN ($5)::text = ''  THEN NULL
-                                 ELSE ($5)::text END
-         WHERE id = $6
-     RETURNING id, name, slug, url, is_public, module_id, COALESCE(icon_url, '') as icon_url;
-    `, p.Name, p.Slug, p.URL, p.IsPublic, p.IconURL,
-		p.ID,
+               network_name = CASE WHEN ($5)::text IS NULL THEN network_name
+                                   WHEN ($5)::text = ''   THEN NULL
+                                   ELSE ($5)::text END,
+               icon_url  = CASE WHEN ($6)::text IS NULL THEN icon_url
+                                 WHEN ($6)::text = ''  THEN NULL
+                                 ELSE ($6)::text END
+         WHERE id = $7
+     RETURNING id, name, slug, url, is_public, module_id, COALESCE(icon_url, '') as icon_url, COALESCE(network_name, '') as network_name;
+    `, p.Name, p.Slug, p.URL, p.IsPublic, p.Network, p.IconURL, p.ID,
 	)
 
 	var out ModulePage
@@ -279,6 +290,7 @@ func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
 		&out.IsPublic,
 		&out.ModuleID,
 		&out.IconURL,
+		&out.NetworkName,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ModulePage{}, fmt.Errorf("ModulePage %s doesn't exist", p.ID)
@@ -549,9 +561,9 @@ func UpdateModuleSSHKey(moduleID, sshKeyID string) error {
 
 func InsertModulePage(m ModulePage) error {
 	_, err := mainDB.Exec(`
-		INSERT INTO module_page (id, module_id, name, slug, url, is_public)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, m.ID, m.ModuleID, m.Name, m.Slug, m.URL, m.IsPublic)
+		INSERT INTO module_page (id, module_id, name, slug, url, is_public, network_name)
+		VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''))
+	`, m.ID, m.ModuleID, m.Name, m.Slug, m.URL, m.IsPublic, m.NetworkName)
 	return err
 }
 
@@ -910,7 +922,14 @@ func GetModulePages(p ModulePagesPagination) ([]ModulePage, error) {
 	// 4) Assemble SQL
 	var sb strings.Builder
 	sb.WriteString(`
-SELECT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.icon_url, m.icon_url, '') AS icon_url
+SELECT mp.id,
+       mp.name,
+       mp.slug,
+       mp.url,
+       mp.is_public,
+       mp.module_id,
+       COALESCE(mp.icon_url, m.icon_url, '') AS icon_url,
+       COALESCE(mp.network_name, '') AS network_name
   FROM module_page mp
   JOIN modules m ON m.id = mp.module_id`)
 	if len(whereConds) > 0 {
@@ -943,6 +962,7 @@ SELECT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.
 			&pg.IsPublic,
 			&pg.ModuleID,
 			&pg.IconURL,
+			&pg.NetworkName,
 		); err != nil {
 			return nil, err
 		}
@@ -954,7 +974,14 @@ SELECT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.
 
 func GetUserPages(identifier string) ([]ModulePage, error) {
 	rows, err := mainDB.Query(`
-        SELECT DISTINCT mp.id, mp.name, mp.slug, mp.url, mp.is_public, mp.module_id, COALESCE(mp.icon_url, m.icon_url, '') AS icon_url
+        SELECT DISTINCT mp.id,
+                        mp.name,
+                        mp.slug,
+                        mp.url,
+                        mp.is_public,
+                        mp.module_id,
+                        COALESCE(mp.icon_url, m.icon_url, '') AS icon_url,
+                        COALESCE(mp.network_name, '') AS network_name
         FROM users u
         JOIN user_roles ur ON u.id = ur.user_id
         JOIN module_roles mr ON ur.role_id = mr.role_id
@@ -978,6 +1005,7 @@ func GetUserPages(identifier string) ([]ModulePage, error) {
 			&page.IsPublic,
 			&page.ModuleID,
 			&page.IconURL,
+			&page.NetworkName,
 		); err != nil {
 			return nil, err
 		}
