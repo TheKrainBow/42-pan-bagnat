@@ -7,7 +7,7 @@ if [ -d /data/repos ]; then
 fi
 
 ssh-keyscan github.com > ./known_hosts
-ssh-keyscan gitlab-world.42.fr >> ./known_hosts
+ssh-keyscan -p 422 gitlab-world.42.fr >> ./known_hosts
 
 # exec your binary
 exec ./main "$@"
