@@ -11,6 +11,12 @@ type VersionResponse struct {
 	Version string `json:"version" example:"1.1"`
 }
 
+// Healthz exposes an unauthenticated readiness endpoint for container health checks.
+func Healthz(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	fmt.Fprintf(w, `{"status":"ok"}`)
+}
+
 // @Summary      Ping backend API
 // @Description  Get a response from the API
 // @Tags         Ping

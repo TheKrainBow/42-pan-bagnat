@@ -163,6 +163,8 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(corsMiddleware.Handler)
 
+	r.Get("/api/v1/healthz", ping.Healthz)
+
 	r.Get("/api/swagger-public.json", func(w http.ResponseWriter, r *http.Request) {
 		raw, err := utils.LoadRawSpec()
 		if err != nil {

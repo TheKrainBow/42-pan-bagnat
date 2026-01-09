@@ -5,6 +5,13 @@ services:
       context: ./frontend
     expose:
       - '3000'
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:3000/"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
     networks:
       - pan-bagnat-core
 
@@ -16,14 +23,23 @@ services:
     ports:
       - '80:80'
       - '443:443'
+    restart: unless-stopped
     networks:
       - pan-bagnat-core
       - pan-bagnat-host
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      - backend
-      - frontend
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   backend:
     container_name: pan-bagnat-backend
@@ -33,6 +49,7 @@ services:
     init: true
     expose:
       - "8080"
+    restart: unless-stopped
     environment:
       HOST_NAME: ${HOST_NAME}
       POSTGRES_USER: ${POSTGRES_USER}
@@ -50,11 +67,20 @@ services:
       GIT_SSH_KNOWN_HOSTS: ${GIT_SSH_KNOWN_HOSTS}
       SSH_KNOWN_HOSTS_LIST: ${SSH_KNOWN_HOSTS_LIST}
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     volumes:
       - ./repos:/data/repos
       - ./assets:/app/assets
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://127.0.0.1:8080/api/v1/healthz >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
     networks:
       - pan-bagnat-net
       - pan-bagnat-core
