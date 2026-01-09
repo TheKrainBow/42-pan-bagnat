@@ -70,6 +70,11 @@
   gap: 6px;
 }
 
+.ssh-creator-deleted span {
+  font-style: italic;
+  color: var(--text-secondary, #9aa0a6);
+}
+
 .ssh-creator img {
   width: 20px;
   height: 20px;
