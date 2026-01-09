@@ -67,7 +67,7 @@ func DeployModule(module Module) error {
 	websocket.SendModuleDeployStatus(module.ID, true, "pending", "")
 
 	// Step 1: docker compose build
-	cmdBuild := exec.Command("docker", "compose", "-f", file, "build")
+	cmdBuild := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "build")
 	cmdBuild.Dir = dir
 	err = runAndLog(module.ID, cmdBuild)
 	if err != nil {
@@ -77,7 +77,7 @@ func DeployModule(module Module) error {
 	}
 
 	// Step 2: docker compose up -d
-	cmdUp := exec.Command("docker", "compose", "-f", file, "up", "-d")
+	cmdUp := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "up", "-d")
 	cmdUp.Dir = dir
 	err = runAndLog(module.ID, cmdUp)
 	if err != nil {
@@ -473,15 +473,9 @@ func CleanupModuleDockerResources(module Module) error {
 	}
 	file := "docker-compose.yml"
 
-	cmdDown := exec.Command("docker", "compose", "-f", file, "down", "--volumes", "--remove-orphans", "--rmi", "all")
+	cmdDown := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "down", "--volumes", "--remove-orphans", "--rmi", "all")
 	cmdDown.Dir = dir
 	if err := runAndLog(module.ID, cmdDown); err != nil {
-		return LogModule(module.ID, "ERROR", "Failed to docker compose down", nil, err)
-	}
-
-	cmdPrune := exec.Command("docker", "image", "prune", "-a", "-f")
-	cmdPrune.Dir = dir
-	if err := runAndLog(module.ID, cmdPrune); err != nil {
 		return LogModule(module.ID, "ERROR", "Failed to docker compose down", nil, err)
 	}
 
