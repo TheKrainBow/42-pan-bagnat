@@ -9,22 +9,75 @@ export default function ModulePageSection({ moduleId }) {
   const [edits, setEdits] = useState({});            // keyed by row.id
   const [isSaving, setIsSaving] = useState(false);
   const [iconTarget, setIconTarget] = useState(null);
+  const [proxyStatuses, setProxyStatuses] = useState({});
+  const [networks, setNetworks] = useState([]);
   const hasUnsaved = Object.values(edits).some(e => e.dirty);
+
+  const fetchNetworks = async () => {
+    try {
+      const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/networks`);
+      if (!res) return;
+      const data = await res.json();
+      setNetworks(data.networks || []);
+    } catch (err) {
+      console.error('Failed to fetch module networks:', err);
+      setNetworks([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchNetworks();
+  }, [moduleId]);
+
+  const fetchProxyStatus = async (slug) => {
+    if (!slug) return;
+    setProxyStatuses(prev => ({ ...prev, [slug]: { loading: true } }));
+    try {
+      const res = await fetchWithAuth(`/module-page/_status/${encodeURIComponent(slug)}`);
+      if (!res) return;
+      if (!res.ok) {
+        setProxyStatuses(prev => ({ ...prev, [slug]: { loading: false, error: `HTTP ${res.status}` } }));
+        return;
+      }
+      const data = await res.json();
+      setProxyStatuses(prev => ({ ...prev, [slug]: { loading: false, ...data } }));
+    } catch (err) {
+      setProxyStatuses(prev => ({ ...prev, [slug]: { loading: false, error: err.message } }));
+    }
+  };
+
+  const handleProxyReconnect = async (slug) => {
+    if (!slug) return;
+    try {
+      const res = await fetchWithAuth(`/module-page/_status/${encodeURIComponent(slug)}`, {
+        method: 'POST'
+      });
+      if (!res) return;
+      await fetchProxyStatus(slug);
+    } catch (err) {
+      console.error('Reconnect failed:', err);
+    }
+  };
 
   // load existing pages
   const fetchPages = async () => {
     try {
+      setProxyStatuses({});
       const res = await fetchWithAuth(`
         /api/v1/admin/modules/${moduleId}/pages
       `);
+      if (!res) return;
       const data = await res.json();
       const list = (data.pages || []).map(p => ({
         id: p.id,
+        slug: p.slug,
         name: p.name,
         url: p.url,
         isPublic: p.is_public,
         icon_url: p.icon_url,
-        isNew: false
+        network: p.network_name || '',
+        isNew: false,
+        moduleCheck: p.module_check || null
       }));
       setPages(list);
 
@@ -34,6 +87,8 @@ export default function ModulePageSection({ moduleId }) {
         initial[p.id] = { ...p, dirty: false };
       });
       setEdits(initial);
+
+      list.filter(p => p.slug).forEach(p => fetchProxyStatus(p.slug));
     } catch (err) {
       console.error('Fetch failed:', err);
     }
@@ -48,7 +103,7 @@ export default function ModulePageSection({ moduleId }) {
   // begin a new blank row
   const handleAddRow = () => {
     const tempId = `new-${Date.now()}`;
-    const newRow = { id: tempId, name: '', url: '', isPublic: false, icon_url: '', isNew: true };
+    const newRow = { id: tempId, slug: '', name: '', url: '', isPublic: false, icon_url: '', network: '', isNew: true, moduleCheck: null };
 
     setPages(ps => [...ps, newRow]);
     setEdits(e => ({
@@ -80,6 +135,7 @@ export default function ModulePageSection({ moduleId }) {
         name,
         url,
         is_public: isPublic,
+        network_name: (edits[id].network || '').trim() || null,
       };
       if (isNew) {
         await fetchWithAuth(
@@ -154,8 +210,16 @@ export default function ModulePageSection({ moduleId }) {
         <div className="no-pages">No pages added yet.</div>
       ) : (
         <ul className="page-list">
-          {pages.map(({ id }) => {
+          {pages.map(({ id, slug, moduleCheck }) => {
             const edit = edits[id] || {};
+            const proxy = slug ? proxyStatuses[slug] : null;
+            const moduleStatus = moduleCheck
+              ? (moduleCheck.ok ? 'ok' : 'ko')
+              : 'pending';
+            const proxyStatus = proxy
+              ? (proxy.loading ? 'pending' : proxy.ok ? 'ok' : 'ko')
+              : 'pending';
+
             return (
               <li
                 key={id}
@@ -164,6 +228,7 @@ export default function ModulePageSection({ moduleId }) {
                 <div className="page-info">
                   <img src={edit.icon_url || '/icons/modules.png'} className="page-icon-preview" alt="icon" title="Click to change icon" onClick={()=> setIconTarget(id)} />
                   <input
+                    className="page-name-input"
                     type="text"
                     placeholder="Name"
                     value={edit.name || ''}
@@ -176,14 +241,46 @@ export default function ModulePageSection({ moduleId }) {
                     value={edit.url || ''}
                     onChange={e => handleChange(id, 'url', e.target.value)}
                   />
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={edit.isPublic || false}
-                      onChange={e => handleChange(id, 'isPublic', e.target.checked)}
-                    />
-                    Public
-                  </label>
+                  <select
+                    className={`page-network-select${edit.network && !networks.includes(edit.network) ? ' missing-network' : ''}`}
+                    value={edit.network || ''}
+                    onChange={e => handleChange(id, 'network', e.target.value)}
+                  >
+                    <option value="">No network</option>
+                    {networks.map(net => (
+                      <option key={net} value={net}>{net}</option>
+                    ))}
+                    {edit.network && !networks.includes(edit.network) && (
+                      <option value={edit.network} className="missing-option">
+                        {edit.network} (!)
+                      </option>
+                    )}
+                  </select>
+                  <div className="page-status">
+                    <span
+                      className={`status-chip ${moduleStatus}`}
+                      title={moduleCheck?.details || (moduleCheck?.ok ? 'Reachable' : 'Awaiting containers')}
+                    >
+                      Module {moduleStatus === 'ok' ? 'OK' : moduleStatus === 'ko' ? 'KO' : '...'}
+                    </span>
+                    <button
+                      type="button"
+                      className={`status-chip proxy-button ${proxyStatus}`}
+                      title={proxy?.error || proxy?.message || (proxy?.loading ? 'Checking…' : 'Awaiting response')}
+                      onClick={() => proxyStatus === 'ko' && slug ? handleProxyReconnect(slug) : null}
+                      disabled={proxyStatus !== 'ko' || !slug}
+                    >
+                      Proxy {proxyStatus === 'ok' ? 'OK' : proxyStatus === 'ko' ? 'KO' : '...'}
+                    </button>
+                    <label className="page-public-toggle">
+                      <input
+                        type="checkbox"
+                        checked={edit.isPublic || false}
+                        onChange={e => handleChange(id, 'isPublic', e.target.checked)}
+                      />
+                      Public
+                    </label>
+                  </div>
                 </div>
                 <div className="page-actions">
                   <Button

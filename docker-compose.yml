@@ -15,6 +15,24 @@ services:
     networks:
       - pan-bagnat-core
 
+  modules-proxy:
+    container_name: pan-bagnat-modules-proxy
+    user: "root:root"
+    build:
+      context: ./modules-proxy
+    expose:
+      - "9090"
+    environment:
+      POSTGRES_URL: ${POSTGRES_URL}
+      MODULES_PROXY_PORT: ${MODULES_PROXY_PORT:-9090}
+      MODULES_PROXY_CHANNEL: ${MODULES_PROXY_CHANNEL:-module_page_changed}
+      MODULES_PROXY_CONTAINER: ${MODULES_PROXY_CONTAINER:-pan-bagnat-modules-proxy}
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - pan-bagnat-core
+
   nginx:
     image: nginx:alpine
     volumes:
@@ -34,6 +52,8 @@ services:
         condition: service_healthy
       frontend:
         condition: service_healthy
+      modules-proxy:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/healthz"]
       interval: 10s
@@ -82,8 +102,8 @@ services:
       retries: 12
       start_period: 15s
     networks:
-      - pan-bagnat-net
       - pan-bagnat-core
+      - pan-bagnat-host
   db:
     container_name: pan-bagnat-db
     image: postgres:16

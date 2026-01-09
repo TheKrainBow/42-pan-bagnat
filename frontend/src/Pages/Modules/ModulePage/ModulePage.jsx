@@ -102,7 +102,7 @@ export default function ModulePage({ pages }) {
       <iframe
         id="moduleIframe"
         key={`${page.slug}-${retryKey}`}
-        src={`${window.location.origin}/module-page/${page.slug}/index.html`}
+        src={`${window.location.origin}/module-page/${page.slug}/`}
         title={page.slug}
         frameBorder="0"
         className="module-iframe"

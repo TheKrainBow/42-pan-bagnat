@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -117,13 +118,32 @@ type ModuleLogsPagination struct {
 }
 
 type ModulePage struct {
-	ID       string `json:"id"`
-	Name     string `json:"name"`
-	Slug     string `json:"slug"`
-	URL      string `json:"url"`
-	IsPublic bool   `json:"is_public"`
-	ModuleID string `json:"module_id"`
-	IconURL  string `json:"icon_url"`
+	ID          string             `json:"id"`
+	Name        string             `json:"name"`
+	Slug        string             `json:"slug"`
+	URL         string             `json:"url"`
+	IsPublic    bool               `json:"is_public"`
+	ModuleID    string             `json:"module_id"`
+	IconURL     string             `json:"icon_url"`
+	NetworkName string             `json:"network_name,omitempty"`
+	ModuleCheck *ModulePageCheck   `json:"module_check,omitempty"`
+	ProxyCheck  *ModuleProxyStatus `json:"proxy_check,omitempty"`
+}
+
+type ModulePageCheck struct {
+	OK       bool     `json:"ok"`
+	Details  string   `json:"details,omitempty"`
+	Networks []string `json:"networks,omitempty"`
+	Target   string   `json:"target,omitempty"`
+}
+
+type ModuleProxyStatus struct {
+	OK                bool     `json:"ok"`
+	Details           string   `json:"details,omitempty"`
+	ConnectedNetworks []string `json:"connected_networks,omitempty"`
+	DisconnectedNets  []string `json:"disconnected_networks,omitempty"`
+	LastReportedAt    time.Time
+	Source            string `json:"source,omitempty"`
 }
 
 type ModulePagesPagination struct {
@@ -507,6 +527,102 @@ func GenerateModuleSlug(name, _ string) string {
 	}
 }
 
+func AnnotateModulePagesWithModuleChecks(module Module, pages []ModulePage) []ModulePage {
+	if len(pages) == 0 {
+		return pages
+	}
+	aliasMap, networks, err := CollectModuleNetworkAliases(module)
+	if err != nil {
+		log.Printf("modules: unable to inspect networks for %s: %v", module.Slug, err)
+		return pages
+	}
+	networkSet := make(map[string]struct{}, len(networks))
+	for _, n := range networks {
+		networkSet[n] = struct{}{}
+	}
+	for i := range pages {
+		if chk := evaluateModulePageTarget(aliasMap, networkSet, pages[i].URL, pages[i].NetworkName); chk != nil {
+			pages[i].ModuleCheck = chk
+		}
+	}
+	return pages
+}
+
+func ListModuleNetworks(module Module) ([]string, error) {
+	_, networks, err := CollectModuleNetworkAliases(module)
+	if err != nil {
+		return nil, err
+	}
+	return networks, nil
+}
+
+func evaluateModulePageTarget(aliasMap map[string][]string, networkSet map[string]struct{}, rawURL, selectedNetwork string) *ModulePageCheck {
+	host, err := normalizePageHost(rawURL)
+	if err != nil {
+		return &ModulePageCheck{OK: false, Details: "invalid page URL", Target: host}
+	}
+	if len(aliasMap) == 0 {
+		return &ModulePageCheck{OK: false, Details: "module has no containers yet", Target: host}
+	}
+	netName := strings.TrimSpace(selectedNetwork)
+	if netName == "" {
+		return &ModulePageCheck{OK: false, Details: "no network selected", Target: host}
+	}
+	if _, ok := networkSet[netName]; !ok {
+		return &ModulePageCheck{
+			OK:      false,
+			Details: "network not found among running module networks",
+			Target:  host,
+			Networks: []string{
+				netName,
+			},
+		}
+	}
+	networks := aliasMap[host]
+	if len(networks) == 0 {
+		return &ModulePageCheck{
+			OK:      false,
+			Details: "hostname not found among module containers",
+			Target:  host,
+		}
+	}
+	for _, n := range networks {
+		if n == netName {
+			return &ModulePageCheck{
+				OK:       true,
+				Details:  "",
+				Networks: []string{netName},
+				Target:   host,
+			}
+		}
+	}
+	return &ModulePageCheck{
+		OK:       false,
+		Details:  "hostname not attached to selected network",
+		Target:   host,
+		Networks: networks,
+	}
+}
+
+func normalizePageHost(raw string) (string, error) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return "", errors.New("empty url")
+	}
+	if !strings.Contains(trimmed, "://") {
+		trimmed = "http://" + trimmed
+	}
+	parsed, err := url.Parse(trimmed)
+	if err != nil {
+		return "", err
+	}
+	host := strings.ToLower(strings.TrimSpace(parsed.Hostname()))
+	if host == "" {
+		return "", errors.New("missing host")
+	}
+	return host, nil
+}
+
 func ensureModuleSSHKeyForSlug(slug string) (SSHKey, error) {
 	base := strings.TrimSpace(slug)
 	if base == "" {
@@ -722,7 +838,7 @@ func GetModulePages(pagination ModulePagesPagination) ([]ModulePage, string, err
 	return dest, token, nil
 }
 
-func ImportModulePage(moduleID, name, url string, isPublic bool) (ModulePage, error) {
+func ImportModulePage(moduleID, name, url string, isPublic bool, network string) (ModulePage, error) {
 	pageID, err := GenerateULID(PageKind)
 	if err != nil {
 		return ModulePage{}, fmt.Errorf("failed to generate page ID: %w", err)
@@ -730,22 +846,24 @@ func ImportModulePage(moduleID, name, url string, isPublic bool) (ModulePage, er
 
 	// Prepare module struct
 	dest := ModulePage{
-		ID:       pageID,
-		ModuleID: moduleID,
-		Name:     name,
-		Slug:     GeneratePageSlug(name),
-		URL:      url,
-		IsPublic: isPublic,
+		ID:          pageID,
+		ModuleID:    moduleID,
+		Name:        name,
+		Slug:        GeneratePageSlug(name),
+		URL:         url,
+		IsPublic:    isPublic,
+		NetworkName: strings.TrimSpace(network),
 	}
 
 	// Insert into DB
 	if err := database.InsertModulePage(database.ModulePage{
-		ID:       dest.ID,
-		ModuleID: dest.ModuleID,
-		Name:     dest.Name,
-		Slug:     dest.Slug,
-		URL:      dest.URL,
-		IsPublic: dest.IsPublic,
+		ID:          dest.ID,
+		ModuleID:    dest.ModuleID,
+		Name:        dest.Name,
+		Slug:        dest.Slug,
+		URL:         dest.URL,
+		IsPublic:    dest.IsPublic,
+		NetworkName: dest.NetworkName,
 	}); err != nil {
 		return ModulePage{}, fmt.Errorf("failed to insert module in DB: %w", err)
 	}
@@ -790,7 +908,7 @@ func DeleteModulePage(pageID string) error {
 	return nil
 }
 
-func UpdateModulePage(pageID string, name, url *string, isPublic *bool) (ModulePage, error) {
+func UpdateModulePage(pageID string, name, url *string, isPublic *bool, network *string) (ModulePage, error) {
 	// Build the patch struct for the DB layer
 	patch := database.ModulePagePatch{
 		ID:       pageID,
@@ -802,6 +920,10 @@ func UpdateModulePage(pageID string, name, url *string, isPublic *bool) (ModuleP
 	if name != nil {
 		newSlug := GeneratePageSlug(*name)
 		patch.Slug = &newSlug
+	}
+	if network != nil {
+		trimmed := strings.TrimSpace(*network)
+		patch.Network = &trimmed
 	}
 
 	// Apply the patch

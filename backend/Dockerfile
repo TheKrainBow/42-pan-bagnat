@@ -1,7 +1,7 @@
 # backend/Dockerfile
 
 # 1. Use the latest Go image as a builder
-FROM golang:latest AS builder
+FROM golang:1.25 AS builder
 
 # 2. Set the working directory
 WORKDIR /app

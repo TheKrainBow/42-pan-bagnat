@@ -98,12 +98,7 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse body
-	var input struct {
-		ID       string  `json:"id"`
-		Name     *string `json:"name"`
-		URL      *string `json:"url"`
-		IsPublic *bool   `json:"is_public"`
-	}
+	var input ModulePageUpdateInput
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid JSON input", http.StatusBadRequest)
 		return
@@ -118,8 +113,13 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 		*input.URL = strings.TrimSpace(*input.URL)
 	}
 
+	if input.NetworkName != nil {
+		trimmed := strings.TrimSpace(*input.NetworkName)
+		input.NetworkName = &trimmed
+	}
+
 	// perform update
-	modulePage, err := core.UpdateModulePage(pageID, input.Name, input.URL, input.IsPublic)
+	modulePage, err := core.UpdateModulePage(pageID, input.Name, input.URL, input.IsPublic, input.NetworkName)
 	if err != nil {
 		core.LogModule(moduleID, "ERROR", "Failed to update module page", nil, err)
 		http.Error(w, "Internal error", http.StatusInternalServerError)
