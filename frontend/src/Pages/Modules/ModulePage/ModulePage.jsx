@@ -1,73 +1,63 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import './ModulePage.css';
 import Button from 'Global/Button/Button';
 
+const getModulesDomain = () => {
+  const envValue = (import.meta.env.VITE_MODULES_BASE_DOMAIN || '').trim();
+  if (envValue) return envValue;
+  return 'modules.127.0.0.1.nip.io';
+};
+
+const getModulesProtocol = (domain) => {
+  const override = (import.meta.env.VITE_MODULES_PROTOCOL || '').trim().toLowerCase();
+  if (override === 'http' || override === 'https') {
+    return override;
+  }
+  if (domain.endsWith('.127.0.0.1.nip.io') || domain.endsWith('.nip.io')) {
+    return 'http';
+  }
+  return window.location.protocol === 'https:' ? 'https' : 'http';
+};
+
 export default function ModulePage({ pages }) {
   const { slug } = useParams();
   const [status, setStatus] = useState('loading');
-  const [retryKey, setRetryKey] = useState(0); // to force iframe reload
+  const [retryKey, setRetryKey] = useState(0);
 
   const page = pages.find((p) => p.slug === slug);
+  const modulesDomain = useMemo(() => getModulesDomain(), []);
+  const modulesProtocol = useMemo(() => getModulesProtocol(modulesDomain), [modulesDomain]);
+  const iframeSrc = page ? `${modulesProtocol}://${page.slug}.${modulesDomain}/` : '';
 
   useEffect(() => {
     if (pages.length === 0) return;
-
     const newPage = pages.find((p) => p.slug === slug);
     if (newPage) {
       setStatus('loading');
-      setRetryKey(k => k + 1); // force iframe reload
+      setRetryKey((k) => k + 1);
     }
   }, [slug, pages]);
 
   useEffect(() => {
     setRetryKey(0);
   }, [slug]);
+
   useEffect(() => {
     if (!page) return;
-
     const iframe = document.getElementById('moduleIframe');
-    // if (iframe) {
-    //   iframe.src = 'about:blank'; // wipe iframe instantly
-    // }
     setStatus('loading');
-
     if (!iframe) return;
 
-    const timeout = setTimeout(() => {
-      setStatus('error');
-    }, 8000); // fail after 8s
-
+    const timeout = setTimeout(() => setStatus('error'), 8000);
     iframe.onload = () => {
       clearTimeout(timeout);
-
-      try {
-        // Avoid security errors on cross-origin iframes
-        const iframeDoc = iframe.contentWindow.document;
-        if (!iframeDoc || iframeDoc.body.innerHTML.trim() === '') {
-          setStatus('error');
-          return;
-        }
-
-        const basePath = iframe.src.split('/module-page')[0] + `/module-page/${page.slug}/`;
-        const baseTag = document.createElement('base');
-        baseTag.setAttribute('href', basePath);
-        iframeDoc.head.appendChild(baseTag);
-
-        const links = iframeDoc.querySelectorAll('a');
-        links.forEach((link) => {
-          const href = link.getAttribute('href');
-          if (href && !href.startsWith('http')) {
-            link.setAttribute('href', basePath + href);
-          }
-        });
-
-        setStatus('ready');
-      } catch (e) {
-        setStatus('error');
-      }
+      setStatus('ready');
     };
-
+    iframe.onerror = () => {
+      clearTimeout(timeout);
+      setStatus('error');
+    };
     return () => clearTimeout(timeout);
   }, [page, retryKey]);
 
@@ -102,7 +92,7 @@ export default function ModulePage({ pages }) {
       <iframe
         id="moduleIframe"
         key={`${page.slug}-${retryKey}`}
-        src={`${window.location.origin}/module-page/${page.slug}/`}
+        src={iframeSrc}
         title={page.slug}
         frameBorder="0"
         className="module-iframe"

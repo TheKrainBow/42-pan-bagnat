@@ -13,7 +13,7 @@ for campus-level tooling.
 
 - Deploy and manage feature modules from Git repositories
 - Auto-generate SSH keys and orchestrate deployments with Docker Compose
-- Expose module pages through a reverse-proxied `/module-page/{slug}` system
+- Expose module pages on dedicated subdomains (`https://<slug>.modules.example`) via an internal gateway mesh
 - Manage users and roles, including rule-based assignments
 - Authenticate via 42 OAuth
 - Provide real-time updates through WebSockets

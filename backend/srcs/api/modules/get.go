@@ -1,15 +1,12 @@
 package modules
 
 import (
-	"backend/api/auth"
 	api "backend/api/dto"
 	"backend/core"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
-	"net/http/httputil"
-	"net/url"
 	"strconv"
 	"strings"
 
@@ -511,68 +508,6 @@ func GetModuleContainers(w http.ResponseWriter, r *http.Request) {
 
 // 	fmt.Fprint(w, string(destJSON))
 // }
-
-// PageRedirection proxies the root of a module page.
-// @Summary      Proxy Module Page (root)
-// @Description  Reverse-proxies /module-page/{pageName} to the module’s configured URL.
-// @Tags         Pages
-// @Param        pageName  path  string  true   "Name of the module page"
-// @Success      200       {string}  string  "Proxied content"
-// @Failure      400       {string}  string  "Module page name not provided"
-// @Failure      500       {string}  string  "Error looking up or proxying the module page"
-// @Router       /admin/module-page/{pageName} [get]
-func PageRedirectionRoot(w http.ResponseWriter, r *http.Request) {
-	PageRedirection(w, r)
-}
-
-// PageRedirection proxies any sub-path under a module page.
-// @Summary      Proxy Module Page (sub-paths)
-// @Description  Reverse-proxies /module-page/{pageName}/{path}/* to the module’s configured URL, stripping the prefix.
-// @Tags         Pages
-// @Param        pageName  path  string  true   "Name of the module page"
-// @Param        path      path  string  true   "Sub-path under the module page (may include slashes)"
-// @Success      200       {string}  string  "Proxied content"
-// @Failure      400       {string}  string  "Module page name or path not provided"
-// @Failure      500       {string}  string  "Error looking up or proxying the module page"
-// @Router       /admin/module-page/{pageName}/{path} [get]
-func PageRedirectionSub(w http.ResponseWriter, r *http.Request) {
-	PageRedirection(w, r)
-}
-
-func PageRedirection(w http.ResponseWriter, r *http.Request) {
-	pageName := chi.URLParam(r, "pageName")
-
-	page, err := core.GetPage(pageName)
-	if err != nil {
-		http.Error(w, "error looking up module page: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// Reject non-public pages if not loaded in iframe
-	isIframe := r.Header.Get("Referer") != ""
-
-	if !page.IsPublic && !isIframe {
-		auth.WriteJSONError(w, http.StatusForbidden, "admin", "Your are not allowed to view this content")
-		http.Error(w, "This page is not public", http.StatusForbidden)
-		return
-	}
-
-	targetURL, err := url.Parse(page.URL)
-	if err != nil {
-		http.Error(w, "bad module URL: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	proxy := httputil.NewSingleHostReverseProxy(targetURL)
-
-	suffix := strings.TrimPrefix(r.URL.Path, "/module-page/"+pageName)
-	if suffix == "" {
-		suffix = "/"
-	}
-	r.URL.Path = suffix
-
-	proxy.ServeHTTP(w, r)
-}
 
 // GetAllContainers returns all containers across modules with grouping hints.
 // @Security     SessionAuth

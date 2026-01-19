@@ -89,11 +89,11 @@ AuthZ and guards
 - `AuthMiddleware`: ensures a valid session; clears cookie if expired.
 - `AdminMiddleware`: restricts `/api/v1/admin/*` to users with the `roles_admin` role.
 - `BlackListMiddleware`: if a user has `roles_blacklist`, all sessions are revoked and access is denied (403).
-- `PageAccessMiddleware`: protects `/module-page/{slug}`; allows public pages; requires auth otherwise (and ensures the SPA iframe context).
 
 Cookies & CORS
 - `session_id` is set with appropriate `Secure` flag depending on TLS headers (via Nginx `X-Forwarded-Proto`).
 - CORS is restricted to `http(s)://$HOST_NAME` and allows credentials.
+- Set `SESSION_COOKIE_DOMAIN` (e.g. `.localhost` or `.panbagnat.42nice.fr`) if you need subdomains such as `*.modules.<domain>` to share the session cookie with the main SPA.
 
 Realtime & Webhooks
 - WebSocket endpoint `/ws` with per‑module subscriptions.

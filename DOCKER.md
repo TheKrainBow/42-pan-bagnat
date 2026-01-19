@@ -25,8 +25,21 @@ Defined in `docker-compose.yml`:
   - Fronts the stack and terminates TLS.
   - Proxies:
     - `/` → frontend
-    - `/api`, `/auth`, `/ws`, `/module-page/*` → backend
+    - `/api`, `/auth`, `/ws` → backend
+    - `/module-page/_status/*` → proxy-service (admin UI checks)
+    - `*.modules.<domain>` → proxy-service (module iframes via subdomains)
   - Reads config from `nginx/nginx.conf` and certs from `nginx/ssl`.
+
+- `proxy-service` (container: `pan-bagnat-proxy-service`)
+  - Lightweight Go HTTP proxy (no Docker socket) that serves `*.modules.<domain>` traffic.
+  - Looks up module pages in Postgres, enforces session auth, and forwards to the corresponding gateway container on the shared proxy network.
+  - Also exposes `/module-page/_status/{slug}` for the admin UI, relaying information from `net-controller`.
+  - Connected to both `pan-bagnat-core` (for DB/HTTP ingress) and `pan-bagnat-proxy-net` (to reach gateways).
+
+- `net-controller` (container: `pan-bagnat-net-controller`)
+  - Reconciliation loop with Docker socket access; ensures a `gateway-<slug>` container exists per module page.
+  - Connects each gateway to the shared proxy network + the selected module network, rendering a per-page nginx reverse proxy pointed at the module’s declared URL.
+  - Exposes an internal HTTP API consumed by `proxy-service` for status/reattach actions.
 
 - `db` (container: `pan-bagnat-db`)
   - PostgreSQL 16 with healthcheck.
@@ -48,6 +61,10 @@ Defined in `docker-compose.yml`:
 
 - `pan-bagnat-host` (bridge)
   - Additional network for Nginx with `extra_hosts: host.docker.internal` convenience.
+
+- `pan-bagnat-proxy-net` (bridge, internal: true)
+  - Shared “modules” network used by `proxy-service` and every generated `gateway-<slug>` container.
+  - Provides a collision-free DNS space so `proxy-service` can hit `gateway-<slug>` without joining module networks.
 
 ## Volumes and repo mounts
 

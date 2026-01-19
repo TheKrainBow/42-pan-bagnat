@@ -36,7 +36,7 @@ Option B — manual
 
 Notes
 - For authenticated flows, the backend must be running and reachable on the host used by CORS (see `HOST_NAME` in `.env.example`).
-- In Docker, Nginx proxies `/` to the frontend and `/api`, `/auth`, `/ws`, `/module-page` to the backend.
+- In Docker, Nginx proxies `/` to the frontend, `/api` + `/auth` + `/ws` to the backend, `/module-page/_status` to `proxy-service`, and any `*.modules.<domain>` hostnames to the module `proxy-service`.
 
 ## Development flow (molecular UI)
 
@@ -77,8 +77,9 @@ WebSocket
 - Endpoint: `/ws`. The client subscribes per module to receive live events/logs.
 
 Module Pages
-- User-facing pages are reverse-proxied from the backend at `/module-page/{slug}`.
-- `ModulePage.jsx` embeds them in an iframe and adjusts relative links with a `<base>` tag.
+- User-facing pages load from dedicated subdomains like `https://<slug>.modules.panbagnat.42nice.fr/`.
+- `ModulePage.jsx` points the iframe to `<protocol>://<slug>.<modules-domain>/` where the domain comes from `VITE_MODULES_BASE_DOMAIN` (configured via Docker build arg or `frontend/.env` when running Vite locally).
+- When the domain ends with `.nip.io` (e.g. `modules.127.0.0.1.nip.io`), the iframe automatically forces plain HTTP since no TLS cert exists; you can override the protocol explicitly via `VITE_MODULES_PROTOCOL=http|https` if needed.
 
 Links
 - Backend details: ../backend/README.md

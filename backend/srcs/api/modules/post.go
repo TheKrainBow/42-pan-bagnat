@@ -377,7 +377,7 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	core.LogModule(moduleID, "INFO", fmt.Sprintf("Created page at '/module-page/%s' from '%s'", dest.Slug, dest.URL), nil, nil)
+	core.LogModule(moduleID, "INFO", fmt.Sprintf("Created page '%s' from '%s'", dest.Slug, dest.URL), nil, nil)
 	fmt.Fprint(w, string(destJSON))
 }
 

@@ -3,6 +3,9 @@ services:
     container_name: pan-bagnat-frontend
     build:
       context: ./frontend
+      args:
+        VITE_MODULES_BASE_DOMAIN: ${MODULES_BASE_MODULE_HOST:-modules.127.0.0.1.nip.io}
+        VITE_MODULES_PROTOCOL: ${MODULES_MODULES_PROTOCOL:-}
     expose:
       - '3000'
     restart: unless-stopped
@@ -15,21 +18,51 @@ services:
     networks:
       - pan-bagnat-core
 
-  modules-proxy:
-    container_name: pan-bagnat-modules-proxy
-    user: "root:root"
+  proxy-service:
+    container_name: pan-bagnat-proxy-service
     build:
       context: ./modules-proxy
+      dockerfile: Dockerfile.proxy
     expose:
       - "9090"
     environment:
       POSTGRES_URL: ${POSTGRES_URL}
       MODULES_PROXY_PORT: ${MODULES_PROXY_PORT:-9090}
       MODULES_PROXY_CHANNEL: ${MODULES_PROXY_CHANNEL:-module_page_changed}
-      MODULES_PROXY_CONTAINER: ${MODULES_PROXY_CONTAINER:-pan-bagnat-modules-proxy}
+      MODULES_PROXY_ALLOWED_DOMAINS: ${MODULES_PROXY_ALLOWED_DOMAINS:-modules.panbagnat.42nice.fr,modules.127.0.0.1.nip.io}
+      MODULES_NET_CONTROLLER_URL: ${MODULES_NET_CONTROLLER_URL:-http://net-controller:9091}
     restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
+    networks:
+      - pan-bagnat-core
+      - pan-bagnat-proxy-net
+
+  net-controller:
+    container_name: pan-bagnat-net-controller
+    user: "root:root"
+    build:
+      context: ./modules-proxy
+      dockerfile: Dockerfile.netctl
+    expose:
+      - "9091"
+    environment:
+      POSTGRES_URL: ${POSTGRES_URL}
+      MODULES_PROXY_CHANNEL: ${MODULES_PROXY_CHANNEL:-module_page_changed}
+      MODULES_SHARED_NETWORK: ${MODULES_SHARED_NETWORK:-pan-bagnat-proxy-net}
+      MODULES_GATEWAY_IMAGE: ${MODULES_GATEWAY_IMAGE:-nginx:alpine}
+      MODULES_GATEWAY_PORT: ${MODULES_GATEWAY_PORT:-8080}
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      migrator:
+        condition: service_completed_successfully
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - pan-bagnat-core
 
@@ -52,7 +85,7 @@ services:
         condition: service_healthy
       frontend:
         condition: service_healthy
-      modules-proxy:
+      proxy-service:
         condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1/healthz"]
@@ -151,3 +184,7 @@ networks:
   pan-bagnat-host:
     name: pan-bagnat-host
     driver: bridge
+  pan-bagnat-proxy-net:
+    name: pan-bagnat-proxy-net
+    driver: bridge
+    internal: true
