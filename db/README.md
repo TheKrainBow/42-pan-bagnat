@@ -28,7 +28,8 @@ Main tables
 - `modules` — deployable feature modules
   - Columns: `id`, `name`, `slug`, `git_url`, `git_branch`, `ssh_public_key`, `ssh_private_key`, `version`, `status`, `icon_url`, `latest_version`, `late_commits`, `last_update`
 - `module_page` — user‑facing pages for a module (reverse‑proxied)
-  - Columns: `id`, `module_id`, `name`, `slug`, `url`, `is_public`; `(module_id, name)` unique
+  - Columns: `id`, `module_id`, `name`, `slug`, `network_name`, `target_container`, `target_port`, `iframe_only`, `need_auth`, `icon_url`; `(module_id, name)` unique
+  - `target_container`/`target_port` tell the net-controller which Docker service to reach, `network_name` indicates which module network to attach to, and the boolean flags control whether the page can be opened outside Pan Bagnat (`iframe_only`) and whether proxy-service enforces authentication (`need_auth`).
 - `module_log` — logs attached to a module (git/docker outputs, lifecycle messages)
   - Columns: `id`, `module_id`, `created_at`, `level`, `message`, `meta jsonb`
 - `sessions` — user sessions (cookie `session_id`)

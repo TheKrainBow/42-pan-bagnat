@@ -33,7 +33,7 @@ Key locations:
 - `/ws` → `pan-bagnat-backend` (WebSocket)
 - `/module-page/_status/*` → `pan-bagnat-proxy-service` (admin UI probes)
 - `*.modules.panbagnat.42nice.fr` → `pan-bagnat-proxy-service` (wildcard module subdomains)
-- `*.modules.127.0.0.1.nip.io` → `pan-bagnat-proxy-service` (local wildcard without TLS)
+- `*.modules.localhost` / `*.modules.127.0.0.1.nip.io` → `pan-bagnat-proxy-service` (local wildcard without TLS; see `localDNS/README.md` for DNS resolution)
 
 These paths are defined in `server { … }` for the TLS vhost. Port 80 vhost only redirects to HTTPS.
 
@@ -73,11 +73,13 @@ This keeps WebSocket connections alive for live updates/log events.
 
 Module pages now live on dedicated subdomains:
 - Production: `https://<slug>.modules.panbagnat.42nice.fr`
-- Local dev: `http://<slug>.modules.127.0.0.1.nip.io`
+- Local dev: `https://<slug>.modules.localhost` when using the dnsmasq helper (or `http://<slug>.modules.127.0.0.1.nip.io` as a fallback)
 
 Nginx terminates TLS for the wildcard cert (production) and forwards every request to `pan-bagnat-proxy-service`, which enforces sessions and proxies to the per-page gateway container.
 
 Admin-only health checks still run through `/module-page/_status/{slug}` on the main site; the route is forwarded to `proxy-service`, which in turn asks `net-controller` for gateway status or to trigger a reconcile.
+
+Local DNS reminder: to resolve `*.modules.localhost` you must run the dnsmasq helper under `localDNS/` or add equivalent entries to your system resolver. Without it, your browser will never reach the wildcard vhost defined in `nginx.conf`.
 
 ## Logs, reload, and troubleshooting
 

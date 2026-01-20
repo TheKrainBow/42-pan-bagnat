@@ -84,6 +84,7 @@ Helpful Make targets:
 AuthN
 - 42 OAuth login flow: `/auth/42/login` → `/auth/42/callback` exchanges code for token, then issues a `session_id` cookie.
 - Session storage in Postgres (`sessions`), with expiry and per‑device handling.
+- `SESSION_COOKIE_DOMAIN` should be set to a wildcard such as `.localhost` or `.panbagnat.42nice.fr` so the SPA and every `*.modules.<domain>` host reuse the same session cookie.
 
 AuthZ and guards
 - `AuthMiddleware`: ensures a valid session; clears cookie if expired.
@@ -93,11 +94,17 @@ AuthZ and guards
 Cookies & CORS
 - `session_id` is set with appropriate `Secure` flag depending on TLS headers (via Nginx `X-Forwarded-Proto`).
 - CORS is restricted to `http(s)://$HOST_NAME` and allows credentials.
-- Set `SESSION_COOKIE_DOMAIN` (e.g. `.localhost` or `.panbagnat.42nice.fr`) if you need subdomains such as `*.modules.<domain>` to share the session cookie with the main SPA.
+- Login redirection carries a short-lived `pb_login_next` cookie. `/auth/42/login?next=<url>` sets that cookie (domain follows `SESSION_COOKIE_DOMAIN`), the OAuth callback consumes it, validates the target host against `MODULES_IFRAME_ALLOWED_HOSTS` + `MODULES_PROXY_ALLOWED_DOMAINS`, and performs a 303 redirect if the URL is trusted. This is what enables opening a module directly on `slug.modules.<domain>` and landing back there after authenticating.
 
 Realtime & Webhooks
 - WebSocket endpoint `/ws` with per‑module subscriptions.
 - Webhook `/webhooks/events` (HMAC signed) fans‑out events to subscribers.
+
+Module proxy integration
+- Module pages now declare a container name + port instead of a raw URL (`module_page.target_container` / `target_port`) along with `network_name`, `iframe_only`, and `need_auth`.
+- `/api/v1/modules/pages/{slug}/session` issues an HMAC-signed token that the frontend trades for a module specific cookie by calling `<module-origin>/_pb/session`. Tokens expire quickly (`MODULES_SESSION_TOKEN_TTL`) and are bound to the user session ID.
+- Environment variables `MODULES_PROXY_ALLOWED_DOMAINS` and `MODULES_IFRAME_ALLOWED_HOSTS` must match the lists used by `proxy-service` so both sides agree on valid hosts/suffixes.
+- `MODULES_LOGIN_URL` (served by the frontend) is where unauthenticated module requests are redirected; the backend advertises the same URL to `proxy-service`.
 
 ## Swagger (specs and UI)
 
