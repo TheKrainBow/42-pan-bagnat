@@ -36,7 +36,7 @@ Option B — manual
 
 Notes
 - For authenticated flows, the backend must be running and reachable on the host used by CORS (see `HOST_NAME` in `.env.example`).
-- In Docker, Nginx proxies `/` to the frontend and `/api`, `/auth`, `/ws`, `/module-page` to the backend.
+- In Docker, Nginx proxies `/` to the frontend, `/api` + `/auth` + `/ws` to the backend, `/module-page/_status` to `proxy-service`, and any `*.modules.<domain>` hostnames to the module `proxy-service`.
 
 ## Development flow (molecular UI)
 
@@ -77,8 +77,11 @@ WebSocket
 - Endpoint: `/ws`. The client subscribes per module to receive live events/logs.
 
 Module Pages
-- User-facing pages are reverse-proxied from the backend at `/module-page/{slug}`.
-- `ModulePage.jsx` embeds them in an iframe and adjusts relative links with a `<base>` tag.
+- User-facing pages load from dedicated subdomains like `https://<slug>.modules.panbagnat.42nice.fr/` in prod or `https://<slug>.modules.localhost/` in dev (requires the dnsmasq helper described in `localDNS/README.md`).
+- `ModulePage.jsx` uses helpers under `src/utils/modules.js` to compute `<protocol>://<slug>.<modules-domain>/` (domain injected via `VITE_MODULES_BASE_DOMAIN`, protocol inferred from the domain or overridden via `VITE_MODULES_PROTOCOL`).
+- The SPA now warms module sessions: saving a page triggers `/api/v1/modules/pages/{slug}/session`, then `exchangeModuleSession` (`src/utils/moduleSession.js`) loads `<origin>/_pb/session?token=...` in a hidden iframe so the module shares the same `session_id` cookie as the main app.
+- Login honors a `next` query parameter. `/login?next=https://slug.modules.localhost/page` rounds trips through OAuth and, once `/api/v1/users/me` returns 200, the SPA calls the warm-session endpoint and navigates back to `next`. This enables opening a module in a standalone tab without touching `/modules` first.
+- When the modules domain ends with `.localhost` or `.nip.io`, the helpers force plain HTTP because there is no trusted wildcard cert. Set `VITE_MODULES_PROTOCOL=https` when developing with custom certificates.
 
 Links
 - Backend details: ../backend/README.md

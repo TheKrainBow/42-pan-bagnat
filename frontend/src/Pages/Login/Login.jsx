@@ -1,10 +1,37 @@
 // src/Pages/Login.jsx
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import "./Login.css";
 import LoginCard from "./LoginCard";
+import { getModulesDomain, parseModuleURL } from "../../utils/modules";
+import { exchangeModuleSession } from "../../utils/moduleSession";
+
+const modulesBaseDomain = getModulesDomain().toLowerCase();
+
+const isSafeRedirectTarget = (value) => {
+  if (!value) return false;
+  if (value.startsWith('/')) return true;
+  try {
+    const url = new URL(value);
+    const host = url.hostname.toLowerCase();
+    const currentHost = window.location.hostname.toLowerCase();
+    if (host === currentHost) {
+      return true;
+    }
+    if (modulesBaseDomain && (host === modulesBaseDomain || host.endsWith(`.${modulesBaseDomain}`))) {
+      return true;
+    }
+  } catch {
+    return false;
+  }
+  return false;
+};
 
 export default function LoginPage() {
   const canvasRef = useRef(null);
+  const nextParam = useMemo(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('next') || '';
+  }, []);
 
   // sim state
   const particles = useRef([]);
@@ -414,14 +441,17 @@ export default function LoginPage() {
     (async () => {
       const res = await fetch("/api/v1/users/me");
       if (res.status === 200) {
-        window.location.href = "/modules";
+        await maybeWarmModuleSession(nextParam, modulesBaseDomain);
+        const target = nextParam && isSafeRedirectTarget(nextParam) ? nextParam : "/modules";
+        window.location.href = target;
       }
     })();
-  }, []);
+  }, [nextParam]);
 
   const handleLogin = () => {
     revealAnimation.current = revealRadius;
-    window.location.href = "/auth/42/login";
+    const target = nextParam ? `/auth/42/login?next=${encodeURIComponent(nextParam)}` : "/auth/42/login";
+    window.location.href = target;
   };
 
   const handleMagicLink = async (email) => {
@@ -447,4 +477,26 @@ export default function LoginPage() {
       <LoginCard onLogin={handleLogin} onMagicLink={handleMagicLink} />
     </div>
   );
+}
+
+async function maybeWarmModuleSession(nextParam, modulesDomain) {
+  if (!nextParam || !isSafeRedirectTarget(nextParam)) {
+    return;
+  }
+  const moduleInfo = parseModuleURL(nextParam, modulesDomain);
+  if (!moduleInfo || !moduleInfo.slug) {
+    return;
+  }
+  try {
+    const resp = await fetch(`/api/v1/modules/pages/${moduleInfo.slug}/session`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!resp.ok) return;
+    const body = await resp.json();
+    if (!body?.token) return;
+    await exchangeModuleSession(moduleInfo.origin, body.token);
+  } catch (err) {
+    console.error('Failed to warm module session', err);
+  }
 }

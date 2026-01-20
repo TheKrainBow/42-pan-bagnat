@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 )
@@ -66,6 +67,22 @@ func GenerateSecureSessionID() (string, error) {
 
 const SessionCookieName = "session_id"
 
+var sessionCookieDomain = strings.TrimSpace(os.Getenv("SESSION_COOKIE_DOMAIN"))
+
+var sessionCookieSameSite = func() http.SameSite {
+	raw := strings.TrimSpace(strings.ToLower(os.Getenv("SESSION_COOKIE_SAMESITE")))
+	switch raw {
+	case "lax":
+		return http.SameSiteLaxMode
+	case "strict":
+		return http.SameSiteStrictMode
+	case "none", "":
+		return http.SameSiteNoneMode
+	default:
+		return http.SameSiteNoneMode
+	}
+}()
+
 // ReadSessionIDFromCookie returns the session ID from the cookie if present.
 // Falls back to "X-Session-Id" header or "Authorization: Bearer <id>" for dev/tools.
 func ReadSessionIDFromCookie(r *http.Request) string {
@@ -84,28 +101,40 @@ func ReadSessionIDFromCookie(r *http.Request) string {
 // WriteSessionCookie sets the session cookie with reasonable defaults.
 // Call this right after you create (or reuse) a session.
 func WriteSessionCookie(w http.ResponseWriter, sessionID string, ttl time.Duration, isSecure bool) {
-	http.SetCookie(w, &http.Cookie{
+	secureFlag := isSecure
+	if sessionCookieSameSite == http.SameSiteNoneMode {
+		secureFlag = true
+	}
+	cookie := &http.Cookie{
 		Name:     SessionCookieName,
 		Value:    sessionID,
 		Path:     "/",
 		HttpOnly: true,
-		Secure:   isSecure,
-		SameSite: http.SameSiteLaxMode,
+		Secure:   secureFlag,
+		SameSite: sessionCookieSameSite,
 		MaxAge:   int(ttl.Seconds()), // or omit for session-only
 		Expires:  time.Now().Add(ttl),
-	})
+	}
+	if sessionCookieDomain != "" {
+		cookie.Domain = sessionCookieDomain
+	}
+	http.SetCookie(w, cookie)
 }
 
 // ClearSessionCookie removes the cookie (e.g., on logout or blacklist).
 func ClearSessionCookie(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
+	cookie := &http.Cookie{
 		Name:     SessionCookieName,
 		Value:    "",
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   true,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: sessionCookieSameSite,
 		MaxAge:   -1,
 		Expires:  time.Unix(0, 0),
-	})
+	}
+	if sessionCookieDomain != "" {
+		cookie.Domain = sessionCookieDomain
+	}
+	http.SetCookie(w, cookie)
 }

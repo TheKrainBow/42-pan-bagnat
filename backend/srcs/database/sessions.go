@@ -74,10 +74,10 @@ func TouchSessionMaybe(
 	err := mainDB.QueryRowContext(ctx, `
         UPDATE sessions
            SET last_seen  = $2,
-               expires_at = LEAST(created_at + $3::interval, $2 + $4::interval)
+               expires_at = LEAST(created_at + $3::interval, ($2 AT TIME ZONE 'UTC') + $4::interval)
          WHERE session_id = $1
            AND now() < expires_at
-           AND (last_seen IS NULL OR last_seen <= $2 - $5::interval)
+           AND (last_seen IS NULL OR last_seen <= ($2 AT TIME ZONE 'UTC') - $5::interval)
      RETURNING last_seen, expires_at
     `,
 		sessionID,

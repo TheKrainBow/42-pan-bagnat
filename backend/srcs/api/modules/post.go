@@ -345,13 +345,31 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if input.URL = strings.TrimSpace(input.URL); input.URL == "" {
-		http.Error(w, "Missing field url", http.StatusBadRequest)
+	if input.Name = strings.TrimSpace(input.Name); input.Name == "" {
+		http.Error(w, "Missing field name", http.StatusBadRequest)
 		return
 	}
 
-	if input.Name = strings.TrimSpace(input.Name); input.Name == "" {
-		http.Error(w, "Missing field name", http.StatusBadRequest)
+	var targetContainer *string
+	if input.TargetContainer != nil {
+		trimmed := strings.TrimSpace(*input.TargetContainer)
+		if trimmed != "" {
+			targetContainer = &trimmed
+		}
+	}
+
+	var targetPort *int
+	if input.TargetPort != nil {
+		if *input.TargetPort <= 0 || *input.TargetPort > 65535 {
+			http.Error(w, "Invalid target_port", http.StatusBadRequest)
+			return
+		}
+		val := *input.TargetPort
+		targetPort = &val
+	}
+
+	if (targetContainer == nil) != (targetPort == nil) {
+		http.Error(w, "target_container and target_port must be defined together", http.StatusBadRequest)
 		return
 	}
 
@@ -363,7 +381,7 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	modulePage, err := core.ImportModulePage(moduleID, input.Name, input.URL, input.IsPublic, network)
+	modulePage, err := core.ImportModulePage(moduleID, input.Name, targetContainer, targetPort, input.IframeOnly, input.NeedAuth, network)
 	if err != nil {
 		core.LogModule(moduleID, "ERROR", "Couldn't add a module Page", nil, err)
 		http.Error(w, "Failed to import module page", http.StatusInternalServerError)
@@ -377,7 +395,14 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	core.LogModule(moduleID, "INFO", fmt.Sprintf("Created page at '/module-page/%s' from '%s'", dest.Slug, dest.URL), nil, nil)
+	targetMsg := "pending target"
+	if dest.TargetContainer != nil && dest.TargetPort != nil {
+		targetMsg = fmt.Sprintf("%s:%d", *dest.TargetContainer, *dest.TargetPort)
+	}
+	core.LogModule(moduleID, "INFO", fmt.Sprintf("Created page '%s' targeting %s", dest.Slug, targetMsg), map[string]any{
+		"iframe_only": dest.IframeOnly,
+		"need_auth":   dest.NeedAuth,
+	}, nil)
 	fmt.Fprint(w, string(destJSON))
 }
 

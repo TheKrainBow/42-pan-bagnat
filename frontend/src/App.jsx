@@ -97,9 +97,11 @@ function Main() {
     initTheme();
   }, []);
 
-  // Redirect to login if unauthenticated user in user mode
-  if (userLoaded && !user && mode === 'user') {
-    return <Navigate to="/login" replace />;
+  const shouldRedirectToLogin = userLoaded && !user && mode === 'user' && path !== '/login';
+  if (shouldRedirectToLogin) {
+    const nextDest = encodeURIComponent(location.pathname + (location.search || ''));
+    const loginTarget = nextDest ? `/login?next=${nextDest}` : '/login';
+    return <Navigate to={loginTarget} replace />;
   }
 
   return (

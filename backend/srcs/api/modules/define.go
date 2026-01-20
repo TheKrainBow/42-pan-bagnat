@@ -1,6 +1,9 @@
 package modules
 
-import api "backend/api/dto"
+import (
+	api "backend/api/dto"
+	"time"
+)
 
 // Define the model for the API Module input
 // @Description API Module model
@@ -44,6 +47,12 @@ type ModulePagesGetResponse struct {
 	NextPage    string           `json:"next_page_token" example:"BAD87as"`
 }
 
+// ModulePageSessionResponse represents the payload returned when minting a module session token.
+type ModulePageSessionResponse struct {
+	Token     string    `json:"token" example:"eyJzaWQiOiJzZXNzaW9uIn0.MEUCIQ..."`
+	ExpiresAt time.Time `json:"expires_at" example:"2026-01-19T15:42:00Z"`
+}
+
 // ModuleNetworksResponse lists docker networks detected for a module.
 type ModuleNetworksResponse struct {
 	Networks []string `json:"networks"`
@@ -62,11 +71,17 @@ type ModulePageUpdateInput struct {
 	// Name is the new name for the page.
 	Name *string `json:"name,omitempty" example:"Home"`
 
-	// URL is the new URL for the page.
-	URL *string `json:"url,omitempty" example:"https://example.com/home"`
+	// TargetContainer is the docker container name this page proxies to.
+	TargetContainer *string `json:"target_container,omitempty" example:"frontend"`
 
-	// IsPublic toggles whether the page is public.
-	IsPublic *bool `json:"is_public,omitempty" example:"true"`
+	// TargetPort is the port exposed by the container to proxy.
+	TargetPort *int `json:"target_port,omitempty" example:"80"`
+
+	// IframeOnly enforces that the page is only reachable from the Pan Bagnat iframe.
+	IframeOnly *bool `json:"iframe_only,omitempty" example:"true"`
+
+	// NeedAuth toggles whether authentication is required.
+	NeedAuth *bool `json:"need_auth,omitempty" example:"true"`
 
 	// NetworkName is the docker network to which the reverse proxy must attach.
 	NetworkName *string `json:"network_name,omitempty" example:"piscine-monitor-net"`
@@ -104,10 +119,14 @@ type ComposeRequest struct {
 type ModulePageInput struct {
 	// Name is the slug/identifier for this page (e.g. "home")
 	Name string `json:"name"      example:"home"`
-	// URL is the target URL to proxy or redirect for this page
-	URL string `json:"url"       example:"https://example.com/home"`
-	// IsPublic controls whether the page is publicly accessible
-	IsPublic bool `json:"is_public" example:"true"`
+	// TargetContainer is the docker container name this page proxies to.
+	TargetContainer *string `json:"target_container,omitempty" example:"frontend"`
+	// TargetPort is the port exposed by the container to proxy.
+	TargetPort *int `json:"target_port,omitempty" example:"80"`
+	// IframeOnly enforces iframe usage for the page.
+	IframeOnly bool `json:"iframe_only" example:"true"`
+	// NeedAuth controls whether authentication is required.
+	NeedAuth bool `json:"need_auth" example:"true"`
 	// NetworkName is the docker network the proxy should join for this page (optional)
 	NetworkName *string `json:"network_name,omitempty" example:"piscine-monitor-net"`
 }

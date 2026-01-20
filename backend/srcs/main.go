@@ -113,15 +113,6 @@ func InjectUserInMiddleware(next http.Handler) http.Handler {
 	})
 }
 
-func InjectPageNameMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		pageName := chi.URLParam(r, "pageName")
-		fmt.Printf("pageName: %s\n", pageName)
-		ctx := context.WithValue(r.Context(), auth.PageCtxKey, pageName)
-		next.ServeHTTP(w, r.WithContext(ctx))
-	})
-}
-
 func main() {
 	port := getPort()
 
@@ -215,8 +206,6 @@ func main() {
 	r.Route("/auth", func(r chi.Router) {
 		auth.RegisterRoutes(r)
 	})
-	r.With(InjectUserInMiddleware, InjectPageNameMiddleware, auth.BlackListMiddleware, auth.PageAccessMiddleware).Get("/module-page/{pageName}", modules.PageRedirection)
-	r.With(InjectUserInMiddleware, InjectPageNameMiddleware, auth.BlackListMiddleware, auth.PageAccessMiddleware).Get("/module-page/{pageName}/*", modules.PageRedirection)
 
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/users/me", users.GetUserMe)
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/users/me/pages", users.GetContextUserPages)
@@ -228,6 +217,7 @@ func main() {
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Delete("/api/v1/users/me/sessions", users.DeleteUserSessions)
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Delete("/api/v1/users/me/sessions/{sessionID}", users.DeleteUserSession)
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/ping", ping.Ping)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Post("/api/v1/modules/pages/{slug}/session", modules.IssueModulePageSession)
 
 	r.Route("/api/v1/admin", func(r chi.Router) {
 		r.Group(func(r chi.Router) {

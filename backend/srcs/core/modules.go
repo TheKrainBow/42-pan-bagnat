@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -118,32 +117,16 @@ type ModuleLogsPagination struct {
 }
 
 type ModulePage struct {
-	ID          string             `json:"id"`
-	Name        string             `json:"name"`
-	Slug        string             `json:"slug"`
-	URL         string             `json:"url"`
-	IsPublic    bool               `json:"is_public"`
-	ModuleID    string             `json:"module_id"`
-	IconURL     string             `json:"icon_url"`
-	NetworkName string             `json:"network_name,omitempty"`
-	ModuleCheck *ModulePageCheck   `json:"module_check,omitempty"`
-	ProxyCheck  *ModuleProxyStatus `json:"proxy_check,omitempty"`
-}
-
-type ModulePageCheck struct {
-	OK       bool     `json:"ok"`
-	Details  string   `json:"details,omitempty"`
-	Networks []string `json:"networks,omitempty"`
-	Target   string   `json:"target,omitempty"`
-}
-
-type ModuleProxyStatus struct {
-	OK                bool     `json:"ok"`
-	Details           string   `json:"details,omitempty"`
-	ConnectedNetworks []string `json:"connected_networks,omitempty"`
-	DisconnectedNets  []string `json:"disconnected_networks,omitempty"`
-	LastReportedAt    time.Time
-	Source            string `json:"source,omitempty"`
+	ID              string  `json:"id"`
+	Name            string  `json:"name"`
+	Slug            string  `json:"slug"`
+	TargetContainer *string `json:"target_container,omitempty"`
+	TargetPort      *int    `json:"target_port,omitempty"`
+	IframeOnly      bool    `json:"iframe_only"`
+	NeedAuth        bool    `json:"need_auth"`
+	ModuleID        string  `json:"module_id"`
+	IconURL         string  `json:"icon_url"`
+	NetworkName     string  `json:"network_name,omitempty"`
 }
 
 type ModulePagesPagination struct {
@@ -171,6 +154,14 @@ type ModuleContainer struct {
 	Status ContainerStatus `json:"status"`
 	Reason string          `json:"reason"`
 	Since  string          `json:"since"`
+	Ports  []ContainerPort `json:"ports,omitempty"`
+}
+
+type ContainerPort struct {
+	ContainerPort int    `json:"container_port"`
+	HostPort      int    `json:"host_port,omitempty"`
+	Protocol      string `json:"protocol,omitempty"`
+	Scope         string `json:"scope,omitempty"`
 }
 
 // AllContainer describes containers across all modules/projects
@@ -281,10 +272,10 @@ func GenerateModulePagesOrderBy(order string) (dest []database.ModulePagesOrder)
 			field = database.ModulePagesName
 		case string(database.ModulePagesSlug):
 			field = database.ModulePagesSlug
-		case string(database.ModulePagesIsPublic):
-			field = database.ModulePagesIsPublic
-		case string(database.ModulePagesURL):
-			field = database.ModulePagesURL
+		case string(database.ModulePagesIframeOnly):
+			field = database.ModulePagesIframeOnly
+		case string(database.ModulePagesNeedAuth):
+			field = database.ModulePagesNeedAuth
 		default:
 			continue
 		}
@@ -450,6 +441,22 @@ func GetUserPages(userIdentifier string) ([]ModulePage, error) {
 	return dest, nil
 }
 
+func UserCanAccessPage(userIdentifier, slug string) (bool, error) {
+	if strings.TrimSpace(userIdentifier) == "" || strings.TrimSpace(slug) == "" {
+		return false, nil
+	}
+	pages, err := GetUserPages(userIdentifier)
+	if err != nil {
+		return false, err
+	}
+	for _, page := range pages {
+		if page.Slug == slug {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 func GetPage(pageName string) (ModulePage, error) {
 	var dest ModulePage
 
@@ -527,100 +534,12 @@ func GenerateModuleSlug(name, _ string) string {
 	}
 }
 
-func AnnotateModulePagesWithModuleChecks(module Module, pages []ModulePage) []ModulePage {
-	if len(pages) == 0 {
-		return pages
-	}
-	aliasMap, networks, err := CollectModuleNetworkAliases(module)
-	if err != nil {
-		log.Printf("modules: unable to inspect networks for %s: %v", module.Slug, err)
-		return pages
-	}
-	networkSet := make(map[string]struct{}, len(networks))
-	for _, n := range networks {
-		networkSet[n] = struct{}{}
-	}
-	for i := range pages {
-		if chk := evaluateModulePageTarget(aliasMap, networkSet, pages[i].URL, pages[i].NetworkName); chk != nil {
-			pages[i].ModuleCheck = chk
-		}
-	}
-	return pages
-}
-
 func ListModuleNetworks(module Module) ([]string, error) {
 	_, networks, err := CollectModuleNetworkAliases(module)
 	if err != nil {
 		return nil, err
 	}
 	return networks, nil
-}
-
-func evaluateModulePageTarget(aliasMap map[string][]string, networkSet map[string]struct{}, rawURL, selectedNetwork string) *ModulePageCheck {
-	host, err := normalizePageHost(rawURL)
-	if err != nil {
-		return &ModulePageCheck{OK: false, Details: "invalid page URL", Target: host}
-	}
-	if len(aliasMap) == 0 {
-		return &ModulePageCheck{OK: false, Details: "module has no containers yet", Target: host}
-	}
-	netName := strings.TrimSpace(selectedNetwork)
-	if netName == "" {
-		return &ModulePageCheck{OK: false, Details: "no network selected", Target: host}
-	}
-	if _, ok := networkSet[netName]; !ok {
-		return &ModulePageCheck{
-			OK:      false,
-			Details: "network not found among running module networks",
-			Target:  host,
-			Networks: []string{
-				netName,
-			},
-		}
-	}
-	networks := aliasMap[host]
-	if len(networks) == 0 {
-		return &ModulePageCheck{
-			OK:      false,
-			Details: "hostname not found among module containers",
-			Target:  host,
-		}
-	}
-	for _, n := range networks {
-		if n == netName {
-			return &ModulePageCheck{
-				OK:       true,
-				Details:  "",
-				Networks: []string{netName},
-				Target:   host,
-			}
-		}
-	}
-	return &ModulePageCheck{
-		OK:       false,
-		Details:  "hostname not attached to selected network",
-		Target:   host,
-		Networks: networks,
-	}
-}
-
-func normalizePageHost(raw string) (string, error) {
-	trimmed := strings.TrimSpace(raw)
-	if trimmed == "" {
-		return "", errors.New("empty url")
-	}
-	if !strings.Contains(trimmed, "://") {
-		trimmed = "http://" + trimmed
-	}
-	parsed, err := url.Parse(trimmed)
-	if err != nil {
-		return "", err
-	}
-	host := strings.ToLower(strings.TrimSpace(parsed.Hostname()))
-	if host == "" {
-		return "", errors.New("missing host")
-	}
-	return host, nil
 }
 
 func ensureModuleSSHKeyForSlug(slug string) (SSHKey, error) {
@@ -838,32 +757,57 @@ func GetModulePages(pagination ModulePagesPagination) ([]ModulePage, string, err
 	return dest, token, nil
 }
 
-func ImportModulePage(moduleID, name, url string, isPublic bool, network string) (ModulePage, error) {
+func ImportModulePage(moduleID, name string, targetContainer *string, targetPort *int, iframeOnly, needAuth bool, network string) (ModulePage, error) {
 	pageID, err := GenerateULID(PageKind)
 	if err != nil {
 		return ModulePage{}, fmt.Errorf("failed to generate page ID: %w", err)
 	}
 
+	var sanitizedTarget *string
+	if targetContainer != nil {
+		trimmed := strings.TrimSpace(*targetContainer)
+		if trimmed != "" {
+			sanitizedTarget = &trimmed
+		}
+	}
+
+	var sanitizedPort *int
+	if targetPort != nil {
+		if *targetPort <= 0 || *targetPort > 65535 {
+			return ModulePage{}, fmt.Errorf("target port must be between 1 and 65535")
+		}
+		val := *targetPort
+		sanitizedPort = &val
+	}
+
+	if (sanitizedTarget == nil) != (sanitizedPort == nil) {
+		return ModulePage{}, fmt.Errorf("target_container and target_port must be defined together")
+	}
+
 	// Prepare module struct
 	dest := ModulePage{
-		ID:          pageID,
-		ModuleID:    moduleID,
-		Name:        name,
-		Slug:        GeneratePageSlug(name),
-		URL:         url,
-		IsPublic:    isPublic,
-		NetworkName: strings.TrimSpace(network),
+		ID:              pageID,
+		ModuleID:        moduleID,
+		Name:            name,
+		Slug:            GeneratePageSlug(name),
+		TargetContainer: sanitizedTarget,
+		TargetPort:      sanitizedPort,
+		IframeOnly:      iframeOnly,
+		NeedAuth:        needAuth,
+		NetworkName:     strings.TrimSpace(network),
 	}
 
 	// Insert into DB
 	if err := database.InsertModulePage(database.ModulePage{
-		ID:          dest.ID,
-		ModuleID:    dest.ModuleID,
-		Name:        dest.Name,
-		Slug:        dest.Slug,
-		URL:         dest.URL,
-		IsPublic:    dest.IsPublic,
-		NetworkName: dest.NetworkName,
+		ID:              dest.ID,
+		ModuleID:        dest.ModuleID,
+		Name:            dest.Name,
+		Slug:            dest.Slug,
+		TargetContainer: toNullString(dest.TargetContainer),
+		TargetPort:      toNullInt(dest.TargetPort),
+		IframeOnly:      dest.IframeOnly,
+		NeedAuth:        dest.NeedAuth,
+		NetworkName:     dest.NetworkName,
 	}); err != nil {
 		return ModulePage{}, fmt.Errorf("failed to insert module in DB: %w", err)
 	}
@@ -908,31 +852,103 @@ func DeleteModulePage(pageID string) error {
 	return nil
 }
 
-func UpdateModulePage(pageID string, name, url *string, isPublic *bool, network *string) (ModulePage, error) {
-	// Build the patch struct for the DB layer
+func UpdateModulePage(pageID string, name *string,
+	targetContainer *string, targetContainerSet bool,
+	targetPort *int, targetPortSet bool,
+	iframeOnly *bool,
+	needAuth *bool,
+	network *string, networkSet bool,
+) (ModulePage, error) {
+	var sanitizedContainer *string
+	if targetContainerSet {
+		if targetContainer != nil {
+			trimmed := strings.TrimSpace(*targetContainer)
+			if trimmed != "" {
+				value := trimmed
+				sanitizedContainer = &value
+			}
+		}
+	}
+
+	var sanitizedPort *int
+	if targetPortSet {
+		if targetPort != nil {
+			if *targetPort <= 0 || *targetPort > 65535 {
+				return ModulePage{}, fmt.Errorf("target port must be between 1 and 65535")
+			}
+			value := *targetPort
+			sanitizedPort = &value
+		}
+	}
+
+	if targetContainerSet != targetPortSet {
+		return ModulePage{}, fmt.Errorf("target_container and target_port must be defined together")
+	}
+
+	if targetContainerSet && targetPortSet {
+		if (sanitizedContainer == nil) != (sanitizedPort == nil) {
+			return ModulePage{}, fmt.Errorf("target_container and target_port must be defined together")
+		}
+	}
+
+	var sanitizedNetwork *string
+	if networkSet {
+		if network != nil {
+			trimmed := strings.TrimSpace(*network)
+			if trimmed != "" {
+				value := trimmed
+				sanitizedNetwork = &value
+			}
+		}
+	}
+
 	patch := database.ModulePagePatch{
-		ID:       pageID,
-		Name:     name,
-		URL:      url,
-		IsPublic: isPublic,
+		ID:                 pageID,
+		Name:               name,
+		TargetContainer:    sanitizedContainer,
+		TargetContainerSet: targetContainerSet,
+		TargetPort:         sanitizedPort,
+		TargetPortSet:      targetPortSet,
+		IframeOnly:         iframeOnly,
+		NeedAuth:           needAuth,
+		Network:            sanitizedNetwork,
+		NetworkSet:         networkSet,
 	}
 
 	if name != nil {
 		newSlug := GeneratePageSlug(*name)
 		patch.Slug = &newSlug
 	}
-	if network != nil {
-		trimmed := strings.TrimSpace(*network)
-		patch.Network = &trimmed
-	}
 
-	// Apply the patch
 	dbPage, err := database.PatchModulePage(patch)
 	if err != nil {
 		return ModulePage{}, err
 	}
 
-	// Convert to core model
 	page := DatabaseModulePageToModulePage(dbPage)
 	return page, nil
+}
+
+func toNullString(value *string) sql.NullString {
+	if value == nil {
+		return sql.NullString{}
+	}
+	trimmed := strings.TrimSpace(*value)
+	if trimmed == "" {
+		return sql.NullString{}
+	}
+	return sql.NullString{String: trimmed, Valid: true}
+}
+
+func toNullInt(value *int) sql.NullInt32 {
+	if value == nil {
+		return sql.NullInt32{}
+	}
+	return sql.NullInt32{Int32: int32(*value), Valid: true}
+}
+
+// AnnotateModulePagesWithModuleChecks currently returns pages unchanged.
+// Placeholder to preserve previous API surface until health checks are reimplemented.
+func AnnotateModulePagesWithModuleChecks(_ Module, pages []ModulePage) []ModulePage {
+	return pages
 }

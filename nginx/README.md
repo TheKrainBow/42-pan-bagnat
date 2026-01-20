@@ -24,13 +24,16 @@ Nginx sits in front of the frontend (Vite/build output) and backend (Go API) and
 Defined upstreams:
 - `pan-bagnat-frontend` → the Vite/React app on port 3000
 - `pan-bagnat-backend` → the Go API on port 8080
+- `pan-bagnat-proxy-service` → the internal module proxy on port 9090
 
 Key locations:
 - `/` → `pan-bagnat-frontend` (serves the SPA)
 - `/api/` → `pan-bagnat-backend`
 - `/auth/` → `pan-bagnat-backend`
 - `/ws` → `pan-bagnat-backend` (WebSocket)
-- `^~ /module-page/` → `pan-bagnat-backend` (reverse proxy of module pages)
+- `/module-page/_status/*` → `pan-bagnat-proxy-service` (admin UI probes)
+- `*.modules.panbagnat.42nice.fr` → `pan-bagnat-proxy-service` (wildcard module subdomains)
+- `*.modules.localhost` / `*.modules.127.0.0.1.nip.io` → `pan-bagnat-proxy-service` (local wildcard without TLS; see `localDNS/README.md` for DNS resolution)
 
 These paths are defined in `server { … }` for the TLS vhost. Port 80 vhost only redirects to HTTPS.
 
@@ -50,7 +53,7 @@ ssl_certificate_key /etc/ssl/42nice.fr.key;
 
 ## Forwarded headers and cookies
 
-For `/api/`, `/auth/`, `/ws`, and `/module-page/`, the proxy sets standard forwarding headers:
+For `/api/`, `/auth/`, `/ws`, `/module-page/_status/`, and the wildcard module vhost, the proxy sets standard forwarding headers:
 - `X-Forwarded-Proto`, `X-Forwarded-Host`, `X-Forwarded-For`, and `Host`.
 
 The backend uses `X-Forwarded-Proto` to decide whether to mark the `session_id` cookie as `Secure`. Make sure TLS terminates at Nginx and that this header is present so cookies behave correctly in browsers.
@@ -68,11 +71,15 @@ This keeps WebSocket connections alive for live updates/log events.
 
 ## Module page proxy specifics
 
-The `^~ /module-page/` location proxies module front‑ends that are served by modules behind the backend. It also:
-- Hides any upstream `Access-Control-Allow-Origin` header (`proxy_hide_header`)
-- Adds `Access-Control-Allow-Origin $http_origin` to mirror the caller (for iframe use in the SPA)
+Module pages now live on dedicated subdomains:
+- Production: `https://<slug>.modules.panbagnat.42nice.fr`
+- Local dev: `https://<slug>.modules.localhost` when using the dnsmasq helper (or `http://<slug>.modules.127.0.0.1.nip.io` as a fallback)
 
-Authorization for module pages is enforced in the backend (`PageAccessMiddleware`) which checks if the page is public or whether the request originates from the SPA (via Referer) and user session.
+Nginx terminates TLS for the wildcard cert (production) and forwards every request to `pan-bagnat-proxy-service`, which enforces sessions and proxies to the per-page gateway container.
+
+Admin-only health checks still run through `/module-page/_status/{slug}` on the main site; the route is forwarded to `proxy-service`, which in turn asks `net-controller` for gateway status or to trigger a reconcile.
+
+Local DNS reminder: to resolve `*.modules.localhost` you must run the dnsmasq helper under `localDNS/` or add equivalent entries to your system resolver. Without it, your browser will never reach the wildcard vhost defined in `nginx.conf`.
 
 ## Logs, reload, and troubleshooting
 

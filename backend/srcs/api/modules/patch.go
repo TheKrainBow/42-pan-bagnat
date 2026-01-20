@@ -5,6 +5,7 @@ import (
 	"backend/core"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -98,10 +99,33 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse body
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read body", http.StatusBadRequest)
+		return
+	}
+
 	var input ModulePageUpdateInput
-	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+	if err := json.Unmarshal(body, &input); err != nil {
 		http.Error(w, "Invalid JSON input", http.StatusBadRequest)
 		return
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(body, &raw); err != nil {
+		http.Error(w, "Invalid JSON input", http.StatusBadRequest)
+		return
+	}
+	targetContainerSet := false
+	if _, ok := raw["target_container"]; ok {
+		targetContainerSet = true
+	}
+	targetPortSet := false
+	if _, ok := raw["target_port"]; ok {
+		targetPortSet = true
+	}
+	networkSet := false
+	if _, ok := raw["network_name"]; ok {
+		networkSet = true
 	}
 
 	// trim & validate required fields
@@ -109,8 +133,9 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 		*input.Name = strings.TrimSpace(*input.Name)
 	}
 
-	if input.URL != nil {
-		*input.URL = strings.TrimSpace(*input.URL)
+	if input.TargetContainer != nil {
+		trimmed := strings.TrimSpace(*input.TargetContainer)
+		input.TargetContainer = &trimmed
 	}
 
 	if input.NetworkName != nil {
@@ -119,7 +144,7 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// perform update
-	modulePage, err := core.UpdateModulePage(pageID, input.Name, input.URL, input.IsPublic, input.NetworkName)
+	modulePage, err := core.UpdateModulePage(pageID, input.Name, input.TargetContainer, targetContainerSet, input.TargetPort, targetPortSet, input.IframeOnly, input.NeedAuth, input.NetworkName, networkSet)
 	if err != nil {
 		core.LogModule(moduleID, "ERROR", "Failed to update module page", nil, err)
 		http.Error(w, "Internal error", http.StatusInternalServerError)
@@ -134,10 +159,18 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 		core.LogModule(moduleID, "INFO",
 			fmt.Sprintf("Updated page '%s'", apiPage.ID),
 			map[string]any{
-				"-> name":      apiPage.Name,
-				"-> url":       apiPage.URL,
-				"-> is_public": apiPage.IsPublic,
+				"-> name":        apiPage.Name,
+				"-> target":      describeTarget(apiPage.TargetContainer, apiPage.TargetPort),
+				"-> iframe_only": apiPage.IframeOnly,
+				"-> need_auth":   apiPage.NeedAuth,
 			}, nil)
 		w.Write(b)
 	}
+}
+
+func describeTarget(container *string, port *int) string {
+	if container != nil && port != nil {
+		return fmt.Sprintf("%s:%d", *container, *port)
+	}
+	return "pending target"
 }

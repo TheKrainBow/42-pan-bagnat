@@ -155,7 +155,7 @@ func PageAccessMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		if page.IsPublic {
+		if !page.NeedAuth {
 			next.ServeHTTP(w, r)
 			return
 		}
