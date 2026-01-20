@@ -9,8 +9,8 @@ export default function ModulePageSection({ moduleId }) {
   const [edits, setEdits] = useState({});            // keyed by row.id
   const [isSaving, setIsSaving] = useState(false);
   const [iconTarget, setIconTarget] = useState(null);
-  const [proxyStatuses, setProxyStatuses] = useState({});
   const [networks, setNetworks] = useState([]);
+  const [containers, setContainers] = useState([]);
   const hasUnsaved = Object.values(edits).some(e => e.dirty);
 
   const fetchNetworks = async () => {
@@ -29,40 +29,43 @@ export default function ModulePageSection({ moduleId }) {
     fetchNetworks();
   }, [moduleId]);
 
-  const fetchProxyStatus = async (slug) => {
-    if (!slug) return;
-    setProxyStatuses(prev => ({ ...prev, [slug]: { loading: true } }));
+  const fetchContainers = async () => {
     try {
-      const res = await fetchWithAuth(`/module-page/_status/${encodeURIComponent(slug)}`);
+      const res = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/docker/ls`);
       if (!res) return;
-      if (!res.ok) {
-        setProxyStatuses(prev => ({ ...prev, [slug]: { loading: false, error: `HTTP ${res.status}` } }));
-        return;
-      }
       const data = await res.json();
-      setProxyStatuses(prev => ({ ...prev, [slug]: { loading: false, ...data } }));
+      setContainers(Array.isArray(data) ? data : []);
     } catch (err) {
-      setProxyStatuses(prev => ({ ...prev, [slug]: { loading: false, error: err.message } }));
+      console.error('Failed to fetch module containers:', err);
+      setContainers([]);
     }
   };
 
-  const handleProxyReconnect = async (slug) => {
-    if (!slug) return;
-    try {
-      const res = await fetchWithAuth(`/module-page/_status/${encodeURIComponent(slug)}`, {
-        method: 'POST'
-      });
-      if (!res) return;
-      await fetchProxyStatus(slug);
-    } catch (err) {
-      console.error('Reconnect failed:', err);
+  useEffect(() => {
+    fetchContainers();
+  }, [moduleId]);
+
+  const getContainerPorts = (containerName) => {
+    if (!containerName) return [];
+    const container = containers.find((c) => c.name === containerName);
+    if (!container || !Array.isArray(container.ports)) return [];
+    return container.ports.filter(
+      (port) => Number.isInteger(port?.container_port) && port.container_port > 0,
+    );
+  };
+
+  const formatPortLabel = (port) => {
+    if (!port) return '';
+    const proto = port.protocol ? `/${port.protocol}` : '';
+    if (port.scope === 'host' && port.host_port) {
+      return `${port.container_port}${proto} • host ${port.host_port}`;
     }
+    return `${port.container_port}${proto} • network`;
   };
 
   // load existing pages
   const fetchPages = async () => {
     try {
-      setProxyStatuses({});
       const res = await fetchWithAuth(`
         /api/v1/admin/modules/${moduleId}/pages
       `);
@@ -72,12 +75,13 @@ export default function ModulePageSection({ moduleId }) {
         id: p.id,
         slug: p.slug,
         name: p.name,
-        url: p.url,
-        isPublic: p.is_public,
+        targetContainer: p.target_container || '',
+        targetPort: typeof p.target_port === 'number' ? p.target_port : null,
+        iframeOnly: !!p.iframe_only,
+        needAuth: !!p.need_auth,
         icon_url: p.icon_url,
         network: p.network_name || '',
         isNew: false,
-        moduleCheck: p.module_check || null
       }));
       setPages(list);
 
@@ -87,8 +91,6 @@ export default function ModulePageSection({ moduleId }) {
         initial[p.id] = { ...p, dirty: false };
       });
       setEdits(initial);
-
-      list.filter(p => p.slug).forEach(p => fetchProxyStatus(p.slug));
     } catch (err) {
       console.error('Fetch failed:', err);
     }
@@ -103,7 +105,18 @@ export default function ModulePageSection({ moduleId }) {
   // begin a new blank row
   const handleAddRow = () => {
     const tempId = `new-${Date.now()}`;
-    const newRow = { id: tempId, slug: '', name: '', url: '', isPublic: false, icon_url: '', network: '', isNew: true, moduleCheck: null };
+    const newRow = {
+      id: tempId,
+      slug: '',
+      name: '',
+      targetContainer: '',
+      targetPort: null,
+      iframeOnly: true,
+      needAuth: true,
+      icon_url: '',
+      network: '',
+      isNew: true,
+    };
 
     setPages(ps => [...ps, newRow]);
     setEdits(e => ({
@@ -124,17 +137,54 @@ export default function ModulePageSection({ moduleId }) {
     }));
   };
 
+  const handleContainerSelect = (id, containerName) => {
+    const availablePorts = getContainerPorts(containerName);
+    setEdits((prev) => {
+      const existing = prev[id] || {};
+      const keepCurrent =
+        availablePorts.find((p) => p.container_port === existing.targetPort)?.container_port ??
+        null;
+      const fallbackPort =
+        keepCurrent !== null ? keepCurrent : (availablePorts[0]?.container_port ?? null);
+      return {
+        ...prev,
+        [id]: {
+          ...existing,
+          targetContainer: containerName,
+          targetPort: containerName ? fallbackPort : null,
+          dirty: true,
+        },
+      };
+    });
+  };
+
+  const handlePortSelect = (id, value) => {
+    const parsed = value === '' ? null : Number(value);
+    setEdits(prev => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        targetPort: Number.isNaN(parsed) ? null : parsed,
+        dirty: true,
+      },
+    }));
+  };
+
   // save either POST (new) or PATCH (existing)
   const handleSave = async (id) => {
-    const { name, url, isPublic, isNew } = edits[id];
-    if (!name || !url) return;
+    const { name, targetContainer, targetPort, iframeOnly, needAuth, isNew } = edits[id];
+    if (!name) return;
 
     setIsSaving(true);
     try {
+      const trimmedContainer = (targetContainer || '').trim();
+      const hasTarget = trimmedContainer !== '' && typeof targetPort === 'number';
       const payload = {
         name,
-        url,
-        is_public: isPublic,
+        target_container: hasTarget ? trimmedContainer : null,
+        target_port: hasTarget ? targetPort : null,
+        iframe_only: !!iframeOnly,
+        need_auth: !!needAuth,
         network_name: (edits[id].network || '').trim() || null,
       };
       if (isNew) {
@@ -210,16 +260,13 @@ export default function ModulePageSection({ moduleId }) {
         <div className="no-pages">No pages added yet.</div>
       ) : (
         <ul className="page-list">
-          {pages.map(({ id, slug, moduleCheck }) => {
+          {pages.map(({ id }) => {
             const edit = edits[id] || {};
-            const proxy = slug ? proxyStatuses[slug] : null;
-            const moduleStatus = moduleCheck
-              ? (moduleCheck.ok ? 'ok' : 'ko')
-              : 'pending';
-            const proxyStatus = proxy
-              ? (proxy.loading ? 'pending' : proxy.ok ? 'ok' : 'ko')
-              : 'pending';
-
+            const containerPorts = getContainerPorts(edit.targetContainer);
+            const hasKnownContainer = !!containers.find(c => c.name === edit.targetContainer);
+            const missingContainer = !(edit.targetContainer || '').trim();
+            const missingPort = typeof edit.targetPort !== 'number';
+            const missingNetwork = !(edit.network || '').trim();
             return (
               <li
                 key={id}
@@ -234,51 +281,91 @@ export default function ModulePageSection({ moduleId }) {
                     value={edit.name || ''}
                     onChange={e => handleChange(id, 'name', e.target.value)}
                   />
-                  <input
-                    className="page-url-input"
-                    type="text"
-                    placeholder="URL"
-                    value={edit.url || ''}
-                    onChange={e => handleChange(id, 'url', e.target.value)}
-                  />
-                  <select
-                    className={`page-network-select${edit.network && !networks.includes(edit.network) ? ' missing-network' : ''}`}
-                    value={edit.network || ''}
-                    onChange={e => handleChange(id, 'network', e.target.value)}
-                  >
-                    <option value="">No network</option>
-                    {networks.map(net => (
-                      <option key={net} value={net}>{net}</option>
-                    ))}
-                    {edit.network && !networks.includes(edit.network) && (
-                      <option value={edit.network} className="missing-option">
-                        {edit.network} (!)
-                      </option>
+                  <div className="select-with-warning">
+                    <select
+                      className="page-select"
+                      value={edit.targetContainer || ''}
+                      onChange={e => handleContainerSelect(id, e.target.value)}
+                    >
+                      <option value="">Select container</option>
+                      {containers.map(container => (
+                        <option key={container.name} value={container.name}>
+                          {container.name}
+                        </option>
+                      ))}
+                      {edit.targetContainer && !hasKnownContainer && (
+                        <option value={edit.targetContainer} className="missing-option">
+                          {edit.targetContainer} (!)
+                        </option>
+                      )}
+                    </select>
+                    {missingContainer && (
+                      <span className="field-warning" title="Container not set">!</span>
                     )}
-                  </select>
-                  <div className="page-status">
-                    <span
-                      className={`status-chip ${moduleStatus}`}
-                      title={moduleCheck?.details || (moduleCheck?.ok ? 'Reachable' : 'Awaiting containers')}
+                  </div>
+                  <div className="select-with-warning">
+                    <select
+                      className="page-select"
+                      value={typeof edit.targetPort === 'number' ? String(edit.targetPort) : ''}
+                      onChange={e => handlePortSelect(id, e.target.value)}
+                      disabled={!edit.targetContainer || containerPorts.length === 0}
                     >
-                      Module {moduleStatus === 'ok' ? 'OK' : moduleStatus === 'ko' ? 'KO' : '...'}
-                    </span>
-                    <button
-                      type="button"
-                      className={`status-chip proxy-button ${proxyStatus}`}
-                      title={proxy?.error || proxy?.message || (proxy?.loading ? 'Checking…' : 'Awaiting response')}
-                      onClick={() => proxyStatus === 'ko' && slug ? handleProxyReconnect(slug) : null}
-                      disabled={proxyStatus !== 'ko' || !slug}
+                      <option value="">
+                        {!edit.targetContainer
+                          ? 'Pick a container first'
+                          : containerPorts.length === 0
+                            ? 'No ports detected'
+                            : 'Select a port'}
+                      </option>
+                      {containerPorts.map((port, idx) => (
+                        <option
+                          key={`${port.container_port}-${port.host_port || 0}-${port.protocol || 'tcp'}-${idx}`}
+                          value={port.container_port}
+                        >
+                          {formatPortLabel(port)}
+                        </option>
+                      ))}
+                    </select>
+                    {missingPort && (
+                      <span className="field-warning" title="Port not set">!</span>
+                    )}
+                  </div>
+                  <div className="select-with-warning">
+                    <select
+                      className={`page-network-select${edit.network && !networks.includes(edit.network) ? ' missing-network' : ''}`}
+                      value={edit.network || ''}
+                      onChange={e => handleChange(id, 'network', e.target.value)}
                     >
-                      Proxy {proxyStatus === 'ok' ? 'OK' : proxyStatus === 'ko' ? 'KO' : '...'}
-                    </button>
-                    <label className="page-public-toggle">
+                      <option value="">No network</option>
+                      {networks.map(net => (
+                        <option key={net} value={net}>{net}</option>
+                      ))}
+                      {edit.network && !networks.includes(edit.network) && (
+                        <option value={edit.network} className="missing-option">
+                          {edit.network} (!)
+                        </option>
+                      )}
+                    </select>
+                    {missingNetwork && (
+                      <span className="field-warning" title="Network not set">!</span>
+                    )}
+                  </div>
+                  <div className="page-access-toggles">
+                    <label className="page-access-toggle">
                       <input
                         type="checkbox"
-                        checked={edit.isPublic || false}
-                        onChange={e => handleChange(id, 'isPublic', e.target.checked)}
+                        checked={edit.iframeOnly || false}
+                        onChange={e => handleChange(id, 'iframeOnly', e.target.checked)}
                       />
-                      Public
+                      Iframe only
+                    </label>
+                    <label className="page-access-toggle">
+                      <input
+                        type="checkbox"
+                        checked={edit.needAuth || false}
+                        onChange={e => handleChange(id, 'needAuth', e.target.checked)}
+                      />
+                      Need auth
                     </label>
                   </div>
                 </div>

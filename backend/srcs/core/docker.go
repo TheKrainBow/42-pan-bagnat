@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -154,7 +155,7 @@ func GetModuleContainers(module Module) ([]ModuleContainer, error) {
 
 	cmd := exec.Command("docker", "ps", "-a",
 		"--filter", fmt.Sprintf("label=com.docker.compose.project=%s", project),
-		"--format", "{{.Names}}|{{.Status}}",
+		"--format", "{{.ID}}|{{.Names}}|{{.Status}}|{{.Ports}}",
 	)
 
 	var stdout bytes.Buffer
@@ -168,13 +169,22 @@ func GetModuleContainers(module Module) ([]ModuleContainer, error) {
 	var containers []ModuleContainer
 
 	for _, line := range lines {
-		parts := strings.SplitN(line, "|", 2)
-		if len(parts) != 2 {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "|", 4)
+		if len(parts) < 3 {
 			continue
 		}
 
-		fullName := parts[0]
-		rawStatus := parts[1]
+		containerID := parts[0]
+		fullName := parts[1]
+		rawStatus := parts[2]
+		rawPorts := ""
+		if len(parts) == 4 {
+			rawPorts = parts[3]
+		}
 
 		// Simplify container name
 		name := strings.TrimPrefix(fullName, project+"-")
@@ -223,10 +233,121 @@ func GetModuleContainers(module Module) ([]ModuleContainer, error) {
 			Status: status,
 			Reason: reason,
 			Since:  since,
+			Ports:  ensureExposedPorts(containerID, parseDockerPorts(rawPorts)),
 		})
 	}
 
 	return containers, nil
+}
+
+func parseDockerPorts(raw string) []ContainerPort {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || strings.EqualFold(raw, "<none>") {
+		return nil
+	}
+	segments := strings.Split(raw, ",")
+	var ports []ContainerPort
+	for _, seg := range segments {
+		entry := strings.TrimSpace(seg)
+		if entry == "" {
+			continue
+		}
+		portInfo := ContainerPort{}
+		if strings.Contains(entry, "->") {
+			parts := strings.SplitN(entry, "->", 2)
+			hostSpec := strings.TrimSpace(parts[0])
+			containerSpec := strings.TrimSpace(parts[1])
+			portInfo.ContainerPort, portInfo.Protocol = parsePortProto(containerSpec)
+			portInfo.HostPort = parseHostPortSpec(hostSpec)
+			portInfo.Scope = "host"
+		} else {
+			portInfo.ContainerPort, portInfo.Protocol = parsePortProto(entry)
+			portInfo.Scope = "internal"
+		}
+		ports = append(ports, portInfo)
+	}
+	if len(ports) == 0 {
+		return nil
+	}
+	return ports
+}
+
+func ensureExposedPorts(containerID string, ports []ContainerPort) []ContainerPort {
+	containerID = strings.TrimSpace(containerID)
+	if containerID == "" {
+		return ports
+	}
+	cmd := exec.Command("docker", "inspect", "-f", "{{json .Config.ExposedPorts}}", containerID)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return ports
+	}
+	data := bytes.TrimSpace(out.Bytes())
+	if len(data) == 0 || bytes.EqualFold(data, []byte("null")) {
+		return ports
+	}
+	var exposed map[string]any
+	if err := json.Unmarshal(data, &exposed); err != nil {
+		return ports
+	}
+	if len(exposed) == 0 {
+		return ports
+	}
+	existing := make(map[string]struct{}, len(ports))
+	for _, port := range ports {
+		key := fmt.Sprintf("%d/%s", port.ContainerPort, port.Protocol)
+		existing[key] = struct{}{}
+	}
+	for key := range exposed {
+		num, proto := parsePortProto(key)
+		if num <= 0 {
+			continue
+		}
+		normalized := fmt.Sprintf("%d/%s", num, proto)
+		if _, ok := existing[normalized]; ok {
+			continue
+		}
+		ports = append(ports, ContainerPort{
+			ContainerPort: num,
+			Protocol:      proto,
+			Scope:         "internal",
+		})
+		existing[normalized] = struct{}{}
+	}
+	return ports
+}
+
+func parsePortProto(value string) (int, string) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0, ""
+	}
+	proto := ""
+	if idx := strings.Index(value, "/"); idx >= 0 {
+		proto = strings.ToLower(strings.TrimSpace(value[idx+1:]))
+		value = value[:idx]
+	}
+	port, _ := strconv.Atoi(strings.TrimSpace(value))
+	return port, proto
+}
+
+func parseHostPortSpec(spec string) int {
+	spec = strings.TrimSpace(spec)
+	if spec == "" {
+		return 0
+	}
+	if idx := strings.LastIndex(spec, ":"); idx >= 0 {
+		portStr := strings.TrimSpace(spec[idx+1:])
+		if port, err := strconv.Atoi(portStr); err == nil {
+			return port
+		}
+	} else {
+		if port, err := strconv.Atoi(spec); err == nil {
+			return port
+		}
+	}
+	return 0
 }
 
 // CollectModuleNetworkAliases maps every known hostname/alias of the module containers

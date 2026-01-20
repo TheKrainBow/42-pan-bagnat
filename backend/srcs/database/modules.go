@@ -118,33 +118,40 @@ type ModuleLogPagination struct {
 }
 
 type ModulePagePatch struct {
-	ID       string  `json:"id"`
-	Name     *string `json:"name"`
-	Slug     *string `json:"slug"`
-	URL      *string `json:"url"`
-	IsPublic *bool   `json:"is_public"`
-	IconURL  *string `json:"icon_url"`
-	Network  *string `json:"network_name"`
+	ID                 string  `json:"id"`
+	Name               *string `json:"name"`
+	Slug               *string `json:"slug"`
+	IframeOnly         *bool   `json:"iframe_only"`
+	NeedAuth           *bool   `json:"need_auth"`
+	IconURL            *string `json:"icon_url"`
+	Network            *string `json:"network_name"`
+	NetworkSet         bool
+	TargetContainer    *string `json:"target_container"`
+	TargetContainerSet bool
+	TargetPort         *int `json:"target_port"`
+	TargetPortSet      bool
 }
 
 type ModulePage struct {
-	ID          string `json:"id" db:"id"`
-	Name        string `json:"name" db:"name"`
-	Slug        string `json:"slug" db:"slug"`
-	URL         string `json:"url" db:"url"`
-	IsPublic    bool   `json:"is_public" db:"is_public"`
-	ModuleID    string `json:"module_id" db:"module_id"`
-	IconURL     string `json:"icon_url" db:"icon_url"`
-	NetworkName string `json:"network_name" db:"network_name"`
+	ID              string         `json:"id" db:"id"`
+	Name            string         `json:"name" db:"name"`
+	Slug            string         `json:"slug" db:"slug"`
+	IframeOnly      bool           `json:"iframe_only" db:"iframe_only"`
+	NeedAuth        bool           `json:"need_auth" db:"need_auth"`
+	ModuleID        string         `json:"module_id" db:"module_id"`
+	IconURL         string         `json:"icon_url" db:"icon_url"`
+	NetworkName     string         `json:"network_name" db:"network_name"`
+	TargetContainer sql.NullString `json:"target_container" db:"target_container"`
+	TargetPort      sql.NullInt32  `json:"target_port" db:"target_port"`
 }
 
 type ModulePagesOrderField string
 
 const (
-	ModulePagesName     ModulePagesOrderField = "name"
-	ModulePagesSlug     ModulePagesOrderField = "slug"
-	ModulePagesURL      ModulePagesOrderField = "url"
-	ModulePagesIsPublic ModulePagesOrderField = "is_public"
+	ModulePagesName       ModulePagesOrderField = "name"
+	ModulePagesSlug       ModulePagesOrderField = "slug"
+	ModulePagesIframeOnly ModulePagesOrderField = "iframe_only"
+	ModulePagesNeedAuth   ModulePagesOrderField = "need_auth"
 )
 
 // single sort instruction
@@ -228,9 +235,12 @@ func GetPage(pageName string) (*ModulePage, error) {
 		       name,
 		       slug,
 		       module_id,
-		       is_public,
-		       url,
-		       COALESCE(network_name, '') AS network_name
+		       iframe_only,
+		       need_auth,
+		       target_container,
+		       target_port,
+		       COALESCE(network_name, '') AS network_name,
+		       COALESCE(icon_url, '') AS icon_url
 		FROM module_page
 		WHERE slug = $1
 	`, pageName)
@@ -241,9 +251,12 @@ func GetPage(pageName string) (*ModulePage, error) {
 		&page.Name,
 		&page.Slug,
 		&page.ModuleID,
-		&page.IsPublic,
-		&page.URL,
+		&page.IframeOnly,
+		&page.NeedAuth,
+		&page.TargetContainer,
+		&page.TargetPort,
 		&page.NetworkName,
+		&page.IconURL,
 	); err != nil {
 		return nil, err
 	}
@@ -268,17 +281,26 @@ func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
         UPDATE module_page
            SET name      = COALESCE($1, name),
                slug      = COALESCE($2, slug),
-               url       = COALESCE($3, url),
-               is_public = COALESCE($4, is_public),
-               network_name = CASE WHEN ($5)::text IS NULL THEN network_name
-                                   WHEN ($5)::text = ''   THEN NULL
-                                   ELSE ($5)::text END,
-               icon_url  = CASE WHEN ($6)::text IS NULL THEN icon_url
-                                 WHEN ($6)::text = ''  THEN NULL
-                                 ELSE ($6)::text END
-         WHERE id = $7
-     RETURNING id, name, slug, url, is_public, module_id, COALESCE(icon_url, '') as icon_url, COALESCE(network_name, '') as network_name;
-    `, p.Name, p.Slug, p.URL, p.IsPublic, p.Network, p.IconURL, p.ID,
+               target_container = CASE
+                                     WHEN $10 THEN NULLIF($3, '')
+                                     ELSE target_container
+                                   END,
+               target_port = CASE
+                                WHEN $11 THEN $4
+                                ELSE target_port
+                             END,
+               iframe_only = COALESCE($5, iframe_only),
+               need_auth   = COALESCE($6, need_auth),
+               network_name = CASE
+                                 WHEN $12 THEN NULLIF($7, '')
+                                 ELSE network_name
+                              END,
+               icon_url  = CASE WHEN ($8)::text IS NULL THEN icon_url
+                                 WHEN ($8)::text = ''  THEN NULL
+                                 ELSE ($8)::text END
+         WHERE id = $9
+     RETURNING id, name, slug, iframe_only, need_auth, module_id, COALESCE(icon_url, '') as icon_url, COALESCE(network_name, '') as network_name, target_container, target_port;
+    `, p.Name, p.Slug, p.TargetContainer, p.TargetPort, p.IframeOnly, p.NeedAuth, p.Network, p.IconURL, p.ID, p.TargetContainerSet, p.TargetPortSet, p.NetworkSet,
 	)
 
 	var out ModulePage
@@ -286,11 +308,13 @@ func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
 		&out.ID,
 		&out.Name,
 		&out.Slug,
-		&out.URL,
-		&out.IsPublic,
+		&out.IframeOnly,
+		&out.NeedAuth,
 		&out.ModuleID,
 		&out.IconURL,
 		&out.NetworkName,
+		&out.TargetContainer,
+		&out.TargetPort,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ModulePage{}, fmt.Errorf("ModulePage %s doesn't exist", p.ID)
@@ -561,9 +585,9 @@ func UpdateModuleSSHKey(moduleID, sshKeyID string) error {
 
 func InsertModulePage(m ModulePage) error {
 	_, err := mainDB.Exec(`
-		INSERT INTO module_page (id, module_id, name, slug, url, is_public, network_name)
-		VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''))
-	`, m.ID, m.ModuleID, m.Name, m.Slug, m.URL, m.IsPublic, m.NetworkName)
+		INSERT INTO module_page (id, module_id, name, slug, target_container, target_port, iframe_only, need_auth, network_name)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NULLIF($9, ''))
+	`, m.ID, m.ModuleID, m.Name, m.Slug, m.TargetContainer, m.TargetPort, m.IframeOnly, m.NeedAuth, m.NetworkName)
 	return err
 }
 
@@ -897,10 +921,10 @@ func GetModulePages(p ModulePagesPagination) ([]ModulePage, error) {
 				args = append(args, p.LastPage.Name)
 			case ModulePagesSlug:
 				args = append(args, p.LastPage.Slug)
-			case ModulePagesURL:
-				args = append(args, p.LastPage.URL)
-			case ModulePagesIsPublic:
-				args = append(args, p.LastPage.IsPublic)
+			case ModulePagesIframeOnly:
+				args = append(args, p.LastPage.IframeOnly)
+			case ModulePagesNeedAuth:
+				args = append(args, p.LastPage.NeedAuth)
 			}
 			argPos++
 		}
@@ -925,8 +949,10 @@ func GetModulePages(p ModulePagesPagination) ([]ModulePage, error) {
 SELECT mp.id,
        mp.name,
        mp.slug,
-       mp.url,
-       mp.is_public,
+       mp.target_container,
+       mp.target_port,
+       mp.iframe_only,
+       mp.need_auth,
        mp.module_id,
        COALESCE(mp.icon_url, m.icon_url, '') AS icon_url,
        COALESCE(mp.network_name, '') AS network_name
@@ -958,8 +984,10 @@ SELECT mp.id,
 			&pg.ID,
 			&pg.Name,
 			&pg.Slug,
-			&pg.URL,
-			&pg.IsPublic,
+			&pg.TargetContainer,
+			&pg.TargetPort,
+			&pg.IframeOnly,
+			&pg.NeedAuth,
 			&pg.ModuleID,
 			&pg.IconURL,
 			&pg.NetworkName,
@@ -977,8 +1005,10 @@ func GetUserPages(identifier string) ([]ModulePage, error) {
         SELECT DISTINCT mp.id,
                         mp.name,
                         mp.slug,
-                        mp.url,
-                        mp.is_public,
+                        mp.target_container,
+                        mp.target_port,
+                        mp.iframe_only,
+                        mp.need_auth,
                         mp.module_id,
                         COALESCE(mp.icon_url, m.icon_url, '') AS icon_url,
                         COALESCE(mp.network_name, '') AS network_name
@@ -1001,8 +1031,10 @@ func GetUserPages(identifier string) ([]ModulePage, error) {
 			&page.ID,
 			&page.Name,
 			&page.Slug,
-			&page.URL,
-			&page.IsPublic,
+			&page.TargetContainer,
+			&page.TargetPort,
+			&page.IframeOnly,
+			&page.NeedAuth,
 			&page.ModuleID,
 			&page.IconURL,
 			&page.NetworkName,

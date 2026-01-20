@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"strconv"
@@ -46,12 +45,12 @@ type config struct {
 }
 
 type gatewaySpec struct {
-	Slug       string
-	ModuleSlug string
-	ModuleID   string
-	Network    string
-	TargetURL  *url.URL
-	RawURL     string
+	Slug            string
+	ModuleSlug      string
+	ModuleID        string
+	Network         string
+	TargetContainer string
+	TargetPort      int
 }
 
 type controller struct {
@@ -197,8 +196,13 @@ func (c *controller) ensureGateway(ctx context.Context, spec gatewaySpec, curren
 	status := types.ProxyStatusPayload{
 		Network: spec.Network,
 	}
-	if spec.TargetURL == nil {
-		status.Message = "invalid target URL"
+	containerName := strings.TrimSpace(spec.TargetContainer)
+	if containerName == "" {
+		status.Message = "invalid target container"
+		return status
+	}
+	if spec.TargetPort <= 0 || spec.TargetPort > 65535 {
+		status.Message = "invalid target port"
 		return status
 	}
 	if strings.TrimSpace(spec.Network) == "" {
@@ -207,7 +211,7 @@ func (c *controller) ensureGateway(ctx context.Context, spec gatewaySpec, curren
 	}
 
 	needsCreate := current.ID == ""
-	targetString := normalizedTarget(spec.TargetURL)
+	targetString := formatTarget(containerName, spec.TargetPort)
 
 	if !needsCreate {
 		if !strings.EqualFold(strings.TrimSpace(current.Network), spec.Network) ||
@@ -267,22 +271,24 @@ func (c *controller) ensureGateway(ctx context.Context, spec gatewaySpec, curren
 func (c *controller) fetchSpecs(ctx context.Context) ([]gatewaySpec, error) {
 	const query = `
 		SELECT mp.slug,
-		       mp.url,
+		       mp.target_container,
+		       mp.target_port,
 		       mp.module_id,
-		       mp.is_public,
 		       m.slug AS module_slug,
 		       COALESCE(mp.network_name, '') AS network_name
 		FROM module_page mp
 		JOIN modules m ON m.id = mp.module_id
+        WHERE mp.target_container IS NOT NULL
+          AND mp.target_port IS NOT NULL
 	`
 
 	type row struct {
-		Slug        string `db:"slug"`
-		URL         string `db:"url"`
-		ModuleID    string `db:"module_id"`
-		ModuleSlug  string `db:"module_slug"`
-		NetworkName string `db:"network_name"`
-		IsPublic    bool   `db:"is_public"`
+		Slug            string `db:"slug"`
+		TargetContainer string `db:"target_container"`
+		TargetPort      int    `db:"target_port"`
+		ModuleID        string `db:"module_id"`
+		ModuleSlug      string `db:"module_slug"`
+		NetworkName     string `db:"network_name"`
 	}
 
 	var rows []row
@@ -296,17 +302,13 @@ func (c *controller) fetchSpecs(ctx context.Context) ([]gatewaySpec, error) {
 		if slug == "" {
 			continue
 		}
-		var parsed *url.URL
-		if u, err := url.Parse(r.URL); err == nil && u.Scheme != "" && u.Host != "" {
-			parsed = u
-		}
 		specs = append(specs, gatewaySpec{
-			Slug:       slug,
-			ModuleSlug: r.ModuleSlug,
-			ModuleID:   r.ModuleID,
-			Network:    strings.TrimSpace(r.NetworkName),
-			TargetURL:  parsed,
-			RawURL:     r.URL,
+			Slug:            slug,
+			ModuleSlug:      r.ModuleSlug,
+			ModuleID:        r.ModuleID,
+			Network:         strings.TrimSpace(r.NetworkName),
+			TargetContainer: strings.TrimSpace(r.TargetContainer),
+			TargetPort:      r.TargetPort,
 		})
 	}
 	return specs, nil
@@ -447,17 +449,8 @@ func dnsSafeSlug(slug string) string {
 	return cleaned
 }
 
-func normalizedTarget(u *url.URL) string {
-	copied := *u
-	if copied.Path == "" {
-		copied.Path = "/"
-	}
-	if !strings.HasSuffix(copied.Path, "/") {
-		copied.Path += "/"
-	}
-	copied.RawQuery = ""
-	copied.Fragment = ""
-	return copied.String()
+func formatTarget(container string, port int) string {
+	return fmt.Sprintf("http://%s:%d/", container, port)
 }
 
 func (c *controller) gatewayCommand(target string, spec gatewaySpec) string {
@@ -474,7 +467,7 @@ func (c *controller) gatewayCommand(target string, spec gatewaySpec) string {
 	buf.WriteString("        location / {\n")
 	fmt.Fprintf(&buf, "            proxy_pass %s;\n", target)
 	buf.WriteString("            proxy_http_version 1.1;\n")
-	fmt.Fprintf(&buf, "            proxy_set_header Host %s;\n", spec.TargetURL.Host)
+	fmt.Fprintf(&buf, "            proxy_set_header Host %s:%d;\n", spec.TargetContainer, spec.TargetPort)
 	buf.WriteString("            proxy_set_header X-Forwarded-Host $http_x_forwarded_host;\n")
 	buf.WriteString("            proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;\n")
 	buf.WriteString("            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n")

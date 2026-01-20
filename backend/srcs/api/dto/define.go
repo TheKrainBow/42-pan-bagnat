@@ -125,22 +125,16 @@ type ModuleLog struct {
 }
 
 type ModulePage struct {
-	ID          string           `json:"id" example:"page_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
-	Name        string           `json:"name"`
-	Slug        string           `json:"slug"`
-	URL         string           `json:"url"`
-	IsPublic    bool             `json:"is_public"`
-	ModuleID    string           `json:"module_id"`
-	IconURL     string           `json:"icon_url,omitempty"`
-	NetworkName string           `json:"network_name,omitempty"`
-	ModuleCheck *ModulePageCheck `json:"module_check,omitempty"`
-}
-
-type ModulePageCheck struct {
-	OK       bool     `json:"ok"`
-	Details  string   `json:"details,omitempty"`
-	Networks []string `json:"networks,omitempty"`
-	Target   string   `json:"target,omitempty"`
+	ID              string  `json:"id" example:"page_01HZ0MMK4S6VQW4WPHB6NZ7R7X"`
+	Name            string  `json:"name"`
+	Slug            string  `json:"slug"`
+	TargetContainer *string `json:"target_container,omitempty"`
+	TargetPort      *int    `json:"target_port,omitempty"`
+	IframeOnly      bool    `json:"iframe_only"`
+	NeedAuth        bool    `json:"need_auth"`
+	ModuleID        string  `json:"module_id"`
+	IconURL         string  `json:"icon_url,omitempty"`
+	NetworkName     string  `json:"network_name,omitempty"`
 }
 
 // Session represents a user session (device) in the system

@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
 	"database/sql"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -28,29 +31,51 @@ import (
 const (
 	sessionCookieName  = "session_id"
 	defaultGatewayPort = 8080
+	moduleSessionPath  = "/_pb/session"
 )
 
 var (
-	errNoSession      = errors.New("no session")
-	errSessionExpired = errors.New("session expired")
+	errNoSession          = errors.New("no session")
+	errSessionExpired     = errors.New("session expired")
+	errInvalidToken       = errors.New("invalid session token")
+	errTokenExpired       = errors.New("session token expired")
+	sessionCookieSameSite = func() http.SameSite {
+		raw := strings.TrimSpace(strings.ToLower(os.Getenv("SESSION_COOKIE_SAMESITE")))
+		switch raw {
+		case "strict":
+			return http.SameSiteStrictMode
+		case "lax":
+			return http.SameSiteLaxMode
+		case "none", "":
+			return http.SameSiteNoneMode
+		default:
+			return http.SameSiteNoneMode
+		}
+	}()
+	authDebugEnabled = strings.EqualFold(os.Getenv("PROXY_DEBUG_AUTH"), "1")
 )
 
 type config struct {
-	PostgresURL      string
-	ListenAddr       string
-	Channel          string
-	AllowedDomains   []string
-	NetControllerURL string
-	GatewayPort      int
+	PostgresURL        string
+	ListenAddr         string
+	Channel            string
+	AllowedDomains     []string
+	IframeAllowedHosts []string
+	NetControllerURL   string
+	GatewayPort        int
+	SessionSecret      []byte
+	SessionCookieTTL   time.Duration
 }
 
 type cachedPage struct {
-	Slug       string
-	URL        string
-	ModuleID   string
-	ModuleSlug string
-	IsPublic   bool
-	Network    string
+	Slug            string
+	ModuleID        string
+	ModuleSlug      string
+	IframeOnly      bool
+	NeedAuth        bool
+	Network         string
+	TargetContainer string
+	TargetPort      int
 }
 
 type sessionUser struct {
@@ -59,6 +84,14 @@ type sessionUser struct {
 	LastSeen  time.Time
 	ExpiresAt time.Time
 	SessionID string
+}
+
+type moduleAccessClaims struct {
+	SessionID string `json:"sid"`
+	Slug      string `json:"slug"`
+	IssuedAt  int64  `json:"iat"`
+	ExpiresAt int64  `json:"exp"`
+	Nonce     string `json:"n"`
 }
 
 type pageStore struct {
@@ -159,24 +192,37 @@ func (c *netControllerClient) Reconcile(ctx context.Context, slug string) (types
 }
 
 type proxyService struct {
-	db            *sqlx.DB
-	store         *pageStore
-	connInfo      string
-	channelName   string
-	allowedSuffix []string
-	netClient     *netControllerClient
-	gatewayPort   int
+	db               *sqlx.DB
+	store            *pageStore
+	connInfo         string
+	channelName      string
+	allowedSuffix    []string
+	iframeHosts      map[string]struct{}
+	netClient        *netControllerClient
+	gatewayPort      int
+	sessionSecret    []byte
+	sessionCookieTTL time.Duration
 }
 
-func newProxyService(db *sqlx.DB, connInfo, channel string, suffixes []string, netClient *netControllerClient, gatewayPort int) *proxyService {
+func newProxyService(db *sqlx.DB, connInfo, channel string, suffixes []string, iframeHosts []string, netClient *netControllerClient, gatewayPort int, sessionSecret []byte, cookieTTL time.Duration) *proxyService {
+	hostMap := make(map[string]struct{})
+	for _, h := range iframeHosts {
+		h = strings.TrimSpace(strings.ToLower(h))
+		if h != "" {
+			hostMap[h] = struct{}{}
+		}
+	}
 	return &proxyService{
-		db:            db,
-		store:         newPageStore(),
-		connInfo:      connInfo,
-		channelName:   channel,
-		allowedSuffix: suffixes,
-		netClient:     netClient,
-		gatewayPort:   gatewayPort,
+		db:               db,
+		store:            newPageStore(),
+		connInfo:         connInfo,
+		channelName:      channel,
+		allowedSuffix:    suffixes,
+		iframeHosts:      hostMap,
+		netClient:        netClient,
+		gatewayPort:      gatewayPort,
+		sessionSecret:    sessionSecret,
+		sessionCookieTTL: cookieTTL,
 	}
 }
 
@@ -193,21 +239,27 @@ func (p *proxyService) refreshPages(ctx context.Context) error {
 func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 	const query = `
 		SELECT mp.slug,
-		       mp.url,
+		       mp.target_container,
+		       mp.target_port,
 		       mp.module_id,
-		       mp.is_public,
+		       mp.iframe_only,
+		       mp.need_auth,
 		       m.slug AS module_slug,
 		       COALESCE(mp.network_name, '') AS network_name
 		FROM module_page mp
 		JOIN modules m ON m.id = mp.module_id
+        WHERE mp.target_container IS NOT NULL
+          AND mp.target_port IS NOT NULL
 	`
 	type row struct {
-		Slug        string `db:"slug"`
-		URL         string `db:"url"`
-		ModuleID    string `db:"module_id"`
-		IsPublic    bool   `db:"is_public"`
-		ModuleSlug  string `db:"module_slug"`
-		NetworkName string `db:"network_name"`
+		Slug            string `db:"slug"`
+		TargetContainer string `db:"target_container"`
+		TargetPort      int    `db:"target_port"`
+		ModuleID        string `db:"module_id"`
+		IframeOnly      bool   `db:"iframe_only"`
+		NeedAuth        bool   `db:"need_auth"`
+		ModuleSlug      string `db:"module_slug"`
+		NetworkName     string `db:"network_name"`
 	}
 	var rows []row
 	if err := p.db.SelectContext(ctx, &rows, query); err != nil {
@@ -220,12 +272,14 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 			continue
 		}
 		cached = append(cached, cachedPage{
-			Slug:       slug,
-			URL:        r.URL,
-			ModuleID:   r.ModuleID,
-			ModuleSlug: r.ModuleSlug,
-			IsPublic:   r.IsPublic,
-			Network:    strings.TrimSpace(r.NetworkName),
+			Slug:            slug,
+			ModuleID:        r.ModuleID,
+			ModuleSlug:      r.ModuleSlug,
+			IframeOnly:      r.IframeOnly,
+			NeedAuth:        r.NeedAuth,
+			Network:         strings.TrimSpace(r.NetworkName),
+			TargetContainer: strings.TrimSpace(r.TargetContainer),
+			TargetPort:      r.TargetPort,
 		})
 	}
 	return cached, nil
@@ -267,6 +321,36 @@ func (p *proxyService) listenForChanges(ctx context.Context) {
 	}
 }
 
+func (p *proxyService) handleSessionBootstrap(w http.ResponseWriter, r *http.Request, slug string) {
+	if len(p.sessionSecret) == 0 {
+		http.Error(w, "session exchange disabled", http.StatusServiceUnavailable)
+		return
+	}
+	token := strings.TrimSpace(r.URL.Query().Get("token"))
+	if token == "" {
+		http.Error(w, "missing token", http.StatusBadRequest)
+		return
+	}
+	claims, err := parseModuleAccessToken(token, p.sessionSecret)
+	if err != nil {
+		status := http.StatusUnauthorized
+		if errors.Is(err, errTokenExpired) {
+			status = http.StatusUnauthorized
+		}
+		http.Error(w, "invalid session token", status)
+		return
+	}
+	if claims.Slug != slug {
+		http.Error(w, "slug mismatch", http.StatusForbidden)
+		return
+	}
+	p.setModuleSessionCookie(w, claims.SessionID, isHTTPS(r))
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("<!doctype html><title>ok</title><body></body>"))
+}
+
 func (p *proxyService) handleGatewayRequest(w http.ResponseWriter, r *http.Request) {
 	slug, ok := p.extractSlug(r.Host)
 	if !ok {
@@ -278,6 +362,10 @@ func (p *proxyService) handleGatewayRequest(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		log.Printf("[proxy-service] slug=%q not found for host=%q", slug, r.Host)
 		http.NotFound(w, r)
+		return
+	}
+	if r.URL.Path == moduleSessionPath {
+		p.handleSessionBootstrap(w, r, slug)
 		return
 	}
 	if _, allowed, reason := p.authorizePageRequest(w, r, page); !allowed {
@@ -412,12 +500,27 @@ func dnsSafeSlug(slug string) string {
 }
 
 func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Request, page cachedPage) (*sessionUser, bool, string) {
+	if authDebugEnabled {
+		var cookieNames []string
+		for _, c := range r.Cookies() {
+			cookieNames = append(cookieNames, c.Name)
+		}
+		log.Printf("[proxy-service][auth-debug] slug=%s host=%s referer=%q cookies=%v session_id=%q",
+			page.Slug, r.Host, r.Header.Get("Referer"), cookieNames, readSessionID(r))
+	}
+
 	ctx := r.Context()
 	user, err := p.authenticateRequest(ctx, r)
 	switch {
 	case err == errNoSession:
+		if authDebugEnabled {
+			log.Printf("[proxy-service][auth-debug] authenticateRequest -> no session")
+		}
 		user = nil
 	case err == errSessionExpired:
+		if authDebugEnabled {
+			log.Printf("[proxy-service][auth-debug] authenticateRequest -> session expired")
+		}
 		clearSessionCookie(w, isHTTPS(r))
 		writeJSONError(w, http.StatusUnauthorized, "unauthorized", "Session expired. Please sign in again.")
 		return nil, false, "session expired"
@@ -442,17 +545,95 @@ func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	if !page.IsPublic {
-		if r.Header.Get("Referer") == "" {
-			writeJSONError(w, http.StatusForbidden, "iframe_required", "This page must be loaded from Pan Bagnat.")
-			return nil, false, "missing iframe referer"
+	if page.IframeOnly && !p.isRefererAllowed(r.Header.Get("Referer")) {
+		writeJSONError(w, http.StatusForbidden, "iframe_required", "This page must be loaded from Pan Bagnat.")
+		return nil, false, "missing iframe referer"
+	}
+	if page.NeedAuth && user == nil {
+		if authDebugEnabled {
+			log.Printf("[proxy-service][auth-debug] user nil but referer=%q need_auth=%v", r.Header.Get("Referer"), page.NeedAuth)
 		}
-		if user == nil {
-			writeJSONError(w, http.StatusUnauthorized, "unauthorized", "Please sign in.")
-			return nil, false, "not authenticated"
+		writeJSONError(w, http.StatusUnauthorized, "unauthorized", "Please sign in.")
+		return nil, false, "not authenticated"
+	}
+	if authDebugEnabled {
+		userID := "<nil>"
+		if user != nil {
+			userID = user.ID
 		}
+		log.Printf("[proxy-service][auth-debug] access granted slug=%s user=%s", page.Slug, userID)
 	}
 	return user, true, ""
+}
+
+func (p *proxyService) isRefererAllowed(raw string) bool {
+	if len(p.iframeHosts) == 0 {
+		return false
+	}
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return false
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	if host == "" {
+		return false
+	}
+	_, ok := p.iframeHosts[host]
+	return ok
+}
+
+func parseModuleAccessToken(raw string, secret []byte) (moduleAccessClaims, error) {
+	var claims moduleAccessClaims
+	parts := strings.Split(raw, ".")
+	if len(parts) != 2 {
+		return claims, errInvalidToken
+	}
+	payload, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return claims, errInvalidToken
+	}
+	signature, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return claims, errInvalidToken
+	}
+	mac := hmac.New(sha256.New, secret)
+	mac.Write(payload)
+	if !hmac.Equal(signature, mac.Sum(nil)) {
+		return claims, errInvalidToken
+	}
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		return claims, errInvalidToken
+	}
+	if claims.SessionID == "" || claims.Slug == "" {
+		return claims, errInvalidToken
+	}
+	if time.Now().After(time.Unix(claims.ExpiresAt, 0)) {
+		return claims, errTokenExpired
+	}
+	return claims, nil
+}
+
+func (p *proxyService) setModuleSessionCookie(w http.ResponseWriter, sessionID string, secure bool) {
+	if sessionID == "" {
+		return
+	}
+	cookie := &http.Cookie{
+		Name:     sessionCookieName,
+		Value:    sessionID,
+		Path:     "/",
+		HttpOnly: true,
+		Secure:   secure || sessionCookieSameSite == http.SameSiteNoneMode,
+		SameSite: sessionCookieSameSite,
+	}
+	if p.sessionCookieTTL > 0 {
+		cookie.MaxAge = int(p.sessionCookieTTL.Seconds())
+		cookie.Expires = time.Now().Add(p.sessionCookieTTL)
+	}
+	http.SetCookie(w, cookie)
 }
 
 func (p *proxyService) authenticateRequest(ctx context.Context, r *http.Request) (*sessionUser, error) {
@@ -539,7 +720,7 @@ func clearSessionCookie(w http.ResponseWriter, secure bool) {
 		Path:     "/",
 		HttpOnly: true,
 		Secure:   secure,
-		SameSite: http.SameSiteLaxMode,
+		SameSite: sessionCookieSameSite,
 		MaxAge:   -1,
 		Expires:  time.Unix(0, 0),
 	})
@@ -583,6 +764,18 @@ func loadConfig() (config, error) {
 	if len(domains) == 0 {
 		return config{}, errors.New("MODULES_PROXY_ALLOWED_DOMAINS is required")
 	}
+	rawIframe := strings.TrimSpace(os.Getenv("MODULES_IFRAME_ALLOWED_HOSTS"))
+	if rawIframe == "" {
+		rawIframe = "localhost,panbagnat.42nice.fr"
+	}
+	rawIframeHosts := strings.Split(rawIframe, ",")
+	iframeHosts := make([]string, 0, len(rawIframeHosts))
+	for _, h := range rawIframeHosts {
+		trimmed := strings.ToLower(strings.TrimSpace(h))
+		if trimmed != "" {
+			iframeHosts = append(iframeHosts, trimmed)
+		}
+	}
 	netURL := strings.TrimSpace(os.Getenv("MODULES_NET_CONTROLLER_URL"))
 
 	gatewayPort := defaultGatewayPort
@@ -592,13 +785,27 @@ func loadConfig() (config, error) {
 		}
 	}
 
+	secret := strings.TrimSpace(os.Getenv("MODULES_SESSION_SECRET"))
+	if secret == "" {
+		return config{}, errors.New("MODULES_SESSION_SECRET is required")
+	}
+	cookieTTL := time.Hour
+	if raw := strings.TrimSpace(os.Getenv("MODULES_SESSION_COOKIE_TTL")); raw != "" {
+		if d, err := time.ParseDuration(raw); err == nil && d > 0 {
+			cookieTTL = d
+		}
+	}
+
 	return config{
-		PostgresURL:      pg,
-		ListenAddr:       ":" + port,
-		Channel:          channel,
-		AllowedDomains:   domains,
-		NetControllerURL: netURL,
-		GatewayPort:      gatewayPort,
+		PostgresURL:        pg,
+		ListenAddr:         ":" + port,
+		Channel:            channel,
+		AllowedDomains:     domains,
+		IframeAllowedHosts: iframeHosts,
+		NetControllerURL:   netURL,
+		GatewayPort:        gatewayPort,
+		SessionSecret:      []byte(secret),
+		SessionCookieTTL:   cookieTTL,
 	}, nil
 }
 
@@ -621,7 +828,7 @@ func main() {
 
 	netClient := newNetControllerClient(cfg.NetControllerURL)
 
-	service := newProxyService(db, cfg.PostgresURL, cfg.Channel, cfg.AllowedDomains, netClient, cfg.GatewayPort)
+	service := newProxyService(db, cfg.PostgresURL, cfg.Channel, cfg.AllowedDomains, cfg.IframeAllowedHosts, netClient, cfg.GatewayPort, cfg.SessionSecret, cfg.SessionCookieTTL)
 	if err := service.refreshPages(ctx); err != nil {
 		log.Fatalf("failed to load module pages: %v", err)
 	}

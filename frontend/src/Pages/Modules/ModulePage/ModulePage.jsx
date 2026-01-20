@@ -3,6 +3,8 @@ import { useParams, Navigate } from 'react-router-dom';
 import './ModulePage.css';
 import Button from 'Global/Button/Button';
 
+const MODULE_SESSION_PATH = '/_pb/session';
+
 const getModulesDomain = () => {
   const envValue = (import.meta.env.VITE_MODULES_BASE_DOMAIN || '').trim();
   if (envValue) return envValue;
@@ -20,21 +22,64 @@ const getModulesProtocol = (domain) => {
   return window.location.protocol === 'https:' ? 'https' : 'http';
 };
 
+const exchangeModuleSession = (origin, token) =>
+  new Promise((resolve, reject) => {
+    if (!origin || !token) {
+      reject(new Error('missing origin or token'));
+      return;
+    }
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'absolute';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.visibility = 'hidden';
+    iframe.setAttribute('aria-hidden', 'true');
+    iframe.src = `${origin}${MODULE_SESSION_PATH}?token=${encodeURIComponent(token)}`;
+
+    const cleanup = () => {
+      window.clearTimeout(timeout);
+      iframe.remove();
+    };
+
+    const timeout = window.setTimeout(() => {
+      cleanup();
+      reject(new Error('module session exchange timeout'));
+    }, 5000);
+
+    iframe.onload = () => {
+      cleanup();
+      resolve();
+    };
+    iframe.onerror = () => {
+      cleanup();
+      reject(new Error('module session exchange failed'));
+    };
+
+    const target = document.body || document.documentElement;
+    if (!target) {
+      reject(new Error('document not ready'));
+      return;
+    }
+    target.appendChild(iframe);
+  });
+
 export default function ModulePage({ pages }) {
   const { slug } = useParams();
   const [status, setStatus] = useState('loading');
   const [retryKey, setRetryKey] = useState(0);
+  const [authReady, setAuthReady] = useState(false);
 
   const page = pages.find((p) => p.slug === slug);
   const modulesDomain = useMemo(() => getModulesDomain(), []);
   const modulesProtocol = useMemo(() => getModulesProtocol(modulesDomain), [modulesDomain]);
-  const iframeSrc = page ? `${modulesProtocol}://${page.slug}.${modulesDomain}/` : '';
+  const moduleOrigin = page ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
+  const iframeSrc = moduleOrigin ? `${moduleOrigin}/` : '';
 
   useEffect(() => {
     if (pages.length === 0) return;
     const newPage = pages.find((p) => p.slug === slug);
     if (newPage) {
-      setStatus('loading');
       setRetryKey((k) => k + 1);
     }
   }, [slug, pages]);
@@ -45,8 +90,60 @@ export default function ModulePage({ pages }) {
 
   useEffect(() => {
     if (!page) return;
-    const iframe = document.getElementById('moduleIframe');
     setStatus('loading');
+  }, [page, retryKey]);
+
+  useEffect(() => {
+    if (!page) {
+      setAuthReady(false);
+      return;
+    }
+    if (!page.need_auth) {
+      setAuthReady(true);
+      return;
+    }
+
+    let canceled = false;
+    setAuthReady(false);
+
+    const run = async () => {
+      try {
+        const resp = await fetch(`/api/v1/modules/pages/${page.slug}/session`, {
+          method: 'POST',
+          credentials: 'include',
+        });
+        if (!resp.ok) {
+          throw new Error(`token request failed with ${resp.status}`);
+        }
+        const body = await resp.json();
+        if (!body?.token) {
+          throw new Error('token payload missing');
+        }
+        if (!moduleOrigin) {
+          throw new Error('module origin missing');
+        }
+        await exchangeModuleSession(moduleOrigin, body.token);
+        if (!canceled) {
+          setAuthReady(true);
+        }
+      } catch (err) {
+        console.error('Failed to prepare module session', err);
+        if (!canceled) {
+          setAuthReady(false);
+          setStatus('error');
+        }
+      }
+    };
+
+    run();
+    return () => {
+      canceled = true;
+    };
+  }, [page, moduleOrigin, retryKey]);
+
+  useEffect(() => {
+    if (!page || !authReady) return;
+    const iframe = document.getElementById('moduleIframe');
     if (!iframe) return;
 
     const timeout = setTimeout(() => setStatus('error'), 8000);
@@ -59,7 +156,7 @@ export default function ModulePage({ pages }) {
       setStatus('error');
     };
     return () => clearTimeout(timeout);
-  }, [page, retryKey]);
+  }, [page, retryKey, authReady]);
 
   if (!slug) {
     if (pages.length > 0) {
@@ -92,7 +189,7 @@ export default function ModulePage({ pages }) {
       <iframe
         id="moduleIframe"
         key={`${page.slug}-${retryKey}`}
-        src={iframeSrc}
+        src={authReady ? iframeSrc : 'about:blank'}
         title={page.slug}
         frameBorder="0"
         className="module-iframe"

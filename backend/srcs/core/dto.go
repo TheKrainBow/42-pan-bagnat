@@ -2,6 +2,7 @@ package core
 
 import (
 	"backend/database"
+	"strings"
 	"time"
 )
 
@@ -118,15 +119,28 @@ func DatabaseModuleLogsToModuleLogs(dbLogs []database.ModuleLog) (dest []ModuleL
 }
 
 func DatabaseModulePageToModulePage(dbPage database.ModulePage) ModulePage {
+	var targetContainer *string
+	if dbPage.TargetContainer.Valid {
+		val := strings.TrimSpace(dbPage.TargetContainer.String)
+		targetContainer = &val
+	}
+	var targetPort *int
+	if dbPage.TargetPort.Valid {
+		val := int(dbPage.TargetPort.Int32)
+		targetPort = &val
+	}
+
 	return ModulePage{
-		ID:          dbPage.ID,
-		ModuleID:    dbPage.ModuleID,
-		Name:        dbPage.Name,
-		Slug:        dbPage.Slug,
-		URL:         dbPage.URL,
-		IsPublic:    dbPage.IsPublic,
-		IconURL:     dbPage.IconURL,
-		NetworkName: dbPage.NetworkName,
+		ID:              dbPage.ID,
+		ModuleID:        dbPage.ModuleID,
+		Name:            dbPage.Name,
+		Slug:            dbPage.Slug,
+		TargetContainer: targetContainer,
+		TargetPort:      targetPort,
+		IframeOnly:      dbPage.IframeOnly,
+		NeedAuth:        dbPage.NeedAuth,
+		IconURL:         dbPage.IconURL,
+		NetworkName:     dbPage.NetworkName,
 	}
 }
 
