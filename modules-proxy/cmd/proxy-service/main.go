@@ -65,6 +65,7 @@ type config struct {
 	GatewayPort        int
 	SessionSecret      []byte
 	SessionCookieTTL   time.Duration
+	LoginURL           string
 }
 
 type cachedPage struct {
@@ -202,9 +203,10 @@ type proxyService struct {
 	gatewayPort      int
 	sessionSecret    []byte
 	sessionCookieTTL time.Duration
+	loginURL         string
 }
 
-func newProxyService(db *sqlx.DB, connInfo, channel string, suffixes []string, iframeHosts []string, netClient *netControllerClient, gatewayPort int, sessionSecret []byte, cookieTTL time.Duration) *proxyService {
+func newProxyService(db *sqlx.DB, connInfo, channel string, suffixes []string, iframeHosts []string, netClient *netControllerClient, gatewayPort int, sessionSecret []byte, cookieTTL time.Duration, loginURL string) *proxyService {
 	hostMap := make(map[string]struct{})
 	for _, h := range iframeHosts {
 		h = strings.TrimSpace(strings.ToLower(h))
@@ -223,6 +225,7 @@ func newProxyService(db *sqlx.DB, connInfo, channel string, suffixes []string, i
 		gatewayPort:      gatewayPort,
 		sessionSecret:    sessionSecret,
 		sessionCookieTTL: cookieTTL,
+		loginURL:         strings.TrimSpace(loginURL),
 	}
 }
 
@@ -545,13 +548,17 @@ func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	if page.IframeOnly && !p.isRefererAllowed(r.Header.Get("Referer")) {
+	moduleHost := hostWithoutPort(r.Host)
+	if page.IframeOnly && !p.isIframeRefererAllowed(r.Header.Get("Referer"), moduleHost) {
 		writeJSONError(w, http.StatusForbidden, "iframe_required", "This page must be loaded from Pan Bagnat.")
 		return nil, false, "missing iframe referer"
 	}
 	if page.NeedAuth && user == nil {
 		if authDebugEnabled {
 			log.Printf("[proxy-service][auth-debug] user nil but referer=%q need_auth=%v", r.Header.Get("Referer"), page.NeedAuth)
+		}
+		if p.redirectToLoginIfPossible(w, r, r.Header.Get("Referer")) {
+			return nil, false, "redirect_login"
 		}
 		writeJSONError(w, http.StatusUnauthorized, "unauthorized", "Please sign in.")
 		return nil, false, "not authenticated"
@@ -566,7 +573,7 @@ func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Reque
 	return user, true, ""
 }
 
-func (p *proxyService) isRefererAllowed(raw string) bool {
+func (p *proxyService) isRefererFromParent(raw string) bool {
 	if len(p.iframeHosts) == 0 {
 		return false
 	}
@@ -584,6 +591,107 @@ func (p *proxyService) isRefererAllowed(raw string) bool {
 	}
 	_, ok := p.iframeHosts[host]
 	return ok
+}
+
+func (p *proxyService) isIframeRefererAllowed(raw string, moduleHost string) bool {
+	if p.isRefererFromParent(raw) {
+		return true
+	}
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return false
+	}
+	u, err := url.Parse(raw)
+	if err != nil {
+		return false
+	}
+	host := strings.ToLower(u.Hostname())
+	if host == "" {
+		return false
+	}
+	if moduleHost != "" && host == moduleHost {
+		return true
+	}
+	return false
+}
+
+func (p *proxyService) redirectToLoginIfPossible(w http.ResponseWriter, r *http.Request, referer string) bool {
+	if p.loginURL == "" {
+		return false
+	}
+	if r.Method != http.MethodGet {
+		return false
+	}
+	if p.shouldSkipLoginRedirectReferer(referer, r) {
+		return false
+	}
+	if !acceptsHTML(r) {
+		return false
+	}
+	loginURL, err := url.Parse(p.loginURL)
+	if err != nil || loginURL.Scheme == "" || loginURL.Host == "" {
+		return false
+	}
+	next := buildOriginalURL(r)
+	values := loginURL.Query()
+	if next != "" {
+		values.Set("next", next)
+	}
+	loginURL.RawQuery = values.Encode()
+	http.Redirect(w, r, loginURL.String(), http.StatusFound)
+	return true
+}
+
+func acceptsHTML(r *http.Request) bool {
+	accept := strings.ToLower(r.Header.Get("Accept"))
+	if accept == "" {
+		return true
+	}
+	return strings.Contains(accept, "text/html") || strings.Contains(accept, "*/*")
+}
+
+func buildOriginalURL(r *http.Request) string {
+	scheme := "https"
+	if !isHTTPS(r) {
+		scheme = "http"
+	}
+	host := r.Host
+	if host == "" {
+		return ""
+	}
+	u := &url.URL{
+		Scheme:   scheme,
+		Host:     host,
+		Path:     r.URL.Path,
+		RawQuery: r.URL.RawQuery,
+	}
+	return u.String()
+}
+
+func hostWithoutPort(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if idx := strings.Index(raw, ":"); idx >= 0 {
+		raw = raw[:idx]
+	}
+	return strings.ToLower(raw)
+}
+
+func (p *proxyService) shouldSkipLoginRedirectReferer(referer string, r *http.Request) bool {
+	referer = strings.TrimSpace(referer)
+	if referer == "" {
+		return false
+	}
+	if p.isRefererFromParent(referer) {
+		return true
+	}
+	original := buildOriginalURL(r)
+	if original != "" && strings.EqualFold(referer, original) {
+		return true
+	}
+	return false
 }
 
 func parseModuleAccessToken(raw string, secret []byte) (moduleAccessClaims, error) {
@@ -777,6 +885,7 @@ func loadConfig() (config, error) {
 		}
 	}
 	netURL := strings.TrimSpace(os.Getenv("MODULES_NET_CONTROLLER_URL"))
+	loginURL := strings.TrimSpace(os.Getenv("MODULES_LOGIN_URL"))
 
 	gatewayPort := defaultGatewayPort
 	if raw := strings.TrimSpace(os.Getenv("MODULES_GATEWAY_PORT")); raw != "" {
@@ -806,6 +915,7 @@ func loadConfig() (config, error) {
 		GatewayPort:        gatewayPort,
 		SessionSecret:      []byte(secret),
 		SessionCookieTTL:   cookieTTL,
+		LoginURL:           loginURL,
 	}, nil
 }
 
@@ -828,7 +938,7 @@ func main() {
 
 	netClient := newNetControllerClient(cfg.NetControllerURL)
 
-	service := newProxyService(db, cfg.PostgresURL, cfg.Channel, cfg.AllowedDomains, cfg.IframeAllowedHosts, netClient, cfg.GatewayPort, cfg.SessionSecret, cfg.SessionCookieTTL)
+	service := newProxyService(db, cfg.PostgresURL, cfg.Channel, cfg.AllowedDomains, cfg.IframeAllowedHosts, netClient, cfg.GatewayPort, cfg.SessionSecret, cfg.SessionCookieTTL, cfg.LoginURL)
 	if err := service.refreshPages(ctx); err != nil {
 		log.Fatalf("failed to load module pages: %v", err)
 	}

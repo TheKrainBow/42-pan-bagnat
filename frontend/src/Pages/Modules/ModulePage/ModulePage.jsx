@@ -2,67 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import './ModulePage.css';
 import Button from 'Global/Button/Button';
-
-const MODULE_SESSION_PATH = '/_pb/session';
-
-const getModulesDomain = () => {
-  const envValue = (import.meta.env.VITE_MODULES_BASE_DOMAIN || '').trim();
-  if (envValue) return envValue;
-  return 'modules.127.0.0.1.nip.io';
-};
-
-const getModulesProtocol = (domain) => {
-  const override = (import.meta.env.VITE_MODULES_PROTOCOL || '').trim().toLowerCase();
-  if (override === 'http' || override === 'https') {
-    return override;
-  }
-  if (domain.endsWith('.127.0.0.1.nip.io') || domain.endsWith('.nip.io')) {
-    return 'http';
-  }
-  return window.location.protocol === 'https:' ? 'https' : 'http';
-};
-
-const exchangeModuleSession = (origin, token) =>
-  new Promise((resolve, reject) => {
-    if (!origin || !token) {
-      reject(new Error('missing origin or token'));
-      return;
-    }
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'absolute';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    iframe.style.visibility = 'hidden';
-    iframe.setAttribute('aria-hidden', 'true');
-    iframe.src = `${origin}${MODULE_SESSION_PATH}?token=${encodeURIComponent(token)}`;
-
-    const cleanup = () => {
-      window.clearTimeout(timeout);
-      iframe.remove();
-    };
-
-    const timeout = window.setTimeout(() => {
-      cleanup();
-      reject(new Error('module session exchange timeout'));
-    }, 5000);
-
-    iframe.onload = () => {
-      cleanup();
-      resolve();
-    };
-    iframe.onerror = () => {
-      cleanup();
-      reject(new Error('module session exchange failed'));
-    };
-
-    const target = document.body || document.documentElement;
-    if (!target) {
-      reject(new Error('document not ready'));
-      return;
-    }
-    target.appendChild(iframe);
-  });
+import { getModulesDomain, getModulesProtocol } from '../../../utils/modules';
+import { exchangeModuleSession } from '../../../utils/moduleSession';
 
 export default function ModulePage({ pages }) {
   const { slug } = useParams();
