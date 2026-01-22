@@ -475,17 +475,26 @@ func GeneratePageSlug(name string) string {
 	slug := strings.ToLower(name)
 	slug = strings.TrimSpace(slug)
 	slug = regexp.MustCompile(`\s+`).ReplaceAllString(slug, "-")
-	attempt := ""
+	slug = strings.Trim(slug, "-")
+	if slug == "" {
+		slug = "page"
+	}
+
+	attempt := 0
 	for {
-		isTaken, err := database.IsModuleSlugTaken(slug + attempt)
+		candidate := slug
+		if attempt > 0 {
+			candidate = fmt.Sprintf("%s-%d", slug, attempt)
+		}
+		isTaken, err := database.IsModuleSlugTaken(candidate)
 		if err != nil {
-			log.Printf("error while generating slug `%s`: %s\n", slug+attempt, err)
+			log.Printf("error while generating slug `%s`: %s\n", candidate, err)
 			return ""
 		}
 		if !isTaken {
-			return slug + attempt
+			return candidate
 		}
-		attempt += "-"
+		attempt++
 	}
 }
 
@@ -520,17 +529,21 @@ func GenerateModuleSlug(name, _ string) string {
 		return string(out)
 	}
 	slug := sanitize(name)
-	attempt := ""
+	attempt := 0
 	for {
-		isTaken, err := database.IsModuleSlugTaken(slug + attempt)
+		candidate := slug
+		if attempt > 0 {
+			candidate = fmt.Sprintf("%s-%d", slug, attempt)
+		}
+		isTaken, err := database.IsModuleSlugTaken(candidate)
 		if err != nil {
-			log.Printf("error while generating slug `%s`: %s\n", slug+attempt, err)
+			log.Printf("error while generating slug `%s`: %s\n", candidate, err)
 			return ""
 		}
 		if !isTaken {
-			return slug + attempt
+			return candidate
 		}
-		attempt += "-"
+		attempt++
 	}
 }
 

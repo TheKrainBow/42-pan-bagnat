@@ -4,8 +4,8 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_MODULES_BASE_DOMAIN: ${MODULES_BASE_MODULE_HOST:-modules.127.0.0.1.nip.io}
-        VITE_MODULES_PROTOCOL: ${MODULES_MODULES_PROTOCOL:-}
+        VITE_MODULES_BASE_DOMAIN: modules.${HOST_NAME}
+        VITE_MODULES_PROTOCOL: ${MODULES_MODULES_PROTOCOL}
     expose:
       - '3000'
     restart: unless-stopped
@@ -27,16 +27,16 @@ services:
       - "9090"
     environment:
       POSTGRES_URL: ${POSTGRES_URL}
-      MODULES_PROXY_PORT: ${MODULES_PROXY_PORT:-9090}
-      MODULES_PROXY_CHANNEL: ${MODULES_PROXY_CHANNEL:-module_page_changed}
-      MODULES_PROXY_ALLOWED_DOMAINS: ${MODULES_PROXY_ALLOWED_DOMAINS:-modules.panbagnat.42nice.fr,modules.127.0.0.1.nip.io}
-      MODULES_IFRAME_ALLOWED_HOSTS: ${MODULES_IFRAME_ALLOWED_HOSTS:-localhost,panbagnat.42nice.fr}
-      MODULES_NET_CONTROLLER_URL: ${MODULES_NET_CONTROLLER_URL:-http://net-controller:9091}
+      MODULES_PROXY_PORT: ${MODULES_PROXY_PORT}
+      MODULES_PROXY_CHANNEL: ${MODULES_PROXY_CHANNEL}
+      MODULES_PROXY_ALLOWED_DOMAINS: modules.${HOST_NAME}
+      MODULES_IFRAME_ALLOWED_HOSTS: ${HOST_NAME}
+      MODULES_NET_CONTROLLER_URL: ${MODULES_NET_CONTROLLER_URL}
       MODULES_SESSION_SECRET: ${MODULES_SESSION_SECRET}
-      MODULES_SESSION_COOKIE_TTL: ${MODULES_SESSION_COOKIE_TTL:-1h}
-      MODULES_LOGIN_URL: ${MODULES_LOGIN_URL:-https://localhost/login}
-      PROXY_DEBUG_AUTH: ${PROXY_DEBUG_AUTH:-0}
-      SESSION_COOKIE_SAMESITE: ${SESSION_COOKIE_SAMESITE:-None}
+      MODULES_SESSION_COOKIE_TTL: ${MODULES_SESSION_COOKIE_TTL}
+      MODULES_LOGIN_URL: https://${HOST_NAME}/login
+      PROXY_DEBUG_AUTH: ${PROXY_DEBUG_AUTH}
+      SESSION_COOKIE_SAMESITE: ${SESSION_COOKIE_SAMESITE}
     restart: unless-stopped
     depends_on:
       db:
@@ -57,10 +57,10 @@ services:
       - "9091"
     environment:
       POSTGRES_URL: ${POSTGRES_URL}
-      MODULES_PROXY_CHANNEL: ${MODULES_PROXY_CHANNEL:-module_page_changed}
-      MODULES_SHARED_NETWORK: ${MODULES_SHARED_NETWORK:-pan-bagnat-proxy-net}
-      MODULES_GATEWAY_IMAGE: ${MODULES_GATEWAY_IMAGE:-nginx:alpine}
-      MODULES_GATEWAY_PORT: ${MODULES_GATEWAY_PORT:-8080}
+      MODULES_PROXY_CHANNEL: ${MODULES_PROXY_CHANNEL}
+      MODULES_SHARED_NETWORK: ${MODULES_SHARED_NETWORK}
+      MODULES_GATEWAY_IMAGE: ${MODULES_GATEWAY_IMAGE}
+      MODULES_GATEWAY_PORT: ${MODULES_GATEWAY_PORT}
     restart: unless-stopped
     depends_on:
       db:
@@ -78,7 +78,7 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/ssl:/etc/ssl:ro
     ports:
-      - '80:80'
+      - '8080:80'
       - '443:443'
     restart: unless-stopped
     networks:
@@ -117,7 +117,7 @@ services:
       POSTGRES_PORT: ${POSTGRES_PORT}
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_URL: ${POSTGRES_URL}
-      FT_CALLBACK_URL: ${FT_CALLBACK_URL}
+      FT_CALLBACK_URL: https://${HOST_NAME}/auth/42/callback
       FT_CLIENT_ID: ${FT_CLIENT_ID}
       FT_CLIENT_SECRET: ${FT_CLIENT_SECRET}
       WEBHOOK_SECRET: ${WEBHOOK_SECRET}
@@ -125,12 +125,13 @@ services:
       REPO_HOST_BASE_PATH: ${REPO_HOST_BASE_PATH}
       GIT_SSH_KNOWN_HOSTS: ${GIT_SSH_KNOWN_HOSTS}
       SSH_KNOWN_HOSTS_LIST: ${SSH_KNOWN_HOSTS_LIST}
-      SESSION_COOKIE_DOMAIN: ${SESSION_COOKIE_DOMAIN:-}
-      SESSION_COOKIE_SAMESITE: ${SESSION_COOKIE_SAMESITE:-None}
+      SESSION_COOKIE_DOMAIN: .${HOST_NAME}
+      SESSION_COOKIE_SAMESITE: ${SESSION_COOKIE_SAMESITE}
       MODULES_SESSION_SECRET: ${MODULES_SESSION_SECRET}
-      MODULES_SESSION_TOKEN_TTL: ${MODULES_SESSION_TOKEN_TTL:-1m}
-      MODULES_PROXY_ALLOWED_DOMAINS: ${MODULES_PROXY_ALLOWED_DOMAINS:-modules.panbagnat.42nice.fr,modules.127.0.0.1.nip.io}
-      MODULES_IFRAME_ALLOWED_HOSTS: ${MODULES_IFRAME_ALLOWED_HOSTS:-localhost,panbagnat.42nice.fr}
+      MODULES_SESSION_TOKEN_TTL: ${MODULES_SESSION_TOKEN_TTL}
+      MODULES_LOGIN_URL: https://${HOST_NAME}/login
+      MODULES_PROXY_ALLOWED_DOMAINS: modules.${HOST_NAME}
+      MODULES_IFRAME_ALLOWED_HOSTS: ${HOST_NAME}
     depends_on:
       db:
         condition: service_healthy
@@ -164,7 +165,7 @@ services:
     networks:
       - pan-bagnat-core
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-admin} -d ${POSTGRES_DB:-panbagnat} -h localhost"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} -h localhost"]
       interval: 5s
       timeout: 3s
       retries: 20
