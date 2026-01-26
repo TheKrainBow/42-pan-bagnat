@@ -4,6 +4,7 @@ import (
 	"backend/core"
 	"backend/database"
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
@@ -16,14 +17,14 @@ import (
 const loginRedirectCookieName = "pb_login_next"
 const loginRedirectTTL = 5 * time.Minute
 
-var allowedModuleRedirectDomains = parseEnvList("MODULES_PROXY_ALLOWED_DOMAINS")
-var allowedLoginHosts = parseEnvList("MODULES_IFRAME_ALLOWED_HOSTS")
+var allowedModuleRedirectDomains = resolveModuleRedirectDomains()
+var allowedLoginHosts = resolveLoginHosts()
 
 func getOAuthConf() *oauth2.Config {
 	return &oauth2.Config{
 		ClientID:     os.Getenv("FT_CLIENT_ID"),
 		ClientSecret: os.Getenv("FT_CLIENT_SECRET"),
-		RedirectURL:  os.Getenv("FT_CALLBACK_URL"),
+		RedirectURL:  resolveCallbackURL(),
 		// Request the minimal scope required to read /v2/me
 		Scopes: []string{"public"},
 		Endpoint: oauth2.Endpoint{
@@ -217,4 +218,41 @@ func parseEnvList(key string) []string {
 
 func isHTTPSRequest(r *http.Request) bool {
 	return r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+}
+
+func resolveCallbackURL() string {
+	if v := strings.TrimSpace(os.Getenv("FT_CALLBACK_URL")); v != "" {
+		return v
+	}
+	host := strings.TrimSpace(os.Getenv("HOST_NAME"))
+	if host == "" {
+		return ""
+	}
+	return fmt.Sprintf("https://%s/auth/42/callback", host)
+}
+
+func hostNameLower() string {
+	return strings.ToLower(strings.TrimSpace(os.Getenv("HOST_NAME")))
+}
+
+func resolveModuleRedirectDomains() []string {
+	if values := parseEnvList("MODULES_PROXY_ALLOWED_DOMAINS"); len(values) > 0 {
+		return values
+	}
+	host := hostNameLower()
+	if host == "" {
+		return nil
+	}
+	return []string{fmt.Sprintf("modules.%s", host)}
+}
+
+func resolveLoginHosts() []string {
+	if values := parseEnvList("MODULES_IFRAME_ALLOWED_HOSTS"); len(values) > 0 {
+		return values
+	}
+	host := hostNameLower()
+	if host == "" {
+		return nil
+	}
+	return []string{host}
 }

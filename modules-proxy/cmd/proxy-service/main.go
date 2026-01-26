@@ -39,20 +39,8 @@ var (
 	errSessionExpired     = errors.New("session expired")
 	errInvalidToken       = errors.New("invalid session token")
 	errTokenExpired       = errors.New("session token expired")
-	sessionCookieSameSite = func() http.SameSite {
-		raw := strings.TrimSpace(strings.ToLower(os.Getenv("SESSION_COOKIE_SAMESITE")))
-		switch raw {
-		case "strict":
-			return http.SameSiteStrictMode
-		case "lax":
-			return http.SameSiteLaxMode
-		case "none", "":
-			return http.SameSiteNoneMode
-		default:
-			return http.SameSiteNoneMode
-		}
-	}()
-	authDebugEnabled = strings.EqualFold(os.Getenv("PROXY_DEBUG_AUTH"), "1")
+	sessionCookieSameSite = http.SameSiteNoneMode
+	authDebugEnabled      = strings.EqualFold(os.Getenv("PROXY_DEBUG_AUTH"), "1")
 )
 
 type config struct {
@@ -853,6 +841,7 @@ func loadConfig() (config, error) {
 	if pg == "" {
 		return config{}, errors.New("POSTGRES_URL is required")
 	}
+	hostName := strings.ToLower(strings.TrimSpace(os.Getenv("HOST_NAME")))
 	port := strings.TrimSpace(os.Getenv("MODULES_PROXY_PORT"))
 	if port == "" {
 		port = "9090"
@@ -870,11 +859,14 @@ func loadConfig() (config, error) {
 		}
 	}
 	if len(domains) == 0 {
-		return config{}, errors.New("MODULES_PROXY_ALLOWED_DOMAINS is required")
+		if hostName == "" {
+			return config{}, errors.New("MODULES_PROXY_ALLOWED_DOMAINS or HOST_NAME is required")
+		}
+		domains = []string{fmt.Sprintf("modules.%s", hostName)}
 	}
 	rawIframe := strings.TrimSpace(os.Getenv("MODULES_IFRAME_ALLOWED_HOSTS"))
 	if rawIframe == "" {
-		rawIframe = "localhost,panbagnat.42nice.fr"
+		rawIframe = hostName
 	}
 	rawIframeHosts := strings.Split(rawIframe, ",")
 	iframeHosts := make([]string, 0, len(rawIframeHosts))
@@ -885,7 +877,13 @@ func loadConfig() (config, error) {
 		}
 	}
 	netURL := strings.TrimSpace(os.Getenv("MODULES_NET_CONTROLLER_URL"))
+	if netURL == "" {
+		netURL = "http://net-controller:9091"
+	}
 	loginURL := strings.TrimSpace(os.Getenv("MODULES_LOGIN_URL"))
+	if loginURL == "" && hostName != "" {
+		loginURL = fmt.Sprintf("https://%s/login", hostName)
+	}
 
 	gatewayPort := defaultGatewayPort
 	if raw := strings.TrimSpace(os.Getenv("MODULES_GATEWAY_PORT")); raw != "" {

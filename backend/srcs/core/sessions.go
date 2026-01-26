@@ -97,19 +97,7 @@ func SessionCookieDomain() string {
 	return sessionCookieDomain
 }
 
-var sessionCookieSameSite = func() http.SameSite {
-	raw := strings.TrimSpace(strings.ToLower(os.Getenv("SESSION_COOKIE_SAMESITE")))
-	switch raw {
-	case "lax":
-		return http.SameSiteLaxMode
-	case "strict":
-		return http.SameSiteStrictMode
-	case "none", "":
-		return http.SameSiteNoneMode
-	default:
-		return http.SameSiteNoneMode
-	}
-}()
+var sessionCookieSameSite = http.SameSiteNoneMode
 
 // ReadSessionIDFromCookie returns the session ID from the cookie if present.
 // Falls back to "X-Session-Id" header or "Authorization: Bearer <id>" for dev/tools.

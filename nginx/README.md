@@ -17,7 +17,7 @@ Nginx sits in front of the frontend (Vite/build output) and backend (Go API) and
 
 - Config: `nginx/nginx.conf`
 - Docker image: `nginx:alpine`
-- Mounted certs: `nginx/ssl` → `/etc/ssl`
+- Mounted certs: `${NGINX_SSL_DIR}` (defaults to `nginx/ssl`) → `/etc/ssl`
 
 ## Routes and upstreams
 
@@ -47,7 +47,7 @@ ssl_certificate     /etc/ssl/fullchain.pem;
 ssl_certificate_key /etc/ssl/42nice.fr.key;
 ```
 
-- For local development, you can place dev certs under `nginx/ssl` that match the names above. In Docker, that folder is mounted read‑only into the container.
+- For local development, you can place dev certs under `nginx/ssl` (or point `NGINX_SSL_DIR` to another host folder) with the names above. The directory is mounted read‑only into the container.
 - Set `NGINX_FORCE_HTTPS=1` in `.env` to redirect port 80 requests to HTTPS. Leave it at `0` to serve both HTTP and HTTPS simultaneously (handy when certificates are not yet trusted).
 
 ## Forwarded headers and cookies
