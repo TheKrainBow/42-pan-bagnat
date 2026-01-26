@@ -86,24 +86,10 @@ db-test: db-clear-data																	## Database | Set database datas with tes
 #########################################################################################
 .PHONY: up up-dev down build build-back build-front prune fprune
 up:																						## Docker Core | Up docker containers.   (PB only)
-	@echo "⏳ Ensuring network '$(NETWORK)' exists…"
-	@if ! docker network ls --format '{{.Name}}' | grep -q "^$(NETWORK)$$" ; then \
-		echo "✅ Creating network '$(NETWORK)'"; \
-		docker network create --driver bridge $(NETWORK); \
-	else \
-		echo "✅ Network '$(NETWORK)' already exists"; \
-	fi
 	@echo "🚀 Bringing up services…"
 	$(DOCKER_COMPOSE) up -d
 
 up-modules:																				## Docker Modules | Up docker containers.   (Modules only)
-	@echo "⏳ Ensuring network '$(NETWORK)' exists…"
-	@if ! docker network ls --format '{{.Name}}' | grep -q "^$(NETWORK)$$" ; then \
-		echo "✅ Creating network '$(NETWORK)'"; \
-		docker network create --driver bridge $(NETWORK); \
-	else \
-		echo "✅ Network '$(NETWORK)' already exists"; \
-	fi
 	@echo "🚀 Bringing up services…"
 	@for dir in repos/*; do \
 		if [ -d $$dir ] && [ -f $$dir/docker-compose.yml ]; then \
@@ -144,17 +130,6 @@ prune:																					## Docker Core | Delete created images (PB & Modules)
 	$(DOCKER_COMPOSE) down
 	@echo "🗑  Pruning images…"
 	docker image prune -f
-	@echo "🔍 Checking network '$(NETWORK)' usage…"
-	@if docker network inspect $(NETWORK) > /dev/null 2>&1; then \
-		if [ "$$(docker network inspect $(NETWORK) --format '{{len .Containers}}')" -eq "0" ]; then \
-			echo "🗑  No containers attached—removing network '$(NETWORK)'"; \
-			docker network rm $(NETWORK); \
-		else \
-			echo "ℹ️  Network '$(NETWORK)' still in use—skipping removal"; \
-		fi \
-	else \
-		echo "⚠️  Network '$(NETWORK)' does not exist—nothing to do."; \
-	fi
 
 build: 																					## Docker Core | Build and up docker images. (PB only)
 	$(DOCKER_COMPOSE) build
@@ -172,21 +147,24 @@ REPO_DIRS := $(wildcard repos/*)
 
 fprune: prune																			## Docker Core | Stop all containers, volumes, and networks. (PB & Modules)
 	$(DOCKER_COMPOSE) down --volumes --remove-orphans || true
-	docker network rm pan-bagnat_default 2>/dev/null || true
 	docker system prune -af --volumes || true
 	@echo $(REPO_DIRS)
-	@for dir in $(REPO_DIRS); do \
+	@cleaned_dirs=""; \
+	for dir in $(REPO_DIRS); do \
 	  if [ -d $$dir ]; then \
 	    echo "==> fprune in $$dir"; \
-	    ( \
-	      cd "$$dir" && \
-	      $(DOCKER_COMPOSE) down --volumes --remove-orphans || true; \
-	      docker network rm pan-bagnat_default 2>/dev/null || true; \
+	    if (cd "$$dir" && $(DOCKER_COMPOSE) down --volumes --remove-orphans); then \
 	      docker system prune -af --volumes || true; \
-	    ); \
+	      cleaned_dirs="$$cleaned_dirs $$dir"; \
+	    else \
+	      echo "⚠️  Failed to stop containers in $$dir, keeping directory"; \
+	    fi; \
 	  fi; \
 	done; \
-	rm -rf $(REPO_DIRS)
+	if [ -n "$$cleaned_dirs" ]; then \
+	  echo "Removing cleaned repositories:$$cleaned_dirs"; \
+	  rm -rf $$cleaned_dirs; \
+	fi
 
 #########################################################################################
 #                                       TESTS                                           #

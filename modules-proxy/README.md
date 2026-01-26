@@ -46,9 +46,8 @@ module docker compose file spawned the actual workloads.
 Location: `cmd/proxy-service`.
 
 Responsibilities:
-- Cache module pages (`pageStore`) and expose `/module-page/_status/{slug}` for
-  the admin UI (forwarded by `nginx`).
-- Handle every virtual host `*.modules.<allowed domains>`:
+- Cache module pages (`pageStore`) and handle every virtual host
+  `*.modules.<allowed domains>`:
   - Validates the slug exists and, if `NeedAuth` is enabled, looks up the user
     session from the shared `session_id` cookie (`SESSION_COOKIE_DOMAIN` should
     be `.localhost` or `.panbagnat.42nice.fr`).

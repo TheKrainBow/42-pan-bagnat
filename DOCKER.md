@@ -26,7 +26,6 @@ Defined in `docker-compose.yml`:
   - Proxies:
     - `/` → frontend
     - `/api`, `/auth`, `/ws` → backend
-    - `/module-page/_status/*` → proxy-service (admin UI checks)
     - `*.modules.<domain>` → proxy-service (module iframes via subdomains)
   - Reads config from `nginx/nginx.conf` and certs from `nginx/ssl`.
 
@@ -34,7 +33,6 @@ Defined in `docker-compose.yml`:
   - Lightweight Go HTTP proxy (no Docker socket) that serves `*.modules.<domain>` traffic.
   - Looks up module pages in Postgres, enforces `IframeOnly`/`NeedAuth` flags, shares the `session_id` cookie with the SPA, and forwards to the corresponding gateway container on the shared proxy network.
   - If a user is not authenticated and the browser accepts HTML, it redirects to `MODULES_LOGIN_URL` with the module URL in `next`, otherwise it returns JSON `{code:"unauthorized"}`. After login the SPA pre-warms the module cookie via `/api/v1/modules/pages/{slug}/session`.
-  - Exposes `/module-page/_status/{slug}` for the admin UI, relaying information from `net-controller`.
   - Connected to both `pan-bagnat-core` (for DB/HTTP ingress) and `pan-bagnat-proxy-net` (to reach gateways). Configuration keys: `MODULES_PROXY_ALLOWED_DOMAINS`, `MODULES_IFRAME_ALLOWED_HOSTS`, `MODULES_SESSION_SECRET`, `MODULES_LOGIN_URL`, etc.
 
 - `net-controller` (container: `pan-bagnat-net-controller`)

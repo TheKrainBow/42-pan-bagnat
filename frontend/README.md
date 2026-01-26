@@ -36,7 +36,7 @@ Option B — manual
 
 Notes
 - For authenticated flows, the backend must be running and reachable on the host used by CORS (see `HOST_NAME` in `.env.example`).
-- In Docker, Nginx proxies `/` to the frontend, `/api` + `/auth` + `/ws` to the backend, `/module-page/_status` to `proxy-service`, and any `*.modules.<domain>` hostnames to the module `proxy-service`.
+- In Docker, Nginx proxies `/` to the frontend, `/api` + `/auth` + `/ws` to the backend, and any `*.modules.<domain>` hostnames to the module `proxy-service`.
 
 ## Development flow (molecular UI)
 
