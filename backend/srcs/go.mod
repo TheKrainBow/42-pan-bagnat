@@ -4,7 +4,7 @@ go 1.25.5
 
 require (
 	github.com/TheKrainBow/go-api v1.0.6
-	github.com/go-chi/chi/v5 v5.2.3
+	github.com/go-chi/chi/v5 v5.2.4
 	github.com/go-chi/cors v1.2.2
 	github.com/google/go-cmp v0.7.0
 	github.com/jmoiron/sqlx v1.4.0
@@ -25,9 +25,9 @@ require (
 	github.com/go-openapi/swag/typeutils v0.25.4 // indirect
 	github.com/go-openapi/swag/yamlutils v0.25.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/mod v0.31.0 // indirect
+	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/sys v0.40.0 // indirect
 )
 
 require (
@@ -36,7 +36,7 @@ require (
 	github.com/go-openapi/jsonreference v0.21.4 // indirect
 	github.com/go-openapi/spec v0.22.3 // indirect
 	github.com/gorilla/websocket v1.5.3
-	golang.org/x/crypto v0.46.0
-	golang.org/x/tools v0.40.0 // indirect
+	golang.org/x/crypto v0.47.0
+	golang.org/x/tools v0.41.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
