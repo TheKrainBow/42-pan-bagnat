@@ -199,6 +199,7 @@ type proxyService struct {
 	channelName      string
 	allowedSuffix    []string
 	iframeHosts      map[string]struct{}
+	frameAncestors   string
 	netClient        *netControllerClient
 	gatewayPort      int
 	sessionSecret    []byte
@@ -221,6 +222,7 @@ func newProxyService(db *sqlx.DB, connInfo, channel string, suffixes []string, i
 		channelName:      channel,
 		allowedSuffix:    suffixes,
 		iframeHosts:      hostMap,
+		frameAncestors:   buildFrameAncestorsDirective(hostMap),
 		netClient:        netClient,
 		gatewayPort:      gatewayPort,
 		sessionSecret:    sessionSecret,
@@ -389,47 +391,8 @@ func (p *proxyService) handleGatewayRequest(w http.ResponseWriter, r *http.Reque
 	r.Header.Set("X-Forwarded-Proto", originalProto)
 	r.Header.Set("X-Forwarded-Host", r.Host)
 
-	proxy := newReverseProxy(target)
+	proxy := newReverseProxy(target, p.frameAncestors)
 	proxy.ServeHTTP(w, r)
-}
-
-func (p *proxyService) handleModulePageStatus(w http.ResponseWriter, r *http.Request) {
-	slug := chi.URLParam(r, "slug")
-	if slug == "" {
-		http.Error(w, "missing module slug", http.StatusBadRequest)
-		return
-	}
-	page, ok := p.store.get(slug)
-	if !ok {
-		log.Printf("[proxy-service] status request for unknown slug=%q", slug)
-		http.NotFound(w, r)
-		return
-	}
-	if _, allowed, reason := p.authorizePageRequest(w, r, page); !allowed {
-		log.Printf("[proxy-service] denied status slug=%q host=%q reason=%s", slug, r.Host, reason)
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
-	defer cancel()
-
-	var (
-		payload types.ProxyStatusPayload
-		err     error
-	)
-	switch r.Method {
-	case http.MethodPost:
-		payload, err = p.netClient.Reconcile(ctx, slug)
-	default:
-		payload, err = p.netClient.Status(ctx, slug)
-	}
-	if err != nil {
-		log.Printf("[proxy-service] status fetch failed for %s: %v", slug, err)
-		writeJSONError(w, http.StatusBadGateway, "net_controller_unavailable", "Unable to fetch gateway status")
-		return
-	}
-	payload.Network = page.Network
-	respondJSON(w, payload)
 }
 
 func (p *proxyService) extractSlug(hostPort string) (string, bool) {
@@ -549,7 +512,7 @@ func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Reque
 	}
 
 	moduleHost := hostWithoutPort(r.Host)
-	if page.IframeOnly && !p.isIframeRefererAllowed(r.Header.Get("Referer"), moduleHost) {
+	if page.IframeOnly && !p.isIframeRefererAllowed(r, r.Header.Get("Referer"), moduleHost) {
 		writeJSONError(w, http.StatusForbidden, "iframe_required", "This page must be loaded from Pan Bagnat.")
 		return nil, false, "missing iframe referer"
 	}
@@ -593,12 +556,15 @@ func (p *proxyService) isRefererFromParent(raw string) bool {
 	return ok
 }
 
-func (p *proxyService) isIframeRefererAllowed(raw string, moduleHost string) bool {
+func (p *proxyService) isIframeRefererAllowed(r *http.Request, raw string, moduleHost string) bool {
 	if p.isRefererFromParent(raw) {
 		return true
 	}
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
+		if p.frameAncestors != "" && isIframeFetch(r) {
+			return true
+		}
 		return false
 	}
 	u, err := url.Parse(raw)
@@ -684,7 +650,7 @@ func (p *proxyService) shouldSkipLoginRedirectReferer(referer string, r *http.Re
 	if referer == "" {
 		return false
 	}
-	if p.isRefererFromParent(referer) {
+	if p.isRefererFromParent(referer) && isIframeFetch(r) {
 		return true
 	}
 	original := buildOriginalURL(r)
@@ -786,8 +752,34 @@ func (p *proxyService) deleteUserSessions(ctx context.Context, userID string) er
 	return err
 }
 
-func newReverseProxy(target *url.URL) *httputil.ReverseProxy {
+func buildFrameAncestorsDirective(hosts map[string]struct{}) string {
+	if len(hosts) == 0 {
+		return ""
+	}
+	values := []string{"'self'"}
+	for host := range hosts {
+		h := strings.TrimSpace(host)
+		if h == "" {
+			continue
+		}
+		if strings.HasPrefix(h, "http://") || strings.HasPrefix(h, "https://") {
+			values = append(values, h)
+			continue
+		}
+		values = append(values, "https://"+h, "http://"+h)
+	}
+	return strings.Join(values, " ")
+}
+
+func newReverseProxy(target *url.URL, frameAncestors string) *httputil.ReverseProxy {
 	proxy := httputil.NewSingleHostReverseProxy(target)
+	if frameAncestors != "" {
+		policyValue := fmt.Sprintf("frame-ancestors %s", frameAncestors)
+		proxy.ModifyResponse = func(resp *http.Response) error {
+			resp.Header.Add("Content-Security-Policy", policyValue)
+			return nil
+		}
+	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Printf("[proxy-service] proxy error for %s: %v", target.Host, err)
 		http.Error(w, "module upstream error", http.StatusBadGateway)
@@ -839,6 +831,14 @@ func isHTTPS(r *http.Request) bool {
 		return true
 	}
 	return strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+}
+
+func isIframeFetch(r *http.Request) bool {
+	dest := strings.TrimSpace(strings.ToLower(r.Header.Get("Sec-Fetch-Dest")))
+	if dest == "" {
+		return false
+	}
+	return dest == "iframe" || dest == "frame"
 }
 
 func respondJSON(w http.ResponseWriter, payload any) {
@@ -950,8 +950,6 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
-	router.Get("/module-page/_status/{slug}", service.handleModulePageStatus)
-	router.Post("/module-page/_status/{slug}", service.handleModulePageStatus)
 	router.NotFound(service.handleGatewayRequest)
 
 	srv := &http.Server{

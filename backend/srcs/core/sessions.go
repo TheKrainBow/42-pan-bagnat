@@ -67,7 +67,35 @@ func GenerateSecureSessionID() (string, error) {
 
 const SessionCookieName = "session_id"
 
-var sessionCookieDomain = strings.TrimSpace(os.Getenv("SESSION_COOKIE_DOMAIN"))
+var sessionCookieDomain = computeSessionCookieDomain()
+
+func computeSessionCookieDomain() string {
+	domain := strings.TrimSpace(os.Getenv("SESSION_COOKIE_DOMAIN"))
+	if domain != "" {
+		return normalizeCookieDomain(domain)
+	}
+	host := strings.TrimSpace(os.Getenv("HOST_NAME"))
+	host = strings.TrimPrefix(host, ".")
+	if host == "" || !strings.Contains(host, ".") {
+		return ""
+	}
+	return "." + host
+}
+
+func normalizeCookieDomain(domain string) string {
+	domain = strings.TrimSpace(domain)
+	if domain == "" {
+		return ""
+	}
+	if strings.HasPrefix(domain, ".") {
+		return domain
+	}
+	return "." + domain
+}
+
+func SessionCookieDomain() string {
+	return sessionCookieDomain
+}
 
 var sessionCookieSameSite = func() http.SameSite {
 	raw := strings.TrimSpace(strings.ToLower(os.Getenv("SESSION_COOKIE_SAMESITE")))
