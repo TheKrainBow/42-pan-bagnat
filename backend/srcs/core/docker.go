@@ -4,9 +4,11 @@ import (
 	"backend/database"
 	"backend/websocket"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"os/exec"
@@ -14,8 +16,28 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
+
+	dockercontainer "github.com/docker/docker/api/types/container"
+	dockerfilters "github.com/docker/docker/api/types/filters"
+	networktypes "github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 )
+
+var (
+	dockerClientOnce sync.Once
+	dockerClientInst *client.Client
+	dockerClientErr  error
+)
+
+func getDockerClient() (*client.Client, error) {
+	dockerClientOnce.Do(func() {
+		dockerClientInst, dockerClientErr = client.NewClientWithOpts(client.FromEnv, client.WithAPIVersionNegotiation())
+	})
+	return dockerClientInst, dockerClientErr
+}
 
 // Compose now uses the repository's docker-compose.yml directly.
 
@@ -140,155 +162,89 @@ func ComposeDown(module Module) error {
 
 // RemoveContainer force-removes a container by name.
 func RemoveContainer(name string) error {
-	if strings.TrimSpace(name) == "" {
+	name = strings.TrimSpace(name)
+	if name == "" {
 		return fmt.Errorf("empty container name")
 	}
-	cmd := exec.Command("docker", "rm", "-f", name)
-	return cmd.Run()
+	cli, err := getDockerClient()
+	if err != nil {
+		return err
+	}
+	ctx := context.Background()
+	return cli.ContainerRemove(ctx, name, dockercontainer.RemoveOptions{Force: true})
 }
 
 func ptrBool(b bool) *bool    { return &b }
 func strPtr(s string) *string { return &s }
 
 func GetModuleContainers(module Module) ([]ModuleContainer, error) {
-	project := module.Slug
-
-	cmd := exec.Command("docker", "ps", "-a",
-		"--filter", fmt.Sprintf("label=com.docker.compose.project=%s", project),
-		"--format", "{{.ID}}|{{.Names}}|{{.Status}}|{{.Ports}}",
-	)
-
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("docker ps failed: %w", err)
+	project := strings.TrimSpace(module.Slug)
+	if project == "" {
+		return nil, fmt.Errorf("missing module slug")
 	}
-
-	lines := strings.Split(strings.TrimSpace(stdout.String()), "\n")
+	cli, err := getDockerClient()
+	if err != nil {
+		return nil, err
+	}
+	ctx := context.Background()
+	filter := dockerfilters.NewArgs()
+	filter.Add("label", fmt.Sprintf("com.docker.compose.project=%s", project))
+	items, err := cli.ContainerList(ctx, dockercontainer.ListOptions{All: true, Filters: filter})
+	if err != nil {
+		return nil, fmt.Errorf("list containers failed: %w", err)
+	}
 	var containers []ModuleContainer
-
-	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		parts := strings.SplitN(line, "|", 4)
-		if len(parts) < 3 {
-			continue
-		}
-
-		containerID := parts[0]
-		fullName := parts[1]
-		rawStatus := parts[2]
-		rawPorts := ""
-		if len(parts) == 4 {
-			rawPorts = parts[3]
-		}
-
-		// Simplify container name
-		name := strings.TrimPrefix(fullName, project+"-")
-		name = strings.TrimSuffix(name, "-1")
-
-		// Parse status into enum
-		var status ContainerStatus
-		var reason, since string
-		lowered := strings.ToLower(rawStatus)
-
-		switch {
-		case strings.HasPrefix(lowered, "up"):
-			status = ContainerRunning
-			reason = "Up"
-			since = strings.TrimPrefix(rawStatus, "Up ")
-		case strings.HasPrefix(lowered, "exited"):
-			status = ContainerExited
-			parts := strings.SplitN(rawStatus, " ", 2)
-			reason = parts[0]
-			if len(parts) > 1 {
-				since = parts[1]
-			}
-		case strings.HasPrefix(lowered, "paused"):
-			status = ContainerPaused
-			reason = "Paused"
-			since = strings.TrimPrefix(rawStatus, "Paused ")
-		case strings.HasPrefix(lowered, "created"):
-			status = ContainerCreated
-			reason = "Created"
-			since = strings.TrimPrefix(rawStatus, "Created ")
-		case strings.HasPrefix(lowered, "restarting"):
-			status = ContainerRestarting
-			reason = "Restarting"
-			since = strings.TrimPrefix(rawStatus, "Restarting ")
-		case strings.HasPrefix(lowered, "dead"):
-			status = ContainerDead
-			reason = "Dead"
-			since = strings.TrimPrefix(rawStatus, "Dead ")
-		default:
-			status = ContainerUnknown
-			reason = rawStatus
-		}
-
+	for _, item := range items {
+		name := normalizeContainerName(item.Names, project)
+		status, reason, since := parseContainerStatus(item.Status)
+		ports := containerPortsFromSummary(item)
+		ports = ensureExposedPorts(ctx, cli, item.ID, ports)
 		containers = append(containers, ModuleContainer{
 			Name:   name,
 			Status: status,
 			Reason: reason,
 			Since:  since,
-			Ports:  ensureExposedPorts(containerID, parseDockerPorts(rawPorts)),
+			Ports:  ports,
 		})
 	}
-
 	return containers, nil
 }
 
-func parseDockerPorts(raw string) []ContainerPort {
-	raw = strings.TrimSpace(raw)
-	if raw == "" || strings.EqualFold(raw, "<none>") {
+func containerPortsFromSummary(c dockercontainer.Summary) []ContainerPort {
+	if len(c.Ports) == 0 {
 		return nil
 	}
-	segments := strings.Split(raw, ",")
-	var ports []ContainerPort
-	for _, seg := range segments {
-		entry := strings.TrimSpace(seg)
-		if entry == "" {
-			continue
+	ports := make([]ContainerPort, 0, len(c.Ports))
+	for _, p := range c.Ports {
+		entry := ContainerPort{
+			ContainerPort: int(p.PrivatePort),
+			HostPort:      int(p.PublicPort),
+			Protocol:      strings.ToLower(strings.TrimSpace(p.Type)),
 		}
-		portInfo := ContainerPort{}
-		if strings.Contains(entry, "->") {
-			parts := strings.SplitN(entry, "->", 2)
-			hostSpec := strings.TrimSpace(parts[0])
-			containerSpec := strings.TrimSpace(parts[1])
-			portInfo.ContainerPort, portInfo.Protocol = parsePortProto(containerSpec)
-			portInfo.HostPort = parseHostPortSpec(hostSpec)
-			portInfo.Scope = "host"
+		if p.PublicPort > 0 {
+			entry.Scope = "host"
 		} else {
-			portInfo.ContainerPort, portInfo.Protocol = parsePortProto(entry)
-			portInfo.Scope = "internal"
+			entry.Scope = "internal"
 		}
-		ports = append(ports, portInfo)
-	}
-	if len(ports) == 0 {
-		return nil
+		ports = append(ports, entry)
 	}
 	return ports
 }
 
-func ensureExposedPorts(containerID string, ports []ContainerPort) []ContainerPort {
+func ensureExposedPorts(ctx context.Context, cli *client.Client, containerID string, ports []ContainerPort) []ContainerPort {
 	containerID = strings.TrimSpace(containerID)
 	if containerID == "" {
 		return ports
 	}
-	cmd := exec.Command("docker", "inspect", "-f", "{{json .Config.ExposedPorts}}", containerID)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	if err := cmd.Run(); err != nil {
+	if cli == nil {
 		return ports
 	}
-	data := bytes.TrimSpace(out.Bytes())
-	if len(data) == 0 || bytes.EqualFold(data, []byte("null")) {
+	report, err := cli.ContainerInspect(ctx, containerID)
+	if err != nil {
 		return ports
 	}
-	var exposed map[string]any
-	if err := json.Unmarshal(data, &exposed); err != nil {
+	exposed := report.Config.ExposedPorts
+	if len(exposed) == 0 {
 		return ports
 	}
 	if len(exposed) == 0 {
@@ -300,7 +256,7 @@ func ensureExposedPorts(containerID string, ports []ContainerPort) []ContainerPo
 		existing[key] = struct{}{}
 	}
 	for key := range exposed {
-		num, proto := parsePortProto(key)
+		num, proto := parsePortProto(key.Port())
 		if num <= 0 {
 			continue
 		}
@@ -332,22 +288,65 @@ func parsePortProto(value string) (int, string) {
 	return port, proto
 }
 
-func parseHostPortSpec(spec string) int {
-	spec = strings.TrimSpace(spec)
-	if spec == "" {
-		return 0
+func normalizeContainerName(names []string, project string) string {
+	name := firstDockerName(names)
+	if name == "" {
+		return name
 	}
-	if idx := strings.LastIndex(spec, ":"); idx >= 0 {
-		portStr := strings.TrimSpace(spec[idx+1:])
-		if port, err := strconv.Atoi(portStr); err == nil {
-			return port
+	if project != "" {
+		name = strings.TrimPrefix(name, project+"-")
+	}
+	name = strings.TrimSuffix(name, "-1")
+	if name == "" && len(names) > 0 {
+		return strings.TrimPrefix(names[0], "/")
+	}
+	return name
+}
+
+func parseContainerStatus(raw string) (ContainerStatus, string, string) {
+	lowered := strings.ToLower(strings.TrimSpace(raw))
+	switch {
+	case strings.HasPrefix(lowered, "up"):
+		return ContainerRunning, "Up", strings.TrimPrefix(raw, "Up ")
+	case strings.HasPrefix(lowered, "exited"):
+		parts := strings.SplitN(raw, " ", 2)
+		since := ""
+		if len(parts) > 1 {
+			since = parts[1]
 		}
-	} else {
-		if port, err := strconv.Atoi(spec); err == nil {
-			return port
+		return ContainerExited, parts[0], since
+	case strings.HasPrefix(lowered, "paused"):
+		return ContainerPaused, "Paused", strings.TrimPrefix(raw, "Paused ")
+	case strings.HasPrefix(lowered, "created"):
+		return ContainerCreated, "Created", strings.TrimPrefix(raw, "Created ")
+	case strings.HasPrefix(lowered, "restarting"):
+		return ContainerRestarting, "Restarting", strings.TrimPrefix(raw, "Restarting ")
+	case strings.HasPrefix(lowered, "dead"):
+		return ContainerDead, "Dead", strings.TrimPrefix(raw, "Dead ")
+	default:
+		return ContainerUnknown, raw, ""
+	}
+}
+
+func firstDockerName(names []string) string {
+	if len(names) == 0 {
+		return ""
+	}
+	return strings.TrimPrefix(names[0], "/")
+}
+
+func networkNamesFromSummary(networks map[string]*networktypes.EndpointSettings) []string {
+	if len(networks) == 0 {
+		return nil
+	}
+	names := make([]string, 0, len(networks))
+	for name := range networks {
+		if strings.TrimSpace(name) != "" {
+			names = append(names, name)
 		}
 	}
-	return 0
+	sort.Strings(names)
+	return names
 }
 
 // CollectModuleNetworkAliases maps every known hostname/alias of the module containers
@@ -357,68 +356,45 @@ func CollectModuleNetworkAliases(module Module) (map[string][]string, []string, 
 	if slug == "" {
 		return nil, nil, fmt.Errorf("missing module slug")
 	}
-	cmd := exec.Command("docker", "ps", "-a",
-		"--filter", fmt.Sprintf("label=com.docker.compose.project=%s", slug),
-		"--format", "{{.ID}}",
-	)
-	var psOut bytes.Buffer
-	cmd.Stdout = &psOut
-	if err := cmd.Run(); err != nil {
-		return nil, nil, fmt.Errorf("docker ps failed: %w", err)
-	}
-	lines := strings.Split(strings.TrimSpace(psOut.String()), "\n")
-	var ids []string
-	for _, line := range lines {
-		id := strings.TrimSpace(line)
-		if id != "" {
-			ids = append(ids, id)
-		}
-	}
-	aliases := make(map[string][]string)
-	if len(ids) == 0 {
-		return aliases, nil, nil
-	}
-	args := append([]string{"inspect"}, ids...)
-	inspectCmd := exec.Command("docker", args...)
-	var inspectOut bytes.Buffer
-	inspectCmd.Stdout = &inspectOut
-	if err := inspectCmd.Run(); err != nil {
-		return nil, nil, fmt.Errorf("docker inspect failed: %w", err)
-	}
-	var reports []struct {
-		ID     string `json:"Id"`
-		Name   string `json:"Name"`
-		Config struct {
-			Hostname string `json:"Hostname"`
-		} `json:"Config"`
-		NetworkSettings struct {
-			Networks map[string]struct {
-				Aliases  []string `json:"Aliases"`
-				DNSNames []string `json:"DNSNames"`
-			} `json:"Networks"`
-		} `json:"NetworkSettings"`
-	}
-	if err := json.Unmarshal(inspectOut.Bytes(), &reports); err != nil {
+	cli, err := getDockerClient()
+	if err != nil {
 		return nil, nil, err
 	}
+	ctx := context.Background()
+	filter := dockerfilters.NewArgs()
+	filter.Add("label", fmt.Sprintf("com.docker.compose.project=%s", slug))
+	list, err := cli.ContainerList(ctx, dockercontainer.ListOptions{All: true, Filters: filter})
+	if err != nil {
+		return nil, nil, fmt.Errorf("list containers failed: %w", err)
+	}
+	aliases := make(map[string][]string)
 	networkSet := make(map[string]struct{})
-	for _, report := range reports {
-		containerName := strings.Trim(strings.TrimPrefix(report.Name, "/"), " ")
+	for _, item := range list {
+		inspect, err := cli.ContainerInspect(ctx, item.ID)
+		if err != nil {
+			continue
+		}
+		containerName := strings.Trim(strings.TrimPrefix(inspect.Name, "/"), " ")
 		if containerName == "" {
-			containerName = report.ID
+			containerName = inspect.ID
 		}
 		baseAliases := []string{}
 		if containerName != "" {
 			baseAliases = append(baseAliases, containerName)
 		}
-		if hn := strings.TrimSpace(report.Config.Hostname); hn != "" {
+		if hn := strings.TrimSpace(inspect.Config.Hostname); hn != "" {
 			baseAliases = append(baseAliases, hn)
 		}
-		for netName, netInfo := range report.NetworkSettings.Networks {
+		for netName, netInfo := range inspect.NetworkSettings.Networks {
+			if netName == "" {
+				continue
+			}
 			networkSet[netName] = struct{}{}
 			names := append([]string{}, baseAliases...)
-			names = append(names, netInfo.Aliases...)
-			names = append(names, netInfo.DNSNames...)
+			if netInfo != nil {
+				names = append(names, netInfo.Aliases...)
+				names = append(names, netInfo.DNSNames...)
+			}
 			for _, alias := range names {
 				alias = strings.ToLower(strings.TrimSpace(alias))
 				if alias == "" {
@@ -448,7 +424,6 @@ func CollectModuleNetworkAliases(module Module) (map[string][]string, []string, 
 
 // GetAllContainers lists all containers, grouping info by compose project and networks.
 func GetAllContainers() ([]AllContainer, error) {
-	// Build module map and compose expectations (services, networks)
 	mods, _, err := GetModules(ModulePagination{Limit: 10000})
 	if err != nil {
 		return nil, fmt.Errorf("failed to load modules: %w", err)
@@ -463,20 +438,25 @@ func GetAllContainers() ([]AllContainer, error) {
 		baseRepoPath = "../../repos"
 	}
 
+	cli, err := getDockerClient()
+	if err != nil {
+		return nil, err
+	}
+	ctx := context.Background()
+
 	type composeInfo struct {
 		Services []string
 		Networks []string
 	}
-	expects := make(map[string]composeInfo) // slug -> services, networks
+	expects := make(map[string]composeInfo)
 
 	for _, m := range mods {
 		dir := filepath.Join(baseRepoPath, m.Slug)
 		if _, err := os.Stat(filepath.Join(dir, "docker-compose.yml")); err != nil {
-			if !errorsIsNotExist(err) { /* ignore */
+			if !errorsIsNotExist(err) {
 			}
 			continue
 		}
-		// docker compose config --format json
 		cfgCmd := exec.Command("docker", "compose", "-f", "docker-compose.yml", "--project-name", m.Slug, "config", "--format", "json")
 		cfgCmd.Dir = dir
 		var out bytes.Buffer
@@ -494,117 +474,121 @@ func GetAllContainers() ([]AllContainer, error) {
 				services = append(services, k)
 			}
 		}
-		networks := []string{}
+		netsSet := map[string]bool{}
 		if ns, ok := cfg["networks"].(map[string]any); ok {
 			for k := range ns {
-				networks = append(networks, k)
+				netsSet[k] = true
 			}
 		}
-		// Also collect networks from existing containers of this project (in case defaults aren't declared)
-		netsSet := map[string]bool{}
-		for _, n := range networks {
-			netsSet[n] = true
-		}
-		psCmd := exec.Command("docker", "ps", "-a", "--filter", fmt.Sprintf("label=com.docker.compose.project=%s", m.Slug),
-			"--format", `{{.Networks}}`)
-		psCmd.Dir = dir
-		var psOut bytes.Buffer
-		psCmd.Stdout = &psOut
-		_ = psCmd.Run()
-		for _, ln := range strings.Split(strings.TrimSpace(psOut.String()), "\n") {
-			for _, n := range strings.Split(strings.TrimSpace(ln), ",") {
-				n = strings.TrimSpace(n)
-				if n == "" {
-					continue
+		filter := dockerfilters.NewArgs()
+		filter.Add("label", fmt.Sprintf("com.docker.compose.project=%s", m.Slug))
+		if current, err := cli.ContainerList(ctx, dockercontainer.ListOptions{All: true, Filters: filter}); err == nil {
+			for _, c := range current {
+				for name := range c.NetworkSettings.Networks {
+					if name != "" {
+						netsSet[name] = true
+					}
 				}
-				netsSet[n] = true
 			}
 		}
-		networks = networks[:0]
+		networks := make([]string, 0, len(netsSet))
 		for n := range netsSet {
 			networks = append(networks, n)
 		}
 		expects[m.Slug] = composeInfo{Services: services, Networks: networks}
 	}
 
-	// BFS over networks starting from compose networks
+	type containerInfo struct {
+		ID       string
+		Name     string
+		Project  string
+		Networks []string
+		Status   string
+	}
+
+	all, err := cli.ContainerList(ctx, dockercontainer.ListOptions{All: true})
+	if err != nil {
+		return nil, fmt.Errorf("list containers failed: %w", err)
+	}
+
+	containersByNetwork := make(map[string][]*containerInfo)
+	processed := make(map[string]bool)
+	results := make(map[string]AllContainer)
 	visitedNet := make(map[string]bool)
-	queue := []string{}
+	var queue []string
+
+	enqueueNet := func(netName string) {
+		netName = strings.TrimSpace(netName)
+		if netName == "" || visitedNet[netName] {
+			return
+		}
+		visitedNet[netName] = true
+		queue = append(queue, netName)
+	}
+
 	for _, ci := range expects {
 		for _, n := range ci.Networks {
-			if !visitedNet[n] {
-				visitedNet[n] = true
-				queue = append(queue, n)
+			enqueueNet(n)
+		}
+	}
+
+	for _, item := range all {
+		fullName := firstDockerName(item.Names)
+		if fullName == "" {
+			fullName = item.ID
+		}
+		info := &containerInfo{
+			ID:       item.ID,
+			Name:     fullName,
+			Project:  item.Labels["com.docker.compose.project"],
+			Networks: networkNamesFromSummary(item.NetworkSettings.Networks),
+			Status:   item.Status,
+		}
+		for _, net := range info.Networks {
+			containersByNetwork[net] = append(containersByNetwork[net], info)
+		}
+		if m, ok := modBySlug[info.Project]; ok {
+			status, reason, since := parseContainerStatus(info.Status)
+			results[info.Name] = AllContainer{
+				Name:       info.Name,
+				Status:     status,
+				Reason:     reason,
+				Since:      since,
+				Project:    info.Project,
+				Networks:   info.Networks,
+				ModuleID:   m.ID,
+				ModuleName: m.Name,
+			}
+			processed[info.ID] = true
+			for _, net := range info.Networks {
+				enqueueNet(net)
 			}
 		}
 	}
 
-	// helper to parse a docker ps line
-	parseLine := func(line string) (name, rawStatus, project string, nets []string) {
-		parts := strings.SplitN(line, "|", 4)
-		if len(parts) < 4 {
-			return "", "", "", nil
-		}
-		name = parts[0]
-		rawStatus = parts[1]
-		project = parts[2]
-		if parts[3] != "" {
-			nets = strings.Split(parts[3], ",")
-		}
-		return
-	}
-	// convert status
-	toStatus := func(raw string) (ContainerStatus, string, string) {
-		lowered := strings.ToLower(raw)
-		switch {
-		case strings.HasPrefix(lowered, "up"):
-			return ContainerRunning, "Up", strings.TrimPrefix(raw, "Up ")
-		case strings.HasPrefix(lowered, "exited"):
-			p := strings.SplitN(raw, " ", 2)
-			since := ""
-			if len(p) > 1 {
-				since = p[1]
-			}
-			return ContainerExited, p[0], since
-		case strings.HasPrefix(lowered, "paused"):
-			return ContainerPaused, "Paused", strings.TrimPrefix(raw, "Paused ")
-		case strings.HasPrefix(lowered, "created"):
-			return ContainerCreated, "Created", strings.TrimPrefix(raw, "Created ")
-		case strings.HasPrefix(lowered, "restarting"):
-			return ContainerRestarting, "Restarting", strings.TrimPrefix(raw, "Restarting ")
-		case strings.HasPrefix(lowered, "dead"):
-			return ContainerDead, "Dead", strings.TrimPrefix(raw, "Dead ")
-		default:
-			return ContainerUnknown, raw, ""
-		}
-	}
-
-	containers := make(map[string]AllContainer) // name -> item
-	push := func(c AllContainer) { containers[c.Name] = c }
-
-	for i := 0; i < len(queue); i++ {
-		net := queue[i]
-		cmd := exec.Command("docker", "ps", "-a", "--filter", "network="+net, "--format", `{{.Names}}|{{.Status}}|{{.Label "com.docker.compose.project"}}|{{.Networks}}`)
-		var out bytes.Buffer
-		cmd.Stdout = &out
-		if err := cmd.Run(); err != nil {
-			continue
-		}
-		text := strings.TrimSpace(out.String())
-		if text == "" {
-			continue
-		}
-		for _, line := range strings.Split(text, "\n") {
-			name, raw, project, nets := parseLine(line)
-			if name == "" {
+	for len(queue) > 0 {
+		net := queue[0]
+		queue = queue[1:]
+		for _, info := range containersByNetwork[net] {
+			if info == nil || processed[info.ID] {
 				continue
 			}
-			// Keep containers belonging to known module compose project;
-			// otherwise, treat as orphan unless it's only infra (pan-bagnat-net)
-			m, ok := modBySlug[project]
-			if !ok {
+			processed[info.ID] = true
+			status, reason, since := parseContainerStatus(info.Status)
+			if m, ok := modBySlug[info.Project]; ok {
+				results[info.Name] = AllContainer{
+					Name:       info.Name,
+					Status:     status,
+					Reason:     reason,
+					Since:      since,
+					Project:    info.Project,
+					Networks:   info.Networks,
+					ModuleID:   m.ID,
+					ModuleName: m.Name,
+				}
+			} else {
 				skip := true
-				for _, n := range nets {
+				for _, n := range info.Networks {
 					if n != "pan-bagnat-net" {
 						skip = false
 						break
@@ -613,46 +597,44 @@ func GetAllContainers() ([]AllContainer, error) {
 				if skip {
 					continue
 				}
-				st, reason, since := toStatus(raw)
-				push(AllContainer{Name: name, Status: st, Reason: reason, Since: since, Project: "orphans", Networks: nets, Orphan: true})
-				// still propagate networks
-				for _, n := range nets {
-					if !visitedNet[n] {
-						visitedNet[n] = true
-						queue = append(queue, n)
-					}
+				results[info.Name] = AllContainer{
+					Name:     info.Name,
+					Status:   status,
+					Reason:   reason,
+					Since:    since,
+					Project:  "orphans",
+					Networks: info.Networks,
+					Orphan:   true,
 				}
-				continue
 			}
-			st, reason, since := toStatus(raw)
-			c := AllContainer{Name: name, Status: st, Reason: reason, Since: since, Project: project, Networks: nets, ModuleID: m.ID, ModuleName: m.Name}
-			push(c)
-			// enqueue their networks
-			for _, n := range nets {
-				if !visitedNet[n] {
-					visitedNet[n] = true
-					queue = append(queue, n)
-				}
+			for _, n := range info.Networks {
+				enqueueNet(n)
 			}
 		}
 	}
 
-	// Add expected-but-missing containers (from compose services)
 	for slug, ci := range expects {
 		for _, svc := range ci.Services {
-			// Compose default name pattern: project-service-1
 			expectedName := fmt.Sprintf("%s-%s-1", slug, svc)
-			if _, ok := containers[expectedName]; ok {
+			if _, ok := results[expectedName]; ok {
 				continue
 			}
 			m := modBySlug[slug]
-			push(AllContainer{Name: expectedName, Status: ContainerUnknown, Reason: "Not created", Since: "", Project: slug, Networks: ci.Networks, ModuleID: m.ID, ModuleName: m.Name, Missing: true})
+			results[expectedName] = AllContainer{
+				Name:       expectedName,
+				Status:     ContainerUnknown,
+				Reason:     "Not created",
+				Project:    slug,
+				Networks:   ci.Networks,
+				ModuleID:   m.ID,
+				ModuleName: m.Name,
+				Missing:    true,
+			}
 		}
 	}
 
-	// Emit slice
-	out := make([]AllContainer, 0, len(containers))
-	for _, v := range containers {
+	out := make([]AllContainer, 0, len(results))
+	for _, v := range results {
 		out = append(out, v)
 	}
 	return out, nil
@@ -663,24 +645,35 @@ func errorsIsNotExist(err error) bool { return errors.Is(err, fs.ErrNotExist) }
 func GetContainerLogs(module Module, containerName string, since string) ([]string, error) {
 	fullName := fmt.Sprintf("%s-%s-1", module.Slug, containerName)
 
-	// Include timestamps so clients can merge logs chronologically across sources
-	var cmd *exec.Cmd
+	cli, err := getDockerClient()
+	if err != nil {
+		return nil, err
+	}
+	ctx := context.Background()
+	opts := dockercontainer.LogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Timestamps: true,
+	}
 	if since != "" {
-		// Use RFC3339 timestamp to fetch only newer logs
-		cmd = exec.Command("docker", "logs", "--timestamps", "--since", since, fullName)
+		opts.Since = since
 	} else {
-		cmd = exec.Command("docker", "logs", "--timestamps", "--tail=1000", fullName)
+		opts.Tail = "1000"
 	}
-
-	var stdout bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stdout
-
-	if err := cmd.Run(); err != nil {
-		return nil, fmt.Errorf("docker logs failed: %w", err)
+	reader, err := cli.ContainerLogs(ctx, fullName, opts)
+	if err != nil {
+		return nil, fmt.Errorf("container logs failed: %w", err)
 	}
-
-	lines := strings.Split(strings.TrimRight(stdout.String(), "\n"), "\n")
+	defer reader.Close()
+	var buf bytes.Buffer
+	if _, err := stdcopy.StdCopy(&buf, &buf, reader); err != nil && !errors.Is(err, io.EOF) {
+		return nil, fmt.Errorf("copy logs failed: %w", err)
+	}
+	text := strings.TrimRight(buf.String(), "\n")
+	if text == "" {
+		return nil, nil
+	}
+	lines := strings.Split(text, "\n")
 	return lines, nil
 }
 
@@ -697,10 +690,15 @@ func CleanupModuleDockerResources(module Module) error {
 		return LogModule(module.ID, "ERROR", "Failed to docker compose down", nil, err)
 	}
 
-	cmdPrune := exec.Command("docker", "image", "prune", "-a", "-f")
-	cmdPrune.Dir = dir
-	if err := runAndLog(module.ID, cmdPrune); err != nil {
-		return LogModule(module.ID, "ERROR", "Failed to docker compose down", nil, err)
+	cli, err := getDockerClient()
+	if err != nil {
+		return LogModule(module.ID, "ERROR", "Failed to init docker client", nil, err)
+	}
+	ctx := context.Background()
+	args := dockerfilters.NewArgs()
+	args.Add("dangling", "false")
+	if _, err := cli.ImagesPrune(ctx, args); err != nil {
+		return LogModule(module.ID, "ERROR", "Failed to prune images", nil, err)
 	}
 
 	LogModule(module.ID, "INFO", "docker cleanup completed", nil, nil)
@@ -744,15 +742,23 @@ func DeleteContainer(module Module, containerName string) error {
 func runDockerCommand(module Module, containerName, action string) error {
 	fullName := fmt.Sprintf("%s-%s-1", module.Slug, containerName)
 	fmt.Printf("[Docker] docker %s %s\n", action, fullName)
-	cmd := exec.Command("docker", action, fullName)
-
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("docker %s failed: %v – %s", action, err, stderr.String())
+	cli, err := getDockerClient()
+	if err != nil {
+		return err
 	}
-	return nil
+	ctx := context.Background()
+	switch action {
+	case "start":
+		return cli.ContainerStart(ctx, fullName, dockercontainer.StartOptions{})
+	case "stop":
+		return cli.ContainerStop(ctx, fullName, dockercontainer.StopOptions{})
+	case "restart":
+		return cli.ContainerRestart(ctx, fullName, dockercontainer.StopOptions{})
+	case "rm":
+		return cli.ContainerRemove(ctx, fullName, dockercontainer.RemoveOptions{Force: true})
+	default:
+		return fmt.Errorf("unsupported docker action %q", action)
+	}
 }
 
 // notifyContainersChanged fetches the current containers and emits a WS event

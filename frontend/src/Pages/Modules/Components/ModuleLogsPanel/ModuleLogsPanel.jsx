@@ -3,6 +3,42 @@ import './ModuleLogsPanel.css';
 import { socketService } from 'Global/SocketService/SocketService';
 import { fetchWithAuth } from 'Global/utils/Auth';
 
+const STATUS_LABELS = {
+  running: 'running',
+  exited: 'stopped',
+  stopped: 'stopped',
+  dead: 'died',
+  restarting: 'restarting',
+  paused: 'paused',
+  created: 'never started',
+  unknown: 'unknown',
+  building: 'building',
+};
+
+const STATUS_COLORS = {
+  running: '#4caf50',
+  restarted: '#4caf50',
+  restarting: '#ffb300',
+  exited: '#9aa0a6',
+  stopped: '#9aa0a6',
+  dead: '#f06292',
+  paused: '#4fc3f7',
+  created: '#bdbdbd',
+  unknown: '#e87171',
+  building: '#fdd835',
+};
+
+function getStatusLabel(status) {
+  if (!status) return '';
+  const trimmed = String(status).toLowerCase();
+  return STATUS_LABELS[trimmed] || trimmed;
+}
+
+function getStatusColor(status) {
+  if (!status) return undefined;
+  return STATUS_COLORS[String(status).toLowerCase()];
+}
+
 // Normalized log entry
 // { sourceType: 'module'|'container', source: string, timestamp: string, message: string, level?: string, meta?: object }
 
@@ -127,25 +163,39 @@ export default function ModuleLogsPanel({ moduleId }) {
         appendLog(entry);
         maybeBackfillFor(entry.timestamp);
       }
+      if (msg.eventType === 'container_status' && msg.module_id === moduleId) {
+        const p = msg.payload || {};
+        const name = p.name;
+        if (!name) return;
+        setContainers(prev => {
+          let found = false;
+          const next = (prev || []).map(item => {
+            if ((item.name || item.Name) === name) {
+              found = true;
+              return {
+                ...item,
+                name: item.name || item.Name || name,
+                status: p.status || item.status,
+                reason: p.reason || item.reason,
+                since: p.since || item.since,
+              };
+            }
+            return item;
+          });
+          if (!found) {
+            next.push({
+              name,
+              status: p.status || 'unknown',
+              reason: p.reason || '',
+              since: p.since || '',
+            });
+          }
+          return next;
+        });
+      }
     });
     return () => unsub();
   }, [moduleId, selected]);
-
-  // Manage module/container topic subscriptions with precise actions instead of bulk
-  useEffect(() => {
-    // on mount or moduleId change: subscribe module if selected, and selected containers
-    if (selected.module) socketService.subscribeTopic(`module:${moduleId}`);
-    for (const name of Object.keys(selected.containers)) {
-      if (selected.containers[name]) socketService.subscribeTopic(`container:${moduleId}:${name}`);
-    }
-    return () => {
-      // cleanup: unsubscribe everything we might have subscribed for this moduleId
-      if (selected.module) socketService.unsubscribeTopic(`module:${moduleId}`);
-      for (const name of Object.keys(selected.containers)) {
-        if (selected.containers[name]) socketService.unsubscribeTopic(`container:${moduleId}:${name}`);
-      }
-    };
-  }, [moduleId]);
 
   // initial fetches when toggling sources on
   useEffect(() => {
@@ -236,10 +286,8 @@ export default function ModuleLogsPanel({ moduleId }) {
         setModNextToken(nextToken || null);
         maintainScrollAfterAppend(pinned, null);
       }).finally(() => setModLoading(false));
-      socketService.subscribeTopic(`module:${moduleId}`);
     } else {
-      // turning off → unsubscribe and keep scroll if pinned
-      socketService.unsubscribeTopic(`module:${moduleId}`);
+      // turning off → keep scroll if pinned
       maintainScrollAfterAppend(pinned, null);
     }
   };
@@ -376,12 +424,20 @@ export default function ModuleLogsPanel({ moduleId }) {
         {(!containers || containers.length === 0) && (
           <div className="selector-empty">No containers</div>
         )}
-        {containers && containers.map(c => (
-          <label key={c.name} className="selector-item">
-            <input type="checkbox" className="selector-checkbox" style={{ "--cb-color": containerColors[c.name] || '#e8eaed' }} checked={!!selected.containers[c.name]} onChange={() => toggleContainer(c.name)} />
-            <span className="selector-label">{c.name}</span>
-          </label>
-        ))}
+        {containers && containers.map(c => {
+          const rawStatus = (c.status || c.Status || '').toLowerCase();
+          const label = getStatusLabel(rawStatus);
+          const color = getStatusColor(rawStatus) || '#9aa0a6';
+          return (
+            <label key={c.name} className="selector-item">
+              <input type="checkbox" className="selector-checkbox" style={{ "--cb-color": containerColors[c.name] || '#e8eaed' }} checked={!!selected.containers[c.name]} onChange={() => toggleContainer(c.name)} />
+              <span className="selector-label">
+                {c.name}
+                {label && <span className="selector-status" style={{ color }}>({label})</span>}
+              </span>
+            </label>
+          );
+        })}
       </div>
       <div className="log-panel" ref={boxRef} onScroll={onScroll}>
         {renderedLogs.length === 0 ? (

@@ -229,6 +229,67 @@ func GetModule(moduleID string) (Module, error) {
 	return module, nil
 }
 
+func GetModuleBySlug(slug string) (Module, error) {
+	row := mainDB.QueryRow(`
+		SELECT m.id,
+		       COALESCE(sk.public_key, '') AS ssh_public_key,
+		       COALESCE(sk.private_key, '') AS ssh_private_key,
+		       m.ssh_key_id,
+		       m.name,
+		       m.slug,
+		       m.version,
+		       m.status,
+		       m.git_url,
+		       m.git_branch,
+		       m.icon_url,
+		       m.latest_version,
+		       m.late_commits,
+		       m.last_update,
+		       m.is_deploying,
+		       m.last_deploy,
+		       m.last_deploy_status,
+		       m.git_last_fetch,
+		       m.git_last_pull,
+		       m.current_commit_hash,
+		       m.current_commit_subject,
+		       m.latest_commit_hash,
+		       m.latest_commit_subject
+		FROM modules m
+		LEFT JOIN ssh_keys sk ON sk.id = m.ssh_key_id
+		WHERE m.slug = $1
+    `, slug)
+
+	var module Module
+	if err := row.Scan(
+		&module.ID,
+		&module.SSHPublicKey,
+		&module.SSHPrivateKey,
+		&module.SSHKeyID,
+		&module.Name,
+		&module.Slug,
+		&module.Version,
+		&module.Status,
+		&module.GitURL,
+		&module.GitBranch,
+		&module.IconURL,
+		&module.LatestVersion,
+		&module.LateCommits,
+		&module.LastUpdate,
+		&module.IsDeploying,
+		&module.LastDeploy,
+		&module.LastDeployStatus,
+		&module.GitLastFetch,
+		&module.GitLastPull,
+		&module.CurrentCommitHash,
+		&module.CurrentCommitSubject,
+		&module.LatestCommitHash,
+		&module.LatestCommitSubject,
+	); err != nil {
+		return Module{}, err
+	}
+	return module, nil
+}
+
 func GetPage(pageName string) (*ModulePage, error) {
 	row := mainDB.QueryRow(`
 		SELECT id,

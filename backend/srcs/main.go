@@ -233,6 +233,7 @@ func main() {
 		})
 	})
 
+	core.StartDockerEventWatcher()
 	go websocket.Dispatch()
 
 	// Wire WS subscribe/unsubscribe hooks for container log streaming

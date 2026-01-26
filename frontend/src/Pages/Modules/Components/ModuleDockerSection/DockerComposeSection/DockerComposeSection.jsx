@@ -125,7 +125,6 @@ export default function DockerComposeSection({ moduleId }) {
   // Realtime deployment status via WebSocket (also git status)
   useEffect(() => {
     if (!moduleId) return
-    socketService.subscribeTopic(`module:${moduleId}`)
     const unsubscribe = socketService.subscribe(msg => {
       if (msg?.eventType === 'module_deploy_status' && msg?.module_id === moduleId) {
         const p = msg.payload || {}
@@ -147,7 +146,7 @@ export default function DockerComposeSection({ moduleId }) {
         try { const ev2 = new CustomEvent('ide:modified', { detail: { paths: st.modified } }); window.dispatchEvent(ev2) } catch {}
       }
     })
-    return () => { socketService.unsubscribeTopic(`module:${moduleId}`); unsubscribe() }
+    return () => unsubscribe()
   }, [moduleId])
 
   // Git status polling and broadcaster

@@ -58,7 +58,6 @@ export default function ModuleGitSection({ moduleId }) {
   // Live updates via WebSocket
   useEffect(() => {
     if (!moduleId) return
-    socketService.subscribeTopic(`module:${moduleId}`)
     const unsub = socketService.subscribe((msg) => {
       if (msg?.eventType === 'git_status' && msg?.module_id === moduleId) {
         const p = msg.payload || {}
@@ -84,7 +83,7 @@ export default function ModuleGitSection({ moduleId }) {
         }
       }
     })
-    return () => { socketService.unsubscribeTopic(`module:${moduleId}`); unsub() }
+    return () => unsub()
   }, [moduleId])
 
   const currentBranch = useMemo(() => branches.find(b => b.current), [branches])
