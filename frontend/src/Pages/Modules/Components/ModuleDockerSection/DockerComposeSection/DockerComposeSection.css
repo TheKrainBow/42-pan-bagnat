@@ -194,3 +194,33 @@
 }
 .tree-toolbar .icon-btn:hover { background: var(--light-background); color: var(--text-primary); }
 .tree-toolbar .icon-btn .codicon { font-size: 16px; }
+
+/* Compose autocomplete tweaks */
+.cm-tooltip.cm-tooltip-autocomplete ul {
+  padding: 4px 0;
+}
+.cm-tooltip.cm-tooltip-autocomplete ul li {
+  color: var(--text-muted);
+  background: var(--background);
+  padding: 2px 8px;
+}
+.cm-tooltip.cm-tooltip-autocomplete ul li .cm-completionLabel {
+  color: var(--text-muted);
+}
+.cm-tooltip.cm-tooltip-autocomplete ul li::before {
+  content: '';
+  display: inline-block;
+  width: 1.2em;
+  color: var(--text-muted);
+}
+.cm-tooltip.cm-tooltip-autocomplete ul li[aria-selected="true"] {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+.cm-tooltip.cm-tooltip-autocomplete ul li[aria-selected="true"] .cm-completionLabel {
+  color: var(--text-primary);
+}
+.cm-tooltip.cm-tooltip-autocomplete ul li[aria-selected="true"]::before {
+  content: '→';
+  color: var(--text-primary);
+}

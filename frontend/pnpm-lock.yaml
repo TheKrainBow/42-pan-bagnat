@@ -11,6 +11,9 @@ importers:
 
   .:
     dependencies:
+      '@codemirror/autocomplete':
+        specifier: ^6.20.0
+        version: 6.20.0
       '@codemirror/lang-cpp':
         specifier: ^6.0.3
         version: 6.0.3
@@ -60,7 +63,7 @@ importers:
         specifier: ^0.0.44
         version: 0.0.44
       prismjs:
-        specifier: ^1.30.0
+        specifier: '>=1.30.0'
         version: 1.30.0
       react:
         specifier: ^19.2.3

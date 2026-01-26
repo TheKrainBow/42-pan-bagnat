@@ -2,7 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import './DockerComposeSection.css'
 import CodeMirror from '@uiw/react-codemirror'
 import { linter } from '@codemirror/lint'
-import { ViewPlugin, Decoration } from '@codemirror/view'
+import { autocompletion, acceptCompletion, completionStatus } from '@codemirror/autocomplete'
+import { ViewPlugin, Decoration, keymap } from '@codemirror/view'
 import { yaml } from '@codemirror/lang-yaml'
 import { StreamLanguage } from '@codemirror/language'
 import '@vscode/codicons/dist/codicon.css'
@@ -24,7 +25,7 @@ export default function DockerComposeSection({ moduleId }) {
   const [remoteDeploying, setRemoteDeploying] = useState(false)
   const [repoRoot, setRepoRoot] = useState('')
   const [composeLintExt, setComposeLintExt] = useState(null)
-  const [moduleSlug, setModuleSlug] = useState('')
+  const [composeEnvAutocompleteExt, setComposeEnvAutocompleteExt] = useState(null)
   const editorRef = useRef(null)
   const [gitStatus, setGitStatus] = useState({ is_merging: false, conflicts: [], modified: [], last_fetch: '', last_pull: '' })
   const [gitBusy, setGitBusy] = useState(false)
@@ -232,27 +233,26 @@ export default function DockerComposeSection({ moduleId }) {
   // Load repo root and attach linter when editing docker-compose.yml
   useEffect(() => {
     const isCompose = (currentPath || '').split('/').pop()?.toLowerCase() === 'docker-compose.yml'
-    if (!isCompose) { setComposeLintExt(null); return }
+    if (!isCompose) {
+      setComposeLintExt(null)
+      setComposeEnvAutocompleteExt(null)
+      return
+    }
+    setComposeEnvAutocompleteExt(makeComposeEnvAutocomplete())
     let cancelled = false
     const load = async () => {
       try {
-        const [resRoot, resMod] = await Promise.all([
-          fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/root`),
-          fetchWithAuth(`/api/v1/admin/modules/${moduleId}`)
-        ])
+        const resRoot = await fetchWithAuth(`/api/v1/admin/modules/${moduleId}/fs/root`)
         const j = await resRoot.json().catch(() => null)
-        const mod = await resMod.json().catch(() => null)
         const root = j?.abs_path || ''
         if (!cancelled) {
           setRepoRoot(root)
-          setModuleSlug(mod?.slug || '')
-          setComposeLintExt(makeComposeLinter({ absRoot: root, moduleSlug: mod?.slug || '' }))
+          setComposeLintExt(makeComposeLinter({ absRoot: root }))
         }
       } catch {
         if (!cancelled) {
           setRepoRoot('')
-          setModuleSlug('')
-          setComposeLintExt(makeComposeLinter({ absRoot: '', moduleSlug: '' }))
+          setComposeLintExt(makeComposeLinter({ absRoot: '' }))
         }
       }
     }
@@ -389,7 +389,12 @@ export default function DockerComposeSection({ moduleId }) {
         <div className="codemirror-wrapper">
           <CodeMirror
             value={content}
-            extensions={[...extensions, ...(composeLintExt ? [composeLintExt] : []), ...(isEnvFile(currentPath) ? [dotenvColorizerExt()] : [])]}
+            extensions={[
+              ...extensions,
+              ...(composeLintExt ? [composeLintExt] : []),
+              ...(composeEnvAutocompleteExt ? composeEnvAutocompleteExt : []),
+              ...(isEnvFile(currentPath) ? [dotenvColorizerExt()] : [])
+            ]}
             height="calc(100vh - 357px)"
             theme="dark"
             editable={!isBinary}
@@ -1283,7 +1288,7 @@ function resolveConflictMarkers(text, mode) {
 }
 
 // Build a CodeMirror linter that flags relative volume host paths and "ports:" usage, with quick fixes
-function makeComposeLinter({ absRoot, moduleSlug }) {
+function makeComposeLinter({ absRoot }) {
   const replacePrefix = (p) => {
     if (!p) return p
     const trimmed = p.replace(/^\.\/?/, '')
@@ -1302,29 +1307,9 @@ function makeComposeLinter({ absRoot, moduleSlug }) {
     let servicesIndent = 0
     let currentService = ''
     let currentServiceIndent = 0
-    // Track top-level networks block for later diagnostics
-    let topNetworksIdx = -1
-    let topNetworksIndent = 0
-    let topNetworksNames = []
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i]
       const indent = line.match(/^\s*/)[0].length
-      // Track top-level networks block and collect simple names under it
-      if (/^\s*networks\s*:\s*(#.*)?$/.test(line) && indent === 0) {
-        topNetworksIdx = i
-        topNetworksIndent = indent
-        // collect network keys directly under this block
-        let k = i + 1
-        topNetworksNames = []
-        while (k < lines.length) {
-          const l = lines[k]
-          const ind = l.match(/^\s*/)[0].length
-          if (l.trim() !== '' && ind <= topNetworksIndent) break
-          const m = l.match(/^\s*([A-Za-z0-9_.-]+)\s*:\s*$/)
-          if (m) topNetworksNames.push(m[1])
-          k++
-        }
-      }
       // Track services and current service name
       if (/^\s*services\s*:\s*(#.*)?$/.test(line)) {
         inServices = true
@@ -1407,131 +1392,53 @@ function makeComposeLinter({ absRoot, moduleSlug }) {
       if (inServices && currentService && /^\s*ports\s*:\s*(#.*)?$/.test(line) && indent > currentServiceIndent) {
         const from = offset + line.indexOf('ports')
         const to = from + 'ports'.length
-        const serviceName = currentService
         const portsIndent = indent
-        // Collect list item lines following
+        const portLineIndices = []
         let j = i + 1
-        const portLines = [] // {i, line}
         while (j < lines.length) {
-          const l = lines[j]
-          const ind = l.match(/^\s*/)[0].length
-          if (l.trim() === '') { portLines.push({ i: j, line: l }); j++; continue }
-          if (ind <= portsIndent) break
-          // list item or mapping line
-          if (/^\s*-\s*.+/.test(l)) portLines.push({ i: j, line: l })
-          else if (/^\s*[A-Za-z0-9_.-]+\s*:/.test(l)) break
-          else portLines.push({ i: j, line: l })
+          const nextLine = lines[j]
+          const nextIndent = nextLine.match(/^\s*/)[0].length
+          if (nextLine.trim() === '') { j++; continue }
+          if (nextIndent <= portsIndent) break
+          if (/^\s*-\s*/.test(nextLine)) {
+            portLineIndices.push(j)
+            j++
+            continue
+          }
+          if (/^\s*[A-Za-z0-9_.-]+\s*:/.test(nextLine)) break
           j++
         }
-
         diags.push({
           from,
           to,
           severity: 'warning',
-          message: 'Please use Expose and add pan-bagnat-net to the module instead of openning a port',
+          message: 'Pan Bagnat will proxy your app. Please use export instead of opening ports',
           actions: [{
-            name: 'Convert to expose + network',
+            name: 'Rename ports to expose',
             apply: (v) => {
               const doc = v.state.doc.toString()
               const all = doc.split(/\n/)
-              // 1) replace ports: with expose:
-              const lineText = all[i]
-              const lineStart = doc.split(/\n/, i).join('\n').length + (i>0?1:0)
-              const portsKeyIndex = lineText.indexOf('ports')
-              const changes = []
-              changes.push({ from: lineStart + portsKeyIndex, to: lineStart + portsKeyIndex + 5, insert: 'expose' })
-              // 2) replace list items host:container -> container
+              const lineStart = doc.split(/\n/, i).join('\n').length + (i > 0 ? 1 : 0)
+              const renamePos = lineStart + all[i].indexOf('ports')
+              const changes = [{ from: renamePos, to: renamePos + 5, insert: 'expose' }]
               const reHostMap = /^(\s*-\s*)("?)(\d+)(?:[^:\n]*?):(\d+)(?:\/(tcp|udp))?("?)(.*)$/
-              for (const pl of portLines) {
-                const lt = all[pl.i]
-                const m = lt.match(reHostMap)
-                if (m) {
-                  const before = m[1]
-                  const quoteL = m[2]
-                  const cont = m[4]
-                  const proto = m[5] ? '/' + m[5] : ''
-                  const quoteR = m[6]
-                  const after = m[7] || ''
-                  const replacement = `${before}${quoteL}${cont}${proto}${quoteR}${after}`
-                  const ls = doc.split(/\n/, pl.i).join('\n').length + (pl.i>0?1:0)
-                  changes.push({ from: ls, to: ls + lt.length, insert: replacement })
-                }
+              for (const lineIdx of portLineIndices) {
+                const text = all[lineIdx]
+                const matchPort = text.match(reHostMap)
+                if (!matchPort) continue
+                const before = matchPort[1]
+                const quoteL = matchPort[2]
+                const containerPort = matchPort[4]
+                const proto = matchPort[5] ? '/' + matchPort[5] : ''
+                const quoteR = matchPort[6]
+                const rest = matchPort[7] || ''
+                const replacement = `${before}${quoteL}${containerPort}${proto}${quoteR}${rest}`
+                const linePos = doc.split(/\n/, lineIdx).join('\n').length + (lineIdx > 0 ? 1 : 0)
+                changes.push({ from: linePos, to: linePos + text.length, insert: replacement })
               }
-              // 3) Ensure top-level networks include pan-bagnat-net external: true
-              const hasTopNetworksIdx = all.findIndex(l => /^networks\s*:\s*(#.*)?$/.test(l))
-              let needAppendTop = false
-              let insertPosDocEnd = doc.length
-              if (hasTopNetworksIdx === -1) {
-                needAppendTop = true
-              } else {
-                // Check if pan-bagnat-net exists under networks
-                let k = hasTopNetworksIdx + 1
-                let found = false
-                while (k < all.length && (all[k].trim() === '' || all[k].match(/^\s+/))) {
-                  if (/^\s*pan-bagnat-net\s*:\s*$/.test(all[k])) { found = true; break }
-                  k++
-                }
-                if (!found) needAppendTop = true
+              if (changes.length > 0) {
+                v.dispatch({ changes })
               }
-              if (needAppendTop) {
-                const block = (all.length>0 && all[all.length-1].trim()!==''? '\n' : '') +
-                  'networks:\n' +
-                  '  pan-bagnat-net:\n' +
-                  '    external: true\n'
-                changes.push({ from: insertPosDocEnd, to: insertPosDocEnd, insert: block })
-              }
-              // 4) Add service networks with alias
-              // Find service block start and end
-              let sStart = i
-              // move up to service name line
-              while (sStart > 0 && !new RegExp(`^\\s*${serviceName}\\s*:`).test(all[sStart])) sStart--
-              let sIndent = all[sStart].match(/^\s*/)[0].length
-              // Determine if networks already present in service
-              let sEnd = sStart + 1
-              while (sEnd < all.length) {
-                const ind = all[sEnd].match(/^\s*/)[0].length
-                if (all[sEnd].trim()!=='' && ind <= sIndent) break
-                sEnd++
-              }
-              const hasNetworks = all.slice(sStart+1, sEnd).some(l => l.match(/^\s*networks\s*:/))
-              const alias = `${moduleSlug || 'module'}-${serviceName}`
-              if (!hasNetworks) {
-                const insertAfterLine = j-1 >= sStart ? j-1 : sStart
-                const insertAfterPos = doc.split(/\n/, insertAfterLine).join('\n').length + (insertAfterLine>0?1:0) + all[insertAfterLine].length
-                const indentStr = ' '.repeat(sIndent + 2)
-                const netBlock = `\n${indentStr}networks:\n${indentStr}  pan-bagnat-net:\n${indentStr}    aliases:\n${indentStr}      - ${alias}`
-                changes.push({ from: insertAfterPos, to: insertAfterPos, insert: netBlock })
-              } else {
-                // ensure network entry exists, else append minimal entry under networks
-                let nIdx = -1
-                for (let t = sStart+1; t < sEnd; t++) if (/^\s*networks\s*:\s*$/.test(all[t])) { nIdx = t; break }
-                if (nIdx !== -1) {
-                  let nIndent = all[nIdx].match(/^\s*/)[0].length
-                  let t = nIdx + 1
-                  let hasNet = false
-                  let pbnIdx = -1
-                  let hasAliases = false
-                  while (t < sEnd) {
-                    const ind = all[t].match(/^\s*/)[0].length
-                    if (all[t].trim()!=='' && ind <= nIndent) break
-                    if (/^\s*pan-bagnat-net\s*:\s*$/.test(all[t])) { hasNet = true; pbnIdx = t }
-                    if (pbnIdx !== -1 && /^\s*aliases\s*:\s*$/.test(all[t])) { hasAliases = true }
-                    t++
-                  }
-                  if (!hasNet) {
-                    const after = doc.split(/\n/, nIdx+1).join('\n').length + (nIdx+1>0?1:0)
-                    const indentStr = ' '.repeat(nIndent + 2)
-                    const block = `${indentStr}pan-bagnat-net:\n${indentStr}  aliases:\n${indentStr}    - ${alias}\n`
-                    changes.push({ from: after, to: after, insert: block })
-                  } else if (!hasAliases && pbnIdx !== -1) {
-                    const insertAt = doc.split(/\n/, pbnIdx+1).join('\n').length + (pbnIdx+1>0?1:0)
-                    const indentStr = ' '.repeat((all[pbnIdx].match(/^\s*/)[0].length) + 2)
-                    const block = `${indentStr}aliases:\n${indentStr}  - ${alias}\n`
-                    changes.push({ from: insertAt, to: insertAt, insert: block })
-                  }
-                }
-              }
-              v.dispatch({ changes })
             }
           }]
         })
@@ -1540,112 +1447,51 @@ function makeComposeLinter({ absRoot, moduleSlug }) {
       offset += line.length + 1
     }
 
-    // Lint: only external network configured (pan-bagnat-net) → suggest adding module private network and attach to all services
-    if (topNetworksIdx !== -1) {
-      const onlyPbn = topNetworksNames.length === 1 && topNetworksNames[0] === 'pan-bagnat-net'
-      if (onlyPbn) {
-        const from = lines.slice(0, topNetworksIdx).join('\n').length + (topNetworksIdx>0?1:0)
-        const to = from + 'networks'.length
-        const moduleNet = `${moduleSlug || 'module'}-net`
-        diags.push({
-          from,
-          to,
-          severity: 'warning',
-          message: `Only external network configured. Add a dedicated \"${moduleNet}\" network to isolate this module and attach all services to it.`,
-          actions: [{
-            name: 'Add module network and attach services',
-            apply: (v) => {
-              const doc = v.state.doc.toString()
-              const all = doc.split(/\n/)
-              const moduleNet = `${moduleSlug || 'module'}-net`
-              const applyChanges = []
-              // Ensure top-level networks has moduleNet definition
-              let nIdx = -1
-              for (let t = 0; t < all.length; t++) {
-                if (/^\s*networks\s*:\s*(#.*)?$/.test(all[t]) && all[t].match(/^\s*/)[0].length === 0) { nIdx = t; break }
-              }
-              if (nIdx === -1) {
-                const block = (all.length>0 && all[all.length-1].trim()!==''? '\n' : '') +
-                  'networks:\n' +
-                  `  ${moduleNet}:\n` +
-                  `    name: ${moduleNet}\n` +
-                  '    driver: bridge\n'
-                applyChanges.push({ from: doc.length, to: doc.length, insert: block })
-              } else {
-                // check if moduleNet exists
-                let exists = false
-                let t = nIdx + 1
-                while (t < all.length) {
-                  const ind = all[t].match(/^\s*/)[0].length
-                  if (all[t].trim() !== '' && ind === 0) break
-                  if (new RegExp(`^\\s*${moduleNet}\\s*:`).test(all[t])) { exists = true; break }
-                  t++
-                }
-                if (!exists) {
-                  const insertAt = doc.split(/\n/, nIdx+1).join('\n').length + (nIdx+1>0?1:0)
-                  const block = `  ${moduleNet}:\n    name: ${moduleNet}\n    driver: bridge\n`
-                  applyChanges.push({ from: insertAt, to: insertAt, insert: block })
-                }
-              }
-              // Attach moduleNet to all services
-              // Find services block
-              let sIdx = -1
-              for (let t = 0; t < all.length; t++) { if (/^\s*services\s*:\s*$/.test(all[t])) { sIdx = t; break } }
-              if (sIdx !== -1) {
-                let t = sIdx + 1
-                const sIndent = all[sIdx].match(/^\s*/)[0].length
-                while (t < all.length) {
-                  const l = all[t]
-                  if (l.trim() !== '' && l.match(/^\s*/)[0].length <= sIndent) break
-                  const svcMatch = l.match(/^(\s*)([A-Za-z0-9_.-]+)\s*:\s*$/)
-                  if (svcMatch) {
-                    const svcIndent = svcMatch[1].length
-                    // find end of service block
-                    let u = t + 1
-                    while (u < all.length) {
-                      const ind = all[u].match(/^\s*/)[0].length
-                      if (all[u].trim() !== '' && ind <= svcIndent) break
-                      u++
-                    }
-                    // search for networks block
-                    let networksLine = -1
-                    for (let k = t+1; k < u; k++) if (/^\s*networks\s*:\s*$/.test(all[k])) { networksLine = k; break }
-                    if (networksLine === -1) {
-                      // insert networks with moduleNet
-                      const insertPos = doc.split(/\n/, u).join('\n').length + (u>0?1:0)
-                      const indentStr = ' '.repeat(svcIndent + 2)
-                      const block = `\n${indentStr}networks:\n${indentStr}  ${moduleNet}:\n`
-                      applyChanges.push({ from: insertPos, to: insertPos, insert: block })
-                    } else {
-                      // ensure mapping entry exists
-                      let hasModuleNet = false
-                      let k = networksLine + 1
-                      const nIndent = all[networksLine].match(/^\s*/)[0].length
-                      while (k < u) {
-                        const ind = all[k].match(/^\s*/)[0].length
-                        if (all[k].trim() !== '' && ind <= nIndent) break
-                        if (new RegExp(`^\\s*${moduleNet}\\s*:`).test(all[k])) { hasModuleNet = true; break }
-                        k++
-                      }
-                      if (!hasModuleNet) {
-                        const insertAt = doc.split(/\n/, networksLine+1).join('\n').length + (networksLine+1>0?1:0)
-                        const indentStr = ' '.repeat(nIndent + 2)
-                        applyChanges.push({ from: insertAt, to: insertAt, insert: `${indentStr}${moduleNet}:\n` })
-                      }
-                    }
-                    t = u - 1
-                  }
-                  t++
-                }
-              }
-              v.dispatch({ changes: applyChanges })
-            }
-          }]
-        })
-      }
-    }
     return diags
   })
+}
+
+const COMPOSE_ENV_VARS = ['FT_CLIENT_ID', 'FT_CLIENT_SECRET']
+
+function makeComposeEnvAutocomplete() {
+  const envCompletion = (context) => {
+    const match = context.matchBefore(/\$\{?[A-Za-z0-9_]*$/)
+    if (!match) return null
+    const from = match.from
+    const to = context.pos
+    const typed = match.text.replace(/^\$\{?/, '').toUpperCase()
+    const options = COMPOSE_ENV_VARS
+      .filter(name => name.startsWith(typed))
+      .map(name => {
+        const insert = `\${${name}}`
+        return {
+          label: insert,
+          type: 'variable',
+          apply: (view) => {
+            view.dispatch({
+              changes: { from, to, insert },
+              selection: { anchor: from + insert.length }
+            })
+          }
+        }
+      })
+    if (!options.length) return null
+    return { from, to, options }
+  }
+  const completionExt = autocompletion({
+    override: [envCompletion],
+    activateOnTyping: true,
+    icons: false
+  })
+  const tabAccept = keymap.of([{
+    key: 'Tab',
+    run: (view) => {
+      const status = completionStatus(view.state)
+      if (!status) return false
+      return acceptCompletion(view)
+    }
+  }])
+  return [completionExt, tabAccept]
 }
 
 // Simple colorizer for .env: add spans for KEY and VALUE around '='
