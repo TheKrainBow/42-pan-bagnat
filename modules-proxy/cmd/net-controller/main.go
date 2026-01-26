@@ -542,7 +542,7 @@ func loadConfig() (config, error) {
 	}
 	shared := strings.TrimSpace(os.Getenv("MODULES_SHARED_NETWORK"))
 	if shared == "" {
-		return config{}, errors.New("MODULES_SHARED_NETWORK is required")
+		shared = "pan-bagnat-proxy-net"
 	}
 	image := strings.TrimSpace(os.Getenv("MODULES_GATEWAY_IMAGE"))
 	if image == "" {
