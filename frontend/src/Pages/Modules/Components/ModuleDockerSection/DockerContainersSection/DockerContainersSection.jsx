@@ -6,6 +6,66 @@ import './DockerContainersSection.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
 import { socketService } from 'Global/SocketService/SocketService';
 
+const STATUS_LABELS = {
+  running: 'running',
+  restarted: 'running',
+  restarting: 'restarting',
+  exited: 'stopped',
+  stopped: 'stopped',
+  dead: 'died',
+  paused: 'paused',
+  created: 'never started',
+  unknown: 'unknown',
+  building: 'building',
+};
+
+const STATUS_COLORS = {
+  running: '#4caf50',
+  restarted: '#4caf50',
+  restarting: '#ffb300',
+  exited: '#9aa0a6',
+  stopped: '#9aa0a6',
+  dead: '#f06292',
+  paused: '#4fc3f7',
+  created: '#bdbdbd',
+  unknown: '#e87171',
+  building: '#fdd835',
+};
+
+const normalizeStatusKey = (status) => {
+  if (!status && status !== 0) return '';
+  return String(status).trim().toLowerCase();
+};
+
+const normalizeContainer = (input) => {
+  if (!input) return null;
+  const name = input.name || input.Name || '';
+  if (!name) return null;
+  return {
+    name,
+    status: normalizeStatusKey(input.status || input.Status) || 'unknown',
+    since: input.since || input.Since || '',
+    reason: input.reason || input.Reason || '',
+  };
+};
+
+const normalizeContainers = (items) => {
+  if (!Array.isArray(items)) return [];
+  return items.map(normalizeContainer).filter(Boolean);
+};
+
+const getStatusLabel = (status) => {
+  const key = normalizeStatusKey(status);
+  if (!key) return 'unknown';
+  return STATUS_LABELS[key] || key;
+};
+
+const getStatusColor = (status) => {
+  const key = normalizeStatusKey(status);
+  if (!key) return '#9aa0a6';
+  return STATUS_COLORS[key] || '#9aa0a6';
+};
+
 export default function DockerContainers({ moduleId }) {
   const [containers, setContainers] = useState([]);
   const [selectedName, setSelectedName] = useState("");
@@ -17,7 +77,7 @@ export default function DockerContainers({ moduleId }) {
   const fetchContainers = () => {
     fetchWithAuth(`/api/v1/admin/modules/${moduleId}/docker/ls`)
       .then(res => res.json())
-      .then(setContainers)
+      .then(data => setContainers(normalizeContainers(data)))
       .catch(err => console.error('Failed to fetch containers:', err));
   };
 
@@ -27,10 +87,31 @@ export default function DockerContainers({ moduleId }) {
     socketService.subscribeTopic(topic);
     const unsub = socketService.subscribe(msg => {
       if (msg.eventType === 'containers_updated' && msg.module_id === moduleId && Array.isArray(msg.payload)) {
-        setContainers(msg.payload);
+        setContainers(normalizeContainers(msg.payload));
       }
     });
     return () => { socketService.unsubscribeTopic(topic); unsub(); };
+  }, [moduleId]);
+
+  useEffect(() => {
+    const unsub = socketService.subscribe(msg => {
+      if (msg.eventType !== 'container_status' || msg.module_id !== moduleId) {
+        return;
+      }
+      const normalized = normalizeContainer(msg.payload);
+      if (!normalized) return;
+      setContainers(prev => {
+        const list = Array.isArray(prev) ? [...prev] : [];
+        const idx = list.findIndex(item => item.name === normalized.name);
+        if (idx >= 0) {
+          list[idx] = { ...list[idx], ...normalized };
+        } else {
+          list.push(normalized);
+        }
+        return list;
+      });
+    });
+    return () => unsub();
   }, [moduleId]);
 
   useEffect(() => {
@@ -108,13 +189,7 @@ export default function DockerContainers({ moduleId }) {
 }
 
 function StatusBadge({ status }) {
-  const color = {
-    running: 'green',
-    exited: 'gray',
-    restarting: 'orange',
-    paused: 'blue',
-    unknown: 'red',
-  }[status] || 'black';
-
-  return <span style={{ color }}>{status}</span>;
+  const label = getStatusLabel(status);
+  const color = getStatusColor(status);
+  return <span className="container-status-badge" style={{ color }}>{label}</span>;
 }

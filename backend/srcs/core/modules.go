@@ -381,6 +381,23 @@ func GetModule(moduleID string) (Module, error) {
 	return dest, nil
 }
 
+func GetModuleBySlug(slug string) (Module, error) {
+	dbModule, err := database.GetModuleBySlug(slug)
+	if err != nil {
+		return Module{}, err
+	}
+	if dbModule.ID == "" {
+		return Module{}, fmt.Errorf("module slug %s not found", slug)
+	}
+	module := DatabaseModuleToModule(dbModule)
+	roles, err := database.GetModuleRoles(module.ID)
+	if err != nil {
+		return module, err
+	}
+	module.Roles = DatabaseRolesToRoles(roles)
+	return module, nil
+}
+
 func GetModulesBySSHKey(sshKeyID string) ([]ModuleSummary, error) {
 	if strings.TrimSpace(sshKeyID) == "" {
 		return nil, fmt.Errorf("missing ssh key id")

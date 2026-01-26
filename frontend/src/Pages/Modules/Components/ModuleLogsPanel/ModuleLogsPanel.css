@@ -44,7 +44,8 @@
   /* Tiny more upward nudge for perfect centering */
   transform: translate(-50%, -64%) rotate(45deg);
 }
-.selector-label { display: inline-flex; align-items: center; gap: 8px; color: #e8eaed; }
+.selector-label { display: inline-flex; align-items: baseline; gap: 8px; color: #e8eaed; }
+.selector-status { font-size: 0.85em; opacity: 0.85; }
 .selector-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; box-shadow: 0 0 0 2px rgba(255,255,255,0.06) inset; }
 .log-panel {
   border: 1px solid #2b2f3a;

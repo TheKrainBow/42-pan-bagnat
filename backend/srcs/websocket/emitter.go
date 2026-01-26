@@ -134,6 +134,23 @@ func SendContainersUpdatedEvent(moduleID string, containers []ContainerPayload) 
 	Events <- evt
 }
 
+func SendContainerStatusEvent(moduleID string, payload ContainerPayload) {
+	ts := time.Now().Format(time.RFC3339)
+	payloadBytes, err := json.Marshal(payload)
+	if err != nil {
+		log.Printf("%s [ERROR] failed to marshal container_status payload: %v", ts, err)
+		return
+	}
+	evt := Event{
+		EventType: "container_status",
+		ModuleID:  moduleID,
+		Topic:     "module:" + moduleID,
+		Timestamp: ts,
+		Payload:   json.RawMessage(payloadBytes),
+	}
+	Events <- evt
+}
+
 // SendModuleDeployStatus notifies clients of a module's deployment state in real-time.
 // Topic: "module:<moduleID>"
 // Payload: { module_id, is_deploying, last_deploy_status, last_deploy }
