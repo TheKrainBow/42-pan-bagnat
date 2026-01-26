@@ -25,7 +25,8 @@ export default function DockerComposeSection({ moduleId }) {
   const [remoteDeploying, setRemoteDeploying] = useState(false)
   const [repoRoot, setRepoRoot] = useState('')
   const [composeLintExt, setComposeLintExt] = useState(null)
-  const [composeEnvAutocompleteExt, setComposeEnvAutocompleteExt] = useState(null)
+  const [envAutocompleteExt, setEnvAutocompleteExt] = useState(null)
+  const [envVarHints, setEnvVarHints] = useState(() => [...DEFAULT_ENV_HINTS])
   const editorRef = useRef(null)
   const [gitStatus, setGitStatus] = useState({ is_merging: false, conflicts: [], modified: [], last_fetch: '', last_pull: '' })
   const [gitBusy, setGitBusy] = useState(false)
@@ -232,13 +233,11 @@ export default function DockerComposeSection({ moduleId }) {
 
   // Load repo root and attach linter when editing docker-compose.yml
   useEffect(() => {
-    const isCompose = (currentPath || '').split('/').pop()?.toLowerCase() === 'docker-compose.yml'
+    const isCompose = isComposeFile(currentPath)
     if (!isCompose) {
       setComposeLintExt(null)
-      setComposeEnvAutocompleteExt(null)
       return
     }
-    setComposeEnvAutocompleteExt(makeComposeEnvAutocomplete())
     let cancelled = false
     const load = async () => {
       try {
@@ -259,6 +258,27 @@ export default function DockerComposeSection({ moduleId }) {
     load()
     return () => { cancelled = true }
   }, [moduleId, currentPath])
+
+  useEffect(() => {
+    const isCompose = isComposeFile(currentPath)
+    const isEnv = isEnvFile(currentPath)
+    if (!isCompose && !isEnv) {
+      setEnvAutocompleteExt(null)
+      return
+    }
+    setEnvAutocompleteExt(makeEnvAutocomplete(envVarHints))
+  }, [currentPath, envVarHints])
+
+  useEffect(() => {
+    if (!isEnvFile(currentPath) || typeof content !== 'string') return
+    const keys = extractEnvKeys(content)
+    if (!keys.length) return
+    setEnvVarHints((prev) => {
+      const next = new Set(prev)
+      for (const key of keys) next.add(key)
+      return Array.from(next)
+    })
+  }, [content, currentPath])
 
   const saveFile = async () => {
     if (!dirty) return
@@ -392,7 +412,7 @@ export default function DockerComposeSection({ moduleId }) {
             extensions={[
               ...extensions,
               ...(composeLintExt ? [composeLintExt] : []),
-              ...(composeEnvAutocompleteExt ? composeEnvAutocompleteExt : []),
+              ...(envAutocompleteExt ? envAutocompleteExt : []),
               ...(isEnvFile(currentPath) ? [dotenvColorizerExt()] : [])
             ]}
             height="calc(100vh - 357px)"
@@ -1241,10 +1261,28 @@ function isProbablyBinary(str) {
   return bad / total > 0.3
 }
 
+function isComposeFile(path) {
+  const fname = (path || '').split('/').pop() || ''
+  return fname.toLowerCase() === 'docker-compose.yml'
+}
+
 function isEnvFile(path) {
   const fname = (path || '').split('/').pop() || ''
   const lower = fname.toLowerCase()
   return lower === '.env' || lower.startsWith('.env')
+}
+
+function extractEnvKeys(text) {
+  if (!text) return []
+  const keys = []
+  const lines = text.split(/\n/)
+  for (const line of lines) {
+    const m = line.match(/^\s*([A-Za-z_][A-Za-z0-9_]*)\s*=/)
+    if (m) {
+      keys.push(m[1].toUpperCase())
+    }
+  }
+  return keys
 }
 
 // Resolve conflict markers in text. mode: 'both' keeps both sides without markers.
@@ -1451,16 +1489,52 @@ function makeComposeLinter({ absRoot }) {
   })
 }
 
-const COMPOSE_ENV_VARS = ['FT_CLIENT_ID', 'FT_CLIENT_SECRET']
+const DEFAULT_ENV_HINTS = [
+  'HOST_NAME',
+  'SESSION_COOKIE_DOMAIN',
+  'FT_CLIENT_ID',
+  'FT_CLIENT_SECRET',
+  'FT_CALLBACK_URL',
+  'MODULES_PROXY_ALLOWED_DOMAINS',
+  'MODULES_IFRAME_ALLOWED_HOSTS',
+  'MODULES_LOGIN_URL',
+  'MODULES_SESSION_SECRET',
+  'MODULES_SESSION_TOKEN_TTL',
+  'MODULES_PROXY_PORT',
+  'MODULES_PROXY_CHANNEL',
+  'MODULES_SHARED_NETWORK',
+  'MODULES_GATEWAY_IMAGE',
+  'MODULES_GATEWAY_PORT',
+  'MODULES_NET_CONTROLLER_URL',
+  'MODULES_SESSION_COOKIE_TTL',
+  'MODULES_MODULES_PROTOCOL',
+  'PROXY_DEBUG_AUTH',
+  'NGINX_FORCE_HTTPS',
+  'NGINX_SSL_CERT',
+  'NGINX_SSL_CERT_KEY',
+  'NGINX_SSL_DIR',
+  'POSTGRES_USER',
+  'POSTGRES_PASSWORD',
+  'POSTGRES_HOST',
+  'POSTGRES_PORT',
+  'POSTGRES_DB',
+  'POSTGRES_URL',
+  'REPO_BASE_PATH',
+  'REPO_HOST_BASE_PATH',
+  'WEBHOOK_SECRET',
+  'GIT_SSH_KNOWN_HOSTS',
+  'SSH_KNOWN_HOSTS_LIST'
+]
 
-function makeComposeEnvAutocomplete() {
+function makeEnvAutocomplete(envNames = []) {
+  const deduped = Array.from(new Set(envNames.map((name) => name.trim()).filter(Boolean)))
   const envCompletion = (context) => {
     const match = context.matchBefore(/\$\{?[A-Za-z0-9_]*$/)
     if (!match) return null
     const from = match.from
     const to = context.pos
     const typed = match.text.replace(/^\$\{?/, '').toUpperCase()
-    const options = COMPOSE_ENV_VARS
+    const options = deduped
       .filter(name => name.startsWith(typed))
       .map(name => {
         const insert = `\${${name}}`
