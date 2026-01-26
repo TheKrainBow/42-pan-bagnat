@@ -13,6 +13,7 @@ export const exchangeModuleSession = (origin, token) =>
     iframe.style.border = '0';
     iframe.style.visibility = 'hidden';
     iframe.setAttribute('aria-hidden', 'true');
+    iframe.referrerPolicy = 'strict-origin-when-cross-origin';
     iframe.src = `${origin}${MODULE_SESSION_PATH}?token=${encodeURIComponent(token)}`;
 
     const cleanup = () => {

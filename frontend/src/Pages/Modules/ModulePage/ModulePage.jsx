@@ -134,6 +134,7 @@ export default function ModulePage({ pages }) {
         title={page.slug}
         frameBorder="0"
         className="module-iframe"
+        referrerPolicy="strict-origin-when-cross-origin"
         style={{ display: status === 'ready' ? 'block' : 'none' }}
       />
     </div>

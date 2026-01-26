@@ -46,12 +46,11 @@ module docker compose file spawned the actual workloads.
 Location: `cmd/proxy-service`.
 
 Responsibilities:
-- Cache module pages (`pageStore`) and expose `/module-page/_status/{slug}` for
-  the admin UI (forwarded by `nginx`).
-- Handle every virtual host `*.modules.<allowed domains>`:
+- Cache module pages (`pageStore`) and handle every virtual host
+  `*.modules.<allowed domains>`:
   - Validates the slug exists and, if `NeedAuth` is enabled, looks up the user
-    session from the shared `session_id` cookie (`SESSION_COOKIE_DOMAIN` should
-    be `.localhost` or `.panbagnat.42nice.fr`).
+    session from the shared `session_id` cookie (defaults to `.HOST_NAME`, but
+    `SESSION_COOKIE_DOMAIN` can override it).
   - Checks iframe rules: `IframeOnly` requires the `Referer` to be Pan Bagnat or
     the module itself.
   - Redirects unauthenticated browser requests to `MODULES_LOGIN_URL` with a
@@ -66,12 +65,12 @@ Responsibilities:
 Config knobs (see `docker-compose.yml`):
 - `MODULES_PROXY_ALLOWED_DOMAINS` — comma-separated list of base domains
   (e.g. `modules.panbagnat.42nice.fr,modules.localhost`) accepted from the Host
-  header. Wildcard subdomains are implied.
+  header. Defaults to `modules.HOST_NAME` when unset.
 - `MODULES_IFRAME_ALLOWED_HOSTS` — list of trusted parent hosts (Pan Bagnat
-  SPA) allowed to embed module iframes.
+  SPA) allowed to embed module iframes. Defaults to `HOST_NAME`.
 - `MODULES_LOGIN_URL` — absolute URL to the SPA login page for redirecting
-  unauthenticated users. The login handler uses the same env list to validate
-  `next` targets.
+  unauthenticated users. Defaults to `https://HOST_NAME/login`. The login
+  handler uses the same env list to validate `next` targets.
 - `MODULES_SESSION_SECRET` / `MODULES_SESSION_COOKIE_TTL` — signing key and TTL
   for module session tokens.
 

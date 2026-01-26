@@ -67,21 +67,37 @@ func GenerateSecureSessionID() (string, error) {
 
 const SessionCookieName = "session_id"
 
-var sessionCookieDomain = strings.TrimSpace(os.Getenv("SESSION_COOKIE_DOMAIN"))
+var sessionCookieDomain = computeSessionCookieDomain()
 
-var sessionCookieSameSite = func() http.SameSite {
-	raw := strings.TrimSpace(strings.ToLower(os.Getenv("SESSION_COOKIE_SAMESITE")))
-	switch raw {
-	case "lax":
-		return http.SameSiteLaxMode
-	case "strict":
-		return http.SameSiteStrictMode
-	case "none", "":
-		return http.SameSiteNoneMode
-	default:
-		return http.SameSiteNoneMode
+func computeSessionCookieDomain() string {
+	domain := strings.TrimSpace(os.Getenv("SESSION_COOKIE_DOMAIN"))
+	if domain != "" {
+		return normalizeCookieDomain(domain)
 	}
-}()
+	host := strings.TrimSpace(os.Getenv("HOST_NAME"))
+	host = strings.TrimPrefix(host, ".")
+	if host == "" || !strings.Contains(host, ".") {
+		return ""
+	}
+	return "." + host
+}
+
+func normalizeCookieDomain(domain string) string {
+	domain = strings.TrimSpace(domain)
+	if domain == "" {
+		return ""
+	}
+	if strings.HasPrefix(domain, ".") {
+		return domain
+	}
+	return "." + domain
+}
+
+func SessionCookieDomain() string {
+	return sessionCookieDomain
+}
+
+var sessionCookieSameSite = http.SameSiteNoneMode
 
 // ReadSessionIDFromCookie returns the session ID from the cookie if present.
 // Falls back to "X-Session-Id" header or "Authorization: Bearer <id>" for dev/tools.

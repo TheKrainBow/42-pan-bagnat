@@ -84,7 +84,7 @@ Helpful Make targets:
 AuthN
 - 42 OAuth login flow: `/auth/42/login` → `/auth/42/callback` exchanges code for token, then issues a `session_id` cookie.
 - Session storage in Postgres (`sessions`), with expiry and per‑device handling.
-- `SESSION_COOKIE_DOMAIN` should be set to a wildcard such as `.localhost` or `.panbagnat.42nice.fr` so the SPA and every `*.modules.<domain>` host reuse the same session cookie.
+- `SESSION_COOKIE_DOMAIN` defaults to `.HOST_NAME` so the SPA and every `*.modules.<domain>` host reuse the same session cookie. Override it only if you need a different wildcard. Cookies always use `SameSite=None` to support module iframes.
 
 AuthZ and guards
 - `AuthMiddleware`: ensures a valid session; clears cookie if expired.
@@ -103,8 +103,8 @@ Realtime & Webhooks
 Module proxy integration
 - Module pages now declare a container name + port instead of a raw URL (`module_page.target_container` / `target_port`) along with `network_name`, `iframe_only`, and `need_auth`.
 - `/api/v1/modules/pages/{slug}/session` issues an HMAC-signed token that the frontend trades for a module specific cookie by calling `<module-origin>/_pb/session`. Tokens expire quickly (`MODULES_SESSION_TOKEN_TTL`) and are bound to the user session ID.
-- Environment variables `MODULES_PROXY_ALLOWED_DOMAINS` and `MODULES_IFRAME_ALLOWED_HOSTS` must match the lists used by `proxy-service` so both sides agree on valid hosts/suffixes.
-- `MODULES_LOGIN_URL` (served by the frontend) is where unauthenticated module requests are redirected; the backend advertises the same URL to `proxy-service`.
+- `MODULES_PROXY_ALLOWED_DOMAINS` and `MODULES_IFRAME_ALLOWED_HOSTS` default to `modules.HOST_NAME` and `HOST_NAME` respectively so both sides agree on valid hosts/suffixes; override them to allow additional domains.
+- `MODULES_LOGIN_URL` (served by the frontend) falls back to `https://HOST_NAME/login` and is where unauthenticated module requests are redirected; the backend advertises the same URL to `proxy-service`.
 
 ## Swagger (specs and UI)
 

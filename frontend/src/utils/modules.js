@@ -1,4 +1,4 @@
-const DEFAULT_MODULES_DOMAIN = 'modules.127.0.0.1.nip.io';
+const DEFAULT_MODULES_DOMAIN = 'modules.localhost';
 
 export function getModulesDomain() {
   const envValue = (import.meta.env.VITE_MODULES_BASE_DOMAIN || '').trim();
@@ -12,8 +12,6 @@ export function getModulesProtocol(domain) {
   }
   const lowerDomain = domain.toLowerCase();
   if (
-    lowerDomain.endsWith('.127.0.0.1.nip.io') ||
-    lowerDomain.endsWith('.nip.io') ||
     lowerDomain === 'localhost' ||
     lowerDomain.endsWith('.localhost')
   ) {
