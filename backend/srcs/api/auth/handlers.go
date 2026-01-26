@@ -16,7 +16,6 @@ import (
 const loginRedirectCookieName = "pb_login_next"
 const loginRedirectTTL = 5 * time.Minute
 
-var sessionCookieDomain = strings.TrimSpace(os.Getenv("SESSION_COOKIE_DOMAIN"))
 var allowedModuleRedirectDomains = parseEnvList("MODULES_PROXY_ALLOWED_DOMAINS")
 var allowedLoginHosts = parseEnvList("MODULES_IFRAME_ALLOWED_HOSTS")
 
@@ -116,11 +115,12 @@ func setLoginRedirectCookie(w http.ResponseWriter, raw string, secure bool) {
 		return
 	}
 	value := url.QueryEscape(raw)
+	domain := core.SessionCookieDomain()
 	http.SetCookie(w, &http.Cookie{
 		Name:     loginRedirectCookieName,
 		Value:    value,
 		Path:     "/",
-		Domain:   sessionCookieDomain,
+		Domain:   domain,
 		HttpOnly: true,
 		Secure:   secure,
 		SameSite: http.SameSiteLaxMode,
@@ -130,11 +130,12 @@ func setLoginRedirectCookie(w http.ResponseWriter, raw string, secure bool) {
 }
 
 func clearLoginRedirectCookie(w http.ResponseWriter, secure bool) {
+	domain := core.SessionCookieDomain()
 	http.SetCookie(w, &http.Cookie{
 		Name:     loginRedirectCookieName,
 		Value:    "",
 		Path:     "/",
-		Domain:   sessionCookieDomain,
+		Domain:   domain,
 		HttpOnly: true,
 		Secure:   secure,
 		SameSite: http.SameSiteLaxMode,
