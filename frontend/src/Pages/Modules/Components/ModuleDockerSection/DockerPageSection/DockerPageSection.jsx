@@ -49,9 +49,23 @@ export default function ModulePageSection({ moduleId }) {
     if (!containerName) return [];
     const container = containers.find((c) => c.name === containerName);
     if (!container || !Array.isArray(container.ports)) return [];
-    return container.ports.filter(
-      (port) => Number.isInteger(port?.container_port) && port.container_port > 0,
-    );
+    const normalizeProto = (value) => {
+      const proto = String(value || '').trim().toLowerCase();
+      return proto || 'tcp';
+    };
+    const unique = new Map();
+    for (const port of container.ports) {
+      if (!Number.isInteger(port?.container_port) || port.container_port <= 0) continue;
+      const normalized = {
+        ...port,
+        protocol: normalizeProto(port.protocol),
+      };
+      const key = `${normalized.container_port}/${normalized.protocol}`;
+      if (!unique.has(key)) {
+        unique.set(key, normalized);
+      }
+    }
+    return Array.from(unique.values());
   };
 
   const formatPortLabel = (port) => {
