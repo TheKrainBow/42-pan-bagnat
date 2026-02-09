@@ -195,7 +195,10 @@ func GetModuleContainers(module Module) ([]ModuleContainer, error) {
 	}
 	var containers []ModuleContainer
 	for _, item := range items {
-		name := normalizeContainerName(item.Names, project)
+		name := firstDockerName(item.Names)
+		if name == "" {
+			name = item.ID
+		}
 		status, reason, since := parseContainerStatus(item.Status)
 		ports := containerPortsFromSummary(item)
 		ports = ensureExposedPorts(ctx, cli, item.ID, ports)
@@ -208,6 +211,64 @@ func GetModuleContainers(module Module) ([]ModuleContainer, error) {
 		})
 	}
 	return containers, nil
+}
+
+func findModuleContainer(ctx context.Context, cli *client.Client, module Module, containerName string) (dockercontainer.Summary, bool) {
+	containerName = strings.TrimSpace(containerName)
+	if cli == nil || containerName == "" {
+		return dockercontainer.Summary{}, false
+	}
+	project := strings.TrimSpace(module.Slug)
+	if project == "" {
+		return dockercontainer.Summary{}, false
+	}
+	filter := dockerfilters.NewArgs()
+	filter.Add("label", fmt.Sprintf("com.docker.compose.project=%s", project))
+	items, err := cli.ContainerList(ctx, dockercontainer.ListOptions{All: true, Filters: filter})
+	if err != nil || len(items) == 0 {
+		return dockercontainer.Summary{}, false
+	}
+
+	score := func(item dockercontainer.Summary) int {
+		pts := 0
+		name := firstDockerName(item.Names)
+		service := strings.TrimSpace(item.Labels["com.docker.compose.service"])
+		canonical := ""
+		if service != "" {
+			canonical = fmt.Sprintf("%s-%s-1", project, service)
+		}
+		switch {
+		case strings.EqualFold(containerName, name):
+			pts += 200
+		case service != "" && strings.EqualFold(containerName, service):
+			pts += 150
+		case canonical != "" && strings.EqualFold(containerName, canonical):
+			pts += 120
+		}
+		if strings.EqualFold(strings.TrimSpace(item.State), "running") {
+			pts += 20
+		}
+		return pts
+	}
+
+	bestIdx := -1
+	bestScore := -1
+	bestCreated := int64(-1)
+	for i := range items {
+		s := score(items[i])
+		if s <= 0 {
+			continue
+		}
+		if s > bestScore || (s == bestScore && items[i].Created > bestCreated) {
+			bestIdx = i
+			bestScore = s
+			bestCreated = items[i].Created
+		}
+	}
+	if bestIdx < 0 {
+		return dockercontainer.Summary{}, false
+	}
+	return items[bestIdx], true
 }
 
 func containerPortsFromSummary(c dockercontainer.Summary) []ContainerPort {
@@ -286,21 +347,6 @@ func parsePortProto(value string) (int, string) {
 	}
 	port, _ := strconv.Atoi(strings.TrimSpace(value))
 	return port, proto
-}
-
-func normalizeContainerName(names []string, project string) string {
-	name := firstDockerName(names)
-	if name == "" {
-		return name
-	}
-	if project != "" {
-		name = strings.TrimPrefix(name, project+"-")
-	}
-	name = strings.TrimSuffix(name, "-1")
-	if name == "" && len(names) > 0 {
-		return strings.TrimPrefix(names[0], "/")
-	}
-	return name
 }
 
 func parseContainerStatus(raw string) (ContainerStatus, string, string) {
@@ -643,13 +689,18 @@ func GetAllContainers() ([]AllContainer, error) {
 func errorsIsNotExist(err error) bool { return errors.Is(err, fs.ErrNotExist) }
 
 func GetContainerLogs(module Module, containerName string, since string) ([]string, error) {
-	fullName := fmt.Sprintf("%s-%s-1", module.Slug, containerName)
-
 	cli, err := getDockerClient()
 	if err != nil {
 		return nil, err
 	}
 	ctx := context.Background()
+	target := strings.TrimSpace(containerName)
+	if ref, ok := findModuleContainer(ctx, cli, module, containerName); ok {
+		target = ref.ID
+	}
+	if target == "" {
+		target = fmt.Sprintf("%s-%s-1", module.Slug, containerName)
+	}
 	opts := dockercontainer.LogsOptions{
 		ShowStdout: true,
 		ShowStderr: true,
@@ -660,7 +711,7 @@ func GetContainerLogs(module Module, containerName string, since string) ([]stri
 	} else {
 		opts.Tail = "1000"
 	}
-	reader, err := cli.ContainerLogs(ctx, fullName, opts)
+	reader, err := cli.ContainerLogs(ctx, target, opts)
 	if err != nil {
 		return nil, fmt.Errorf("container logs failed: %w", err)
 	}
@@ -740,22 +791,28 @@ func DeleteContainer(module Module, containerName string) error {
 }
 
 func runDockerCommand(module Module, containerName, action string) error {
-	fullName := fmt.Sprintf("%s-%s-1", module.Slug, containerName)
-	fmt.Printf("[Docker] docker %s %s\n", action, fullName)
 	cli, err := getDockerClient()
 	if err != nil {
 		return err
 	}
 	ctx := context.Background()
+	target := strings.TrimSpace(containerName)
+	if ref, ok := findModuleContainer(ctx, cli, module, containerName); ok {
+		target = ref.ID
+	}
+	if target == "" {
+		target = fmt.Sprintf("%s-%s-1", module.Slug, containerName)
+	}
+	fmt.Printf("[Docker] docker %s %s\n", action, target)
 	switch action {
 	case "start":
-		return cli.ContainerStart(ctx, fullName, dockercontainer.StartOptions{})
+		return cli.ContainerStart(ctx, target, dockercontainer.StartOptions{})
 	case "stop":
-		return cli.ContainerStop(ctx, fullName, dockercontainer.StopOptions{})
+		return cli.ContainerStop(ctx, target, dockercontainer.StopOptions{})
 	case "restart":
-		return cli.ContainerRestart(ctx, fullName, dockercontainer.StopOptions{})
+		return cli.ContainerRestart(ctx, target, dockercontainer.StopOptions{})
 	case "rm":
-		return cli.ContainerRemove(ctx, fullName, dockercontainer.RemoveOptions{Force: true})
+		return cli.ContainerRemove(ctx, target, dockercontainer.RemoveOptions{Force: true})
 	default:
 		return fmt.Errorf("unsupported docker action %q", action)
 	}

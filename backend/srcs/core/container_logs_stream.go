@@ -228,19 +228,35 @@ func findComposeContainer(ctx context.Context, cli *dockerclient.Client, module 
 		filter.Add("label", fmt.Sprintf("com.docker.compose.project=%s", slug))
 	}
 	service = strings.TrimSpace(service)
-	if service != "" {
-		filter.Add("label", fmt.Sprintf("com.docker.compose.service=%s", service))
-	}
 	containers, err := cli.ContainerList(ctx, dockercontainer.ListOptions{All: true, Filters: filter})
 	if err != nil || len(containers) == 0 {
 		return composeContainerRef{}, false
 	}
+
+	matchService := func(c *dockercontainer.Summary) bool {
+		if c == nil || service == "" {
+			return true
+		}
+		name := firstDockerName(c.Names)
+		labelSvc := strings.TrimSpace(c.Labels["com.docker.compose.service"])
+		canonical := ""
+		if slug != "" && labelSvc != "" {
+			canonical = fmt.Sprintf("%s-%s-1", slug, labelSvc)
+		}
+		return strings.EqualFold(service, name) ||
+			(labelSvc != "" && strings.EqualFold(service, labelSvc)) ||
+			(canonical != "" && strings.EqualFold(service, canonical))
+	}
+
 	var chosen *dockercontainer.Summary
 	isRunning := func(c *dockercontainer.Summary) bool {
 		return c != nil && strings.EqualFold(strings.TrimSpace(c.State), "running")
 	}
 	for idx := range containers {
 		c := &containers[idx]
+		if !matchService(c) {
+			continue
+		}
 		if chosen == nil {
 			chosen = c
 			continue
@@ -273,7 +289,6 @@ func findComposeContainer(ctx context.Context, cli *dockerclient.Client, module 
 	startedAt := parseDockerTimestamp(details)
 	return composeContainerRef{ID: chosen.ID, Name: name, State: state, StartedAt: startedAt}, true
 }
-
 
 func parseDockerTimestamp(details dockerTypes.ContainerJSON) time.Time {
 	if details.State == nil {

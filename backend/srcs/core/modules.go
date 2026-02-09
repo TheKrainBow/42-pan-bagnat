@@ -497,13 +497,13 @@ func GeneratePageSlug(name string) string {
 		slug = "page"
 	}
 
-	attempt := 0
+	attempt := 1
 	for {
 		candidate := slug
-		if attempt > 0 {
+		if attempt > 1 {
 			candidate = fmt.Sprintf("%s-%d", slug, attempt)
 		}
-		isTaken, err := database.IsModuleSlugTaken(candidate)
+		isTaken, err := database.IsPageSlugTaken(candidate)
 		if err != nil {
 			log.Printf("error while generating slug `%s`: %s\n", candidate, err)
 			return ""
@@ -546,10 +546,10 @@ func GenerateModuleSlug(name, _ string) string {
 		return string(out)
 	}
 	slug := sanitize(name)
-	attempt := 0
+	attempt := 1
 	for {
 		candidate := slug
-		if attempt > 0 {
+		if attempt > 1 {
 			candidate = fmt.Sprintf("%s-%d", slug, attempt)
 		}
 		isTaken, err := database.IsModuleSlugTaken(candidate)

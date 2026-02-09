@@ -328,7 +328,7 @@ func IsPageSlugTaken(slug string) (bool, error) {
 	var exists bool
 	err := mainDB.QueryRow(`
 		SELECT EXISTS (
-			SELECT 1 FROM pages WHERE slug = $1
+			SELECT 1 FROM module_page WHERE slug = $1
 		)
 	`, slug).Scan(&exists)
 	if err != nil {
