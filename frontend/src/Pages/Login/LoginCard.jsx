@@ -3,62 +3,82 @@ import React, { useState, useRef } from "react";
 import "./LoginCard.css";
 import Button from "Global/Button/Button";
 import Field from "Global/Field/Field";
-import { toast } from 'react-toastify';
+import { toast } from "react-toastify";
 
-export default function LoginCard({ onLogin, onMagicLink }) {
-  const [downMode, setDownMode] = useState(false);
-  const [login, setEmail] = useState("");
-  const loginFieldRef = useRef(null);
+export default function LoginCard({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const emailFieldRef = useRef(null);
 
-  const toggleDownMode = () => setDownMode(prev => !prev);
-
-  const handleMagicLink = () => {
-	const isValid = loginFieldRef.current.isValid(true);
-      if (!isValid) {
-      loginFieldRef.current.triggerShake();
-      return
+  const handleEmailSubmit = () => {
+    const emailOk = emailFieldRef.current?.isValid(true);
+    if (!emailOk) {
+      emailFieldRef.current?.triggerShake();
+      return;
     }
-    toast.success("Nothing happened but let's pretend it's working")
+    toast.info("Email/password login isn't enabled yet. Please keep using OAuth.");
   };
+
   return (
     <div className="login-card">
-      <div className="card-header">
-        <img src="/icons/panbagnat.png" alt="Pan Bagnat Logo" className="card-logo" />
-        <h1>Pan Bagnat</h1>
-      </div>
+      <span className="card-glow" aria-hidden />
+      <div className="card-body">
+        <div className="card-meta">
+          <h1>Sign in</h1>
+          {/* <span className="card-pill">ADM</span> */}
+          <p className="card-subtitle">
+            Bienvenue sur Pan Bagnat
+          </p>
+        </div>
 
-      {!downMode ? (
-        <>
-		<div className="login-42-btn">
-			<Button label="Sign in with 42 Intranet" onClick={onLogin} icon="/icons/42.svg"/>
-		</div>
-          <button className="down-link" onClick={toggleDownMode}>
-            42 Intranet is down?
-          </button>
-        </>
-      ) : (
-        <>
-          <div className="magic-form">
-            <Field
-              ref={loginFieldRef}
-              label="Login"
-              value={login}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="maagosti"
-              required={true}
+        <div className="oauth-section">
+          <div className="oauth-button">
+            <Button
+              label="Sign in with 42 OAuth"
+              icon="/icons/42.svg"
+              color="black"
+              onClick={onLogin}
             />
-			<Button
-				label="Send Magic Link"
-				onClick={handleMagicLink}
-				disabled={true}
-				disabledMessage={"Not implemented (whoops)"}
-			/>
           </div>
-          <button className="down-link" onClick={toggleDownMode}>
-            Nevermind!
-          </button>
-        </>
-      )}
+        </div>
+
+        <div className="card-divider">
+          <span>or</span>
+        </div>
+
+        <div className="credential-form">
+          <Field
+            ref={emailFieldRef}
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="login@student.42nice.fr"
+            required
+          />
+          {/* <Field
+            ref={passwordFieldRef}
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+            required
+          /> */}
+          <div className="card-actions">
+            {/* <button type="button" className="link-btn" onClick={handleNeedHelp}>
+              Forgot password?
+            </button> */}
+            <div className="email-button">
+              <Button
+                label="Continue with email"
+                color="green"
+                onClick={handleEmailSubmit}
+              />
+            </div>
+          </div>
+        </div>
+
+      </div>
     </div>
   );
 }
