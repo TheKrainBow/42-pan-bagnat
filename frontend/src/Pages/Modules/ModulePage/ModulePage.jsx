@@ -130,12 +130,13 @@ export default function ModulePage({ pages }) {
       <iframe
         id="moduleIframe"
         key={`${page.slug}-${retryKey}`}
-        src={authReady ? iframeSrc : 'about:blank'}
+        src={authReady ? iframeSrc : "about:blank"}
         title={page.slug}
         frameBorder="0"
         className="module-iframe"
         referrerPolicy="strict-origin-when-cross-origin"
-        style={{ display: status === 'ready' ? 'block' : 'none' }}
+        sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
+        style={{ display: status === "ready" ? "block" : "none" }}
       />
     </div>
   );
