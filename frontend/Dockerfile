@@ -28,8 +28,9 @@ ENV PNPM_HOME="/root/.local/share/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 
 # Install serve to host the built app
-RUN pnpm add -g serve
+# RUN npm install -g serve
+RUN pnpm add serve
 
 EXPOSE 3000
 
-CMD ["serve", "-s", "dist", "-l", "3000"]
+CMD ["pnpm", "serve", "-s", "dist", "-l", "3000"]
