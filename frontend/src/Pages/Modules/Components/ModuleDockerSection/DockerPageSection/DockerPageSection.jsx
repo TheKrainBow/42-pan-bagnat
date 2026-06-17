@@ -4,6 +4,7 @@ import './DockerPageSection.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
 import PageIconModal from 'Pages/Modules/Components/ModuleIconModal/ModuleIconModal';
 import { getModulesDomain } from '../../../../../utils/modules';
+import { getModulePageMode, pageModeToFlags } from '../../../../../utils/modulePageMode';
 
 export default function ModulePageSection({ moduleId }) {
   const [pages, setPages] = useState([]);            // holds both existing & new rows
@@ -99,13 +100,13 @@ export default function ModulePageSection({ moduleId }) {
         name: p.name,
         targetContainer: p.target_container || '',
         targetPort: typeof p.target_port === 'number' ? p.target_port : null,
-        iframeOnly: !!p.iframe_only,
+        pageMode: getModulePageMode(p),
         needAuth: !!p.need_auth,
         isVisible: p.is_visible !== false,
         icon_url: p.icon_url,
         network: p.network_name || '',
         isNew: false,
-        slugManual: true,
+        slugAuto: false,
       }));
       setPages(list);
 
@@ -135,13 +136,13 @@ export default function ModulePageSection({ moduleId }) {
       name: '',
       targetContainer: '',
       targetPort: null,
-      iframeOnly: true,
+      pageMode: 'iframe_only',
       needAuth: true,
       isVisible: true,
       icon_url: '',
       network: '',
       isNew: true,
-      slugManual: false,
+      slugAuto: true,
     };
 
     setPages(ps => [...ps, newRow]);
@@ -171,7 +172,7 @@ export default function ModulePageSection({ moduleId }) {
         name: value,
         dirty: true,
       };
-      if (current.isNew && !current.slugManual) {
+      if (current.isNew && current.slugAuto !== false) {
         next.slug = slugify(value);
       }
       return {
@@ -184,13 +185,13 @@ export default function ModulePageSection({ moduleId }) {
   const handleSlugChange = (id, value) => {
     setEdits((prev) => ({
       ...prev,
-      [id]: {
-        ...prev[id],
-        slug: slugify(value),
-        slugManual: true,
-        dirty: true,
-      },
-    }));
+        [id]: {
+          ...prev[id],
+          slug: slugify(value),
+          slugAuto: false,
+          dirty: true,
+        },
+      }));
   };
 
   const handleContainerSelect = (id, containerName) => {
@@ -228,8 +229,9 @@ export default function ModulePageSection({ moduleId }) {
 
   // save either POST (new) or PATCH (existing)
   const handleSave = async (id) => {
-    const { name, slug, targetContainer, targetPort, iframeOnly, needAuth, isVisible, isNew } = edits[id];
+    const { name, slug, targetContainer, targetPort, pageMode, needAuth, isVisible, isNew } = edits[id];
     if (!name || !slug) return;
+    const { iframeOnly, pageOnly } = pageModeToFlags(pageMode);
 
     setIsSaving(true);
     try {
@@ -241,6 +243,7 @@ export default function ModulePageSection({ moduleId }) {
         target_container: hasTarget ? trimmedContainer : null,
         target_port: hasTarget ? targetPort : null,
         iframe_only: !!iframeOnly,
+        page_only: !!pageOnly,
         need_auth: !!needAuth,
         is_visible: !!isVisible,
         network_name: (edits[id].network || '').trim() || null,
@@ -327,7 +330,7 @@ export default function ModulePageSection({ moduleId }) {
               <th>Container</th>
               <th>Port</th>
               <th>Network</th>
-              <th>Iframe</th>
+              <th>Mode</th>
               <th>Auth</th>
               <th>Visible</th>
               <th className="actions-col">Actions</th>
@@ -448,13 +451,15 @@ export default function ModulePageSection({ moduleId }) {
                   </div>
                 </td>
                 <td className="page-cell page-flag-cell">
-                  <label className="page-access-toggle">
-                    <input
-                      type="checkbox"
-                      checked={edit.iframeOnly || false}
-                      onChange={e => handleChange(id, 'iframeOnly', e.target.checked)}
-                    />
-                  </label>
+                  <select
+                    className="page-select"
+                    value={edit.pageMode || 'both'}
+                    onChange={e => handleChange(id, 'pageMode', e.target.value)}
+                  >
+                    <option value="iframe_only">Iframe only</option>
+                    <option value="both">Both</option>
+                    <option value="page_only">Page only</option>
+                  </select>
                 </td>
                 <td className="page-cell page-flag-cell">
                   <label className="page-access-toggle">

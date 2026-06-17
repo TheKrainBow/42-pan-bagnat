@@ -4,26 +4,22 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
 import { loadSidebarPrefs, getVisibleSidebarPages } from '../../utils/sidebarPrefs';
+import { getModulePageMode } from '../../utils/modulePageMode';
+import { getModulesDomain, getModulesProtocol } from '../../utils/modules';
 
 export default function Sidebar({ currentPage, user, pages }) {
   const navigate = useNavigate();
   const mode = currentPage.startsWith('/admin/') ? 'admin' : 'user';
 
-  const [selectedPage, setSelectedPage] = useState(null);
   const [prefs, setPrefs] = useState(() => loadSidebarPrefs(user?.ft_login));
+  const [isCtrlPressed, setIsCtrlPressed] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('pb:sidebar:collapsed') === '1');
   const [anim, setAnim] = useState(''); // '' | 'collapsing' | 'expanding'
   const location = useLocation();
   const match = location.pathname.match(/(?<!\/admin)\/modules\/([^/]+)/);
   const currentSlug = match ? match[1] : null;
-
-  // Sync selected page based on slug or fallback
-  useEffect(() => {
-    if (pages.length === 0) return;
-
-    const found = pages.find((p) => p.slug === currentSlug);
-    setSelectedPage(found || pages[0]);
-  }, [pages, currentSlug]);
+  const modulesDomain = useMemo(() => getModulesDomain(), []);
+  const modulesProtocol = useMemo(() => getModulesProtocol(modulesDomain), [modulesDomain]);
 
   // Reload prefs when user changes
   useEffect(() => {
@@ -34,6 +30,29 @@ export default function Sidebar({ currentPage, user, pages }) {
   useEffect(() => {
     if (user?.ft_login) setPrefs(loadSidebarPrefs(user.ft_login));
   }, [location.pathname, user?.ft_login]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === 'Control') {
+        setIsCtrlPressed(true);
+      }
+    };
+    const onKeyUp = (event) => {
+      if (event.key === 'Control') {
+        setIsCtrlPressed(false);
+      }
+    };
+    const onBlur = () => setIsCtrlPressed(false);
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
 
   // Live updates from settings page
   useEffect(() => {
@@ -89,8 +108,13 @@ export default function Sidebar({ currentPage, user, pages }) {
   }, [pages, prefs, mode]);
 
   // On click
-  const handleSelect = (page) => {
-    setSelectedPage(page);
+  const handleSelect = (page, event) => {
+    const pageMode = getModulePageMode(page);
+    const externalUrl = `${modulesProtocol}://${page.slug}.${modulesDomain}`;
+    if (pageMode === 'page_only' || (pageMode === 'both' && event?.ctrlKey)) {
+      window.location.assign(externalUrl);
+      return;
+    }
     navigate(`/modules/${page.slug}`);
   };
 
@@ -181,11 +205,14 @@ export default function Sidebar({ currentPage, user, pages }) {
               <li
                 key={page.slug}
                 className={`sidebar-item ${currentSlug === page.slug ? 'active' : 'inactive'}`}
-                onClick={() => handleSelect(page)}
+                onClick={(event) => handleSelect(page, event)}
                 title={collapsed ? page.name : undefined}
               >
                 <img className="sidebar-icon" src={page.icon_url || '/icons/modules.png'} alt="" />
                 <span className="sidebar-label">{page.name}</span>
+                {(getModulePageMode(page) === 'page_only' || (getModulePageMode(page) === 'both' && isCtrlPressed)) && (
+                  <img src="/icons/tab.png" alt="" className="sidebar-tab-icon" />
+                )}
               </li>
             ))}
           </ul>

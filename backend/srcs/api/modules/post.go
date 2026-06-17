@@ -379,6 +379,11 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if input.IframeOnly && input.PageOnly {
+		http.Error(w, "iframe_only and page_only cannot both be true", http.StatusBadRequest)
+		return
+	}
+
 	var network string
 	if input.NetworkName != nil {
 		trimmed := strings.TrimSpace(*input.NetworkName)
@@ -387,7 +392,7 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	modulePage, err := core.ImportModulePage(moduleID, input.Name, slug, targetContainer, targetPort, input.IframeOnly, input.NeedAuth, input.IsVisible, network)
+	modulePage, err := core.ImportModulePage(moduleID, input.Name, slug, targetContainer, targetPort, input.IframeOnly, input.PageOnly, input.NeedAuth, input.IsVisible, network)
 	if err != nil {
 		core.LogModule(moduleID, "ERROR", "Couldn't add a module Page", nil, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -407,6 +412,7 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 	}
 	core.LogModule(moduleID, "INFO", fmt.Sprintf("Created page '%s' targeting %s", dest.Slug, targetMsg), map[string]any{
 		"iframe_only": dest.IframeOnly,
+		"page_only":   dest.PageOnly,
 		"need_auth":   dest.NeedAuth,
 		"is_visible":  dest.IsVisible,
 	}, nil)

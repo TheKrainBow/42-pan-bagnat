@@ -62,3 +62,8 @@
 .module-page-status.error {
   color: #ff8888;
 }
+
+.module-page-status-page-only {
+  gap: 16px;
+  color: var(--text-color, #ddd);
+}

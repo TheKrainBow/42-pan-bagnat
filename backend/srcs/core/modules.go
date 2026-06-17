@@ -123,6 +123,7 @@ type ModulePage struct {
 	TargetContainer *string `json:"target_container,omitempty"`
 	TargetPort      *int    `json:"target_port,omitempty"`
 	IframeOnly      bool    `json:"iframe_only"`
+	PageOnly        bool    `json:"page_only"`
 	NeedAuth        bool    `json:"need_auth"`
 	IsVisible       bool    `json:"is_visible"`
 	ModuleID        string  `json:"module_id"`
@@ -800,10 +801,14 @@ func GetModulePages(pagination ModulePagesPagination) ([]ModulePage, string, err
 	return dest, token, nil
 }
 
-func ImportModulePage(moduleID, name string, slug *string, targetContainer *string, targetPort *int, iframeOnly, needAuth, isVisible bool, network string) (ModulePage, error) {
+func ImportModulePage(moduleID, name string, slug *string, targetContainer *string, targetPort *int, iframeOnly, pageOnly, needAuth, isVisible bool, network string) (ModulePage, error) {
 	pageID, err := GenerateULID(PageKind)
 	if err != nil {
 		return ModulePage{}, fmt.Errorf("failed to generate page ID: %w", err)
+	}
+
+	if err := validatePageMode(iframeOnly, pageOnly); err != nil {
+		return ModulePage{}, err
 	}
 
 	var sanitizedTarget *string
@@ -846,6 +851,7 @@ func ImportModulePage(moduleID, name string, slug *string, targetContainer *stri
 		TargetContainer: sanitizedTarget,
 		TargetPort:      sanitizedPort,
 		IframeOnly:      iframeOnly,
+		PageOnly:        pageOnly,
 		NeedAuth:        needAuth,
 		IsVisible:       isVisible,
 		NetworkName:     strings.TrimSpace(network),
@@ -860,6 +866,7 @@ func ImportModulePage(moduleID, name string, slug *string, targetContainer *stri
 		TargetContainer: toNullString(dest.TargetContainer),
 		TargetPort:      toNullInt(dest.TargetPort),
 		IframeOnly:      dest.IframeOnly,
+		PageOnly:        dest.PageOnly,
 		NeedAuth:        dest.NeedAuth,
 		IsVisible:       dest.IsVisible,
 		NetworkName:     dest.NetworkName,
@@ -912,6 +919,7 @@ func UpdateModulePage(pageID string, name *string,
 	targetContainer *string, targetContainerSet bool,
 	targetPort *int, targetPortSet bool,
 	iframeOnly *bool,
+	pageOnly *bool,
 	needAuth *bool,
 	isVisible *bool,
 	network *string, networkSet bool,
@@ -967,6 +975,18 @@ func UpdateModulePage(pageID string, name *string,
 		slug = &sanitizedSlug
 	}
 
+	if iframeOnly != nil && pageOnly != nil && *iframeOnly && *pageOnly {
+		return ModulePage{}, fmt.Errorf("iframe_only and page_only cannot both be true")
+	}
+	if iframeOnly != nil && *iframeOnly && pageOnly == nil {
+		off := false
+		pageOnly = &off
+	}
+	if pageOnly != nil && *pageOnly && iframeOnly == nil {
+		off := false
+		iframeOnly = &off
+	}
+
 	patch := database.ModulePagePatch{
 		ID:                 pageID,
 		Name:               name,
@@ -976,6 +996,7 @@ func UpdateModulePage(pageID string, name *string,
 		TargetPort:         sanitizedPort,
 		TargetPortSet:      targetPortSet,
 		IframeOnly:         iframeOnly,
+		PageOnly:           pageOnly,
 		NeedAuth:           needAuth,
 		IsVisible:          isVisible,
 		Network:            sanitizedNetwork,
@@ -996,6 +1017,13 @@ func ptrValue(value *string) string {
 		return ""
 	}
 	return *value
+}
+
+func validatePageMode(iframeOnly, pageOnly bool) error {
+	if iframeOnly && pageOnly {
+		return fmt.Errorf("iframe_only and page_only cannot both be true")
+	}
+	return nil
 }
 
 func toNullString(value *string) sql.NullString {

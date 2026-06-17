@@ -111,6 +111,7 @@ func ModulePageToAPIModulePage(modulePage core.ModulePage) ModulePage {
 		TargetContainer: modulePage.TargetContainer,
 		TargetPort:      modulePage.TargetPort,
 		IframeOnly:      modulePage.IframeOnly,
+		PageOnly:        modulePage.PageOnly,
 		NeedAuth:        modulePage.NeedAuth,
 		IsVisible:       modulePage.IsVisible,
 		IconURL:         modulePage.IconURL,

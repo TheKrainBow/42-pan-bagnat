@@ -123,6 +123,14 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 	if _, ok := raw["target_port"]; ok {
 		targetPortSet = true
 	}
+	iframeOnlySet := false
+	if _, ok := raw["iframe_only"]; ok {
+		iframeOnlySet = true
+	}
+	pageOnlySet := false
+	if _, ok := raw["page_only"]; ok {
+		pageOnlySet = true
+	}
 	slugSet := false
 	if _, ok := raw["slug"]; ok {
 		slugSet = true
@@ -152,8 +160,21 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 		input.NetworkName = &trimmed
 	}
 
+	if input.IframeOnly != nil && input.PageOnly != nil && *input.IframeOnly && *input.PageOnly {
+		http.Error(w, "iframe_only and page_only cannot both be true", http.StatusBadRequest)
+		return
+	}
+	if input.IframeOnly != nil && *input.IframeOnly && !pageOnlySet {
+		off := false
+		input.PageOnly = &off
+	}
+	if input.PageOnly != nil && *input.PageOnly && !iframeOnlySet {
+		off := false
+		input.IframeOnly = &off
+	}
+
 	// perform update
-	modulePage, err := core.UpdateModulePage(pageID, input.Name, input.Slug, slugSet, input.TargetContainer, targetContainerSet, input.TargetPort, targetPortSet, input.IframeOnly, input.NeedAuth, input.IsVisible, input.NetworkName, networkSet)
+	modulePage, err := core.UpdateModulePage(pageID, input.Name, input.Slug, slugSet, input.TargetContainer, targetContainerSet, input.TargetPort, targetPortSet, input.IframeOnly, input.PageOnly, input.NeedAuth, input.IsVisible, input.NetworkName, networkSet)
 	if err != nil {
 		core.LogModule(moduleID, "ERROR", "Failed to update module page", nil, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -171,6 +192,7 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 				"-> name":        apiPage.Name,
 				"-> target":      describeTarget(apiPage.TargetContainer, apiPage.TargetPort),
 				"-> iframe_only": apiPage.IframeOnly,
+				"-> page_only":   apiPage.PageOnly,
 				"-> need_auth":   apiPage.NeedAuth,
 				"-> is_visible":  apiPage.IsVisible,
 			}, nil)

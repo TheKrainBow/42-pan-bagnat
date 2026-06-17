@@ -138,6 +138,7 @@ func DatabaseModulePageToModulePage(dbPage database.ModulePage) ModulePage {
 		TargetContainer: targetContainer,
 		TargetPort:      targetPort,
 		IframeOnly:      dbPage.IframeOnly,
+		PageOnly:        dbPage.PageOnly,
 		NeedAuth:        dbPage.NeedAuth,
 		IsVisible:       dbPage.IsVisible,
 		IconURL:         dbPage.IconURL,

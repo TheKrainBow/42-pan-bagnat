@@ -5,6 +5,7 @@ import Button from 'Global/Button/Button';
 import { getModulesDomain, getModulesProtocol } from '../../../utils/modules';
 import { exchangeModuleSession } from '../../../utils/moduleSession';
 import { loadSidebarPrefs, getVisibleSidebarPages } from '../../../utils/sidebarPrefs';
+import { getModulePageMode } from '../../../utils/modulePageMode';
 
 export default function ModulePage({ pages, user }) {
   const { slug } = useParams();
@@ -15,10 +16,12 @@ export default function ModulePage({ pages, user }) {
 
   const visiblePages = useMemo(() => getVisibleSidebarPages(pages, prefs), [pages, prefs]);
   const page = visiblePages.find((p) => p.slug === slug);
+  const pageMode = getModulePageMode(page);
   const modulesDomain = useMemo(() => getModulesDomain(), []);
   const modulesProtocol = useMemo(() => getModulesProtocol(modulesDomain), [modulesDomain]);
-  const moduleOrigin = page ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
+  const moduleOrigin = page && pageMode !== 'page_only' ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
   const iframeSrc = moduleOrigin ? `${moduleOrigin}/` : '';
+  const externalUrl = page ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
 
   useEffect(() => {
     if (user?.ft_login) {
@@ -51,12 +54,12 @@ export default function ModulePage({ pages, user }) {
   }, [slug]);
 
   useEffect(() => {
-    if (!page) return;
+    if (!page || pageMode === 'page_only') return;
     setStatus('loading');
-  }, [page, retryKey]);
+  }, [page, pageMode, retryKey]);
 
   useEffect(() => {
-    if (!page) {
+    if (!page || pageMode === 'page_only') {
       setAuthReady(false);
       return;
     }
@@ -101,10 +104,10 @@ export default function ModulePage({ pages, user }) {
     return () => {
       canceled = true;
     };
-  }, [page, moduleOrigin, retryKey]);
+  }, [page, pageMode, moduleOrigin, retryKey]);
 
   useEffect(() => {
-    if (!page || !authReady) return;
+    if (!page || pageMode === 'page_only' || !authReady) return;
     const iframe = document.getElementById('moduleIframe');
     if (!iframe) return;
 
@@ -118,7 +121,7 @@ export default function ModulePage({ pages, user }) {
       setStatus('error');
     };
     return () => clearTimeout(timeout);
-  }, [page, retryKey, authReady]);
+  }, [page, pageMode, retryKey, authReady]);
 
   if (!slug) {
     if (visiblePages.length > 0) {
@@ -133,6 +136,21 @@ export default function ModulePage({ pages, user }) {
 
   if (!page) {
     return <div className="module-page-placeholder">Module not found or access denied.</div>;
+  }
+
+  if (pageMode === 'page_only') {
+    return (
+      <div className="module-page-container">
+        <div className="module-page-status module-page-status-page-only">
+          <p>Ce module n&apos;est pas disponible en iframe.</p>
+          <Button
+            label="Acceder au site"
+            color="blue"
+            onClick={() => window.location.assign(externalUrl)}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (

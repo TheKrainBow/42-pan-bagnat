@@ -83,6 +83,9 @@ type ModulePageUpdateInput struct {
 	// IframeOnly enforces that the page is only reachable from the Pan Bagnat iframe.
 	IframeOnly *bool `json:"iframe_only,omitempty" example:"true"`
 
+	// PageOnly enforces that the page is only reachable directly on the module domain.
+	PageOnly *bool `json:"page_only,omitempty" example:"true"`
+
 	// NeedAuth toggles whether authentication is required.
 	NeedAuth *bool `json:"need_auth,omitempty" example:"true"`
 
@@ -133,6 +136,8 @@ type ModulePageInput struct {
 	TargetPort *int `json:"target_port,omitempty" example:"80"`
 	// IframeOnly enforces iframe usage for the page.
 	IframeOnly bool `json:"iframe_only" example:"true"`
+	// PageOnly enforces direct access on the module domain.
+	PageOnly bool `json:"page_only" example:"false"`
 	// NeedAuth controls whether authentication is required.
 	NeedAuth bool `json:"need_auth" example:"true"`
 	// IsVisible controls whether the page appears in user-facing navigation.
