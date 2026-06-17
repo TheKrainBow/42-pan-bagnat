@@ -167,7 +167,7 @@ export default function ModuleOIDCSection({ moduleId }) {
     }
 
     if (scopes.has('email')) {
-      payload.email = 'user@example.com';
+      payload.email = 'login@student.42nice.fr';
       payload.email_verified = true;
     }
 
@@ -341,11 +341,6 @@ export default function ModuleOIDCSection({ moduleId }) {
           </div>
           <p>This is a dynamic example based on the scopes currently enabled for this client.</p>
           <pre>{userInfoExample}</pre>
-          {data.allowed_scopes?.includes('email') && (
-            <p className="oidc-warning">
-              The <code>email</code> scope is enabled in the UI, but Pan Bagnat currently has no authoritative email source, so the live endpoint will not emit email claims yet.
-            </p>
-          )}
         </div>
       </div>
 
