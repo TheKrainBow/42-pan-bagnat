@@ -344,8 +344,8 @@ func BuildOIDCUserClaims(user User, module Module, _ database.OIDCClient, scopes
 		claims.Picture = user.PhotoURL
 	}
 	if includeEmail {
-		// Pan Bagnat currently has no stored email source.
-		// Keep the claim absent until an authoritative email field exists.
+		claims.Email = buildOIDCEmail(user)
+		claims.EmailVerified = claims.Email != ""
 	}
 	if includeRoles {
 		claims.Module = map[string]any{
@@ -362,6 +362,17 @@ func BuildOIDCUserClaims(user User, module Module, _ database.OIDCClient, scopes
 		}
 	}
 	return claims
+}
+
+func buildOIDCEmail(user User) string {
+	login := strings.TrimSpace(strings.ToLower(user.FtLogin))
+	if login == "" {
+		return ""
+	}
+	if user.FtIsStaff {
+		return login + "@42nice.fr"
+	}
+	return login + "@student.42nice.fr"
 }
 
 func BuildOIDCIDTokenClaims(user User, module Module, client database.OIDCClient, scopes []string, nonce string, now time.Time) oidcIDTokenClaims {

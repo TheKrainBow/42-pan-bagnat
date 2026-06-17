@@ -58,10 +58,14 @@ Scopes: openid profile email roles
 - `roles`
 - `role_slugs`
 
+`email` is derived from the Pan Bagnat login:
+
+- `login@student.42nice.fr` for non-staff users
+- `login@42nice.fr` for staff users
+
 ## Limits
 
 - Authorization Code flow only
 - No refresh token in this version
 - Redirect URIs must be explicit and exact
 - Secret values are shown only once on generation or rotation
-

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"backend/database"
 	"os"
 	"sync"
 	"testing"
@@ -48,6 +49,33 @@ func TestOIDCDiscoveryAndJWKS(t *testing.T) {
 	if keys[0]["kty"] != "RSA" {
 		t.Fatalf("unexpected key type: %v", keys[0]["kty"])
 	}
+}
+
+func TestBuildOIDCUserClaimsEmailFromLogin(t *testing.T) {
+	module := Module{ID: "module_01", Slug: "wiki-test", Name: "Wiki test"}
+	client := database.OIDCClient{}
+
+	t.Run("student", func(t *testing.T) {
+		user := User{ID: "user_01", FtLogin: "heinz", FtIsStaff: false}
+		claims := BuildOIDCUserClaims(user, module, client, []string{"openid", "email"}, "")
+		if got := claims.Email; got != "heinz@student.42nice.fr" {
+			t.Fatalf("unexpected email: %s", got)
+		}
+		if !claims.EmailVerified {
+			t.Fatalf("expected email_verified to be true")
+		}
+	})
+
+	t.Run("staff", func(t *testing.T) {
+		user := User{ID: "user_02", FtLogin: "heinz", FtIsStaff: true}
+		claims := BuildOIDCUserClaims(user, module, client, []string{"openid", "email"}, "")
+		if got := claims.Email; got != "heinz@42nice.fr" {
+			t.Fatalf("unexpected email: %s", got)
+		}
+		if !claims.EmailVerified {
+			t.Fatalf("expected email_verified to be true")
+		}
+	})
 }
 
 func TestMain(m *testing.M) {
