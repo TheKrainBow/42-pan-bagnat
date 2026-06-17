@@ -675,6 +675,10 @@ func ImportModule(actor *User, name string, gitURL string, gitBranch string, ssh
 		_ = AppendSSHKeyEvent(sshKeyID, actor, &dest.ID, msg)
 	}
 
+	if _, err := ensureOIDCClientForModule(dest); err != nil {
+		log.Printf("failed to ensure OIDC client for module %s: %v", dest.ID, err)
+	}
+
 	return dest, nil
 }
 

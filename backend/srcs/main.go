@@ -13,6 +13,7 @@ import (
 	"backend/api/auth"
 	"backend/api/integrations"
 	"backend/api/modules"
+	"backend/api/oidc"
 	"backend/api/ping"
 	"backend/api/roles"
 	"backend/api/sshkeys"
@@ -203,6 +204,10 @@ func main() {
 
 	// r.Get("/swagger/*", httpSwagger.WrapHandler)
 
+	r.With(InjectUserInMiddleware).Route("/", func(r chi.Router) {
+		oidc.RegisterPublicRoutes(r)
+	})
+
 	r.Route("/auth", func(r chi.Router) {
 		auth.RegisterRoutes(r)
 	})
@@ -224,7 +229,10 @@ func main() {
 			r.Use(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware, auth.AdminMiddleware)
 
 			r.Route("/integrations", integrations.RegisterRoutes)
-			r.Route("/modules", modules.RegisterRoutes)
+			r.Route("/modules", func(r chi.Router) {
+				modules.RegisterRoutes(r)
+				oidc.RegisterAdminRoutes(r)
+			})
 			r.Route("/ssh-keys", sshkeys.RegisterRoutes)
 			r.Get("/docker/ls", modules.GetAllContainers)
 			r.Delete("/docker/{containerName}/delete", modules.DeleteContainerGlobal)
@@ -232,6 +240,10 @@ func main() {
 			r.Route("/roles", roles.RegisterRoutes)
 		})
 	})
+
+	if err := core.BackfillOIDCClients(); err != nil {
+		log.Printf("OIDC backfill failed: %v", err)
+	}
 
 	core.StartDockerEventWatcher()
 	go websocket.Dispatch()
