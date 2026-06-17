@@ -4,15 +4,7 @@ import { getStoredTheme, setTheme, toggleTheme } from 'Global/Theme/theme';
 import { fetchWithAuth } from 'Global/utils/Auth';
 import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import { getReadableStyles } from 'Global/utils/ColorUtils';
-
-function loadPrefs(login) {
-  try {
-    const raw = localStorage.getItem(`pb:sidebar:${login}`);
-    return raw ? JSON.parse(raw) : { order: [], hidden: {} };
-  } catch {
-    return { order: [], hidden: {} };
-  }
-}
+import { loadSidebarPrefs, getOrderedSidebarPages } from '../../utils/sidebarPrefs';
 
 function savePrefs(login, prefs) {
   try {
@@ -23,7 +15,7 @@ function savePrefs(login, prefs) {
 export default function UserSettingsPage({ pages: initialPages, user: initialUser }) {
   const [user, setUser] = useState(initialUser || null);
   const [pages, setPages] = useState(initialPages || []);
-  const [prefs, setPrefs] = useState(() => (initialUser?.ft_login ? loadPrefs(initialUser.ft_login) : { order: [], hidden: {} }));
+  const [prefs, setPrefs] = useState(() => loadSidebarPrefs(initialUser?.ft_login));
   const [sessions, setSessions] = useState([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -86,18 +78,12 @@ export default function UserSettingsPage({ pages: initialPages, user: initialUse
 
   // Keep prefs synced with user
   useEffect(() => {
-    if (user?.ft_login) setPrefs(loadPrefs(user.ft_login));
+    if (user?.ft_login) setPrefs(loadSidebarPrefs(user.ft_login));
   }, [user?.ft_login]);
 
   // Compute ordered pages with visibility
   const orderedPages = useMemo(() => {
-    const order = Array.isArray(prefs.order) ? prefs.order : [];
-    const hidden = prefs.hidden || {};
-    const bySlug = new Map(pages.map(p => [p.slug, p]));
-    const out = [];
-    for (const s of order) { if (bySlug.has(s)) { out.push(bySlug.get(s)); bySlug.delete(s); } }
-    for (const p of pages) { if (!out.find(x => x.slug === p.slug)) out.push(p); }
-    return out.map(p => ({ ...p, _hidden: !!hidden[p.slug] }));
+    return getOrderedSidebarPages(pages, prefs);
   }, [pages, prefs]);
 
   // Drag and drop reorder

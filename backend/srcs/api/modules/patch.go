@@ -123,6 +123,10 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 	if _, ok := raw["target_port"]; ok {
 		targetPortSet = true
 	}
+	slugSet := false
+	if _, ok := raw["slug"]; ok {
+		slugSet = true
+	}
 	networkSet := false
 	if _, ok := raw["network_name"]; ok {
 		networkSet = true
@@ -131,6 +135,11 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 	// trim & validate required fields
 	if input.Name != nil {
 		*input.Name = strings.TrimSpace(*input.Name)
+	}
+
+	if input.Slug != nil {
+		trimmed := strings.TrimSpace(*input.Slug)
+		input.Slug = &trimmed
 	}
 
 	if input.TargetContainer != nil {
@@ -144,10 +153,10 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// perform update
-	modulePage, err := core.UpdateModulePage(pageID, input.Name, input.TargetContainer, targetContainerSet, input.TargetPort, targetPortSet, input.IframeOnly, input.NeedAuth, input.NetworkName, networkSet)
+	modulePage, err := core.UpdateModulePage(pageID, input.Name, input.Slug, slugSet, input.TargetContainer, targetContainerSet, input.TargetPort, targetPortSet, input.IframeOnly, input.NeedAuth, input.IsVisible, input.NetworkName, networkSet)
 	if err != nil {
 		core.LogModule(moduleID, "ERROR", "Failed to update module page", nil, err)
-		http.Error(w, "Internal error", http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -163,6 +172,7 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 				"-> target":      describeTarget(apiPage.TargetContainer, apiPage.TargetPort),
 				"-> iframe_only": apiPage.IframeOnly,
 				"-> need_auth":   apiPage.NeedAuth,
+				"-> is_visible":  apiPage.IsVisible,
 			}, nil)
 		w.Write(b)
 	}

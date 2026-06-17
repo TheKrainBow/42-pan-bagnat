@@ -71,6 +71,9 @@ type ModulePageUpdateInput struct {
 	// Name is the new name for the page.
 	Name *string `json:"name,omitempty" example:"Home"`
 
+	// Slug is the hostname segment used to expose the page.
+	Slug *string `json:"slug,omitempty" example:"watchdog"`
+
 	// TargetContainer is the docker container name this page proxies to.
 	TargetContainer *string `json:"target_container,omitempty" example:"frontend"`
 
@@ -82,6 +85,9 @@ type ModulePageUpdateInput struct {
 
 	// NeedAuth toggles whether authentication is required.
 	NeedAuth *bool `json:"need_auth,omitempty" example:"true"`
+
+	// IsVisible controls whether the page appears in user-facing navigation.
+	IsVisible *bool `json:"is_visible,omitempty" example:"true"`
 
 	// NetworkName is the docker network to which the reverse proxy must attach.
 	NetworkName *string `json:"network_name,omitempty" example:"piscine-monitor-net"`
@@ -117,8 +123,10 @@ type ComposeRequest struct {
 // ModulePageInput describes the payload for creating a new module page.
 // swagger:model ModulePageInput
 type ModulePageInput struct {
-	// Name is the slug/identifier for this page (e.g. "home")
-	Name string `json:"name"      example:"home"`
+	// Name is the human-readable label displayed in the admin.
+	Name string `json:"name" example:"Watchdog"`
+	// Slug is the hostname segment used to expose the page. If omitted, it is generated from the name.
+	Slug *string `json:"slug,omitempty" example:"watchdog"`
 	// TargetContainer is the docker container name this page proxies to.
 	TargetContainer *string `json:"target_container,omitempty" example:"frontend"`
 	// TargetPort is the port exposed by the container to proxy.
@@ -127,6 +135,8 @@ type ModulePageInput struct {
 	IframeOnly bool `json:"iframe_only" example:"true"`
 	// NeedAuth controls whether authentication is required.
 	NeedAuth bool `json:"need_auth" example:"true"`
+	// IsVisible controls whether the page appears in user-facing navigation.
+	IsVisible bool `json:"is_visible" example:"true"`
 	// NetworkName is the docker network the proxy should join for this page (optional)
 	NetworkName *string `json:"network_name,omitempty" example:"piscine-monitor-net"`
 }

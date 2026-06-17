@@ -124,6 +124,7 @@ type ModulePage struct {
 	TargetPort      *int    `json:"target_port,omitempty"`
 	IframeOnly      bool    `json:"iframe_only"`
 	NeedAuth        bool    `json:"need_auth"`
+	IsVisible       bool    `json:"is_visible"`
 	ModuleID        string  `json:"module_id"`
 	IconURL         string  `json:"icon_url"`
 	NetworkName     string  `json:"network_name,omitempty"`
@@ -462,16 +463,7 @@ func UserCanAccessPage(userIdentifier, slug string) (bool, error) {
 	if strings.TrimSpace(userIdentifier) == "" || strings.TrimSpace(slug) == "" {
 		return false, nil
 	}
-	pages, err := GetUserPages(userIdentifier)
-	if err != nil {
-		return false, err
-	}
-	for _, page := range pages {
-		if page.Slug == slug {
-			return true, nil
-		}
-	}
-	return false, nil
+	return database.UserCanAccessPage(userIdentifier, slug)
 }
 
 func GetPage(pageName string) (ModulePage, error) {
@@ -489,10 +481,7 @@ func GetPage(pageName string) (ModulePage, error) {
 }
 
 func GeneratePageSlug(name string) string {
-	slug := strings.ToLower(name)
-	slug = strings.TrimSpace(slug)
-	slug = regexp.MustCompile(`\s+`).ReplaceAllString(slug, "-")
-	slug = strings.Trim(slug, "-")
+	slug := normalizePageSlug(name)
 	if slug == "" {
 		slug = "page"
 	}
@@ -513,6 +502,30 @@ func GeneratePageSlug(name string) string {
 		}
 		attempt++
 	}
+}
+
+func normalizePageSlug(value string) string {
+	slug := strings.ToLower(strings.TrimSpace(value))
+	slug = regexp.MustCompile(`[^a-z0-9]+`).ReplaceAllString(slug, "-")
+	slug = strings.Trim(slug, "-")
+	return slug
+}
+
+func ensurePageSlugAvailable(value string, excludePageID string) (string, error) {
+	slug := normalizePageSlug(value)
+	if slug == "" {
+		return "", fmt.Errorf("invalid page slug")
+	}
+
+	existing, err := database.GetPage(slug)
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
+		return "", fmt.Errorf("couldn't validate page slug: %w", err)
+	}
+	if err == nil && existing != nil && existing.ID != excludePageID {
+		return "", fmt.Errorf("page slug already exists")
+	}
+
+	return slug, nil
 }
 
 func GenerateModuleSlug(name, _ string) string {
@@ -787,7 +800,7 @@ func GetModulePages(pagination ModulePagesPagination) ([]ModulePage, string, err
 	return dest, token, nil
 }
 
-func ImportModulePage(moduleID, name string, targetContainer *string, targetPort *int, iframeOnly, needAuth bool, network string) (ModulePage, error) {
+func ImportModulePage(moduleID, name string, slug *string, targetContainer *string, targetPort *int, iframeOnly, needAuth, isVisible bool, network string) (ModulePage, error) {
 	pageID, err := GenerateULID(PageKind)
 	if err != nil {
 		return ModulePage{}, fmt.Errorf("failed to generate page ID: %w", err)
@@ -814,16 +827,27 @@ func ImportModulePage(moduleID, name string, targetContainer *string, targetPort
 		return ModulePage{}, fmt.Errorf("target_container and target_port must be defined together")
 	}
 
+	pageSlug := ""
+	if slug != nil && strings.TrimSpace(*slug) != "" {
+		pageSlug, err = ensurePageSlugAvailable(*slug, "")
+		if err != nil {
+			return ModulePage{}, err
+		}
+	} else {
+		pageSlug = GeneratePageSlug(name)
+	}
+
 	// Prepare module struct
 	dest := ModulePage{
 		ID:              pageID,
 		ModuleID:        moduleID,
 		Name:            name,
-		Slug:            GeneratePageSlug(name),
+		Slug:            pageSlug,
 		TargetContainer: sanitizedTarget,
 		TargetPort:      sanitizedPort,
 		IframeOnly:      iframeOnly,
 		NeedAuth:        needAuth,
+		IsVisible:       isVisible,
 		NetworkName:     strings.TrimSpace(network),
 	}
 
@@ -837,6 +861,7 @@ func ImportModulePage(moduleID, name string, targetContainer *string, targetPort
 		TargetPort:      toNullInt(dest.TargetPort),
 		IframeOnly:      dest.IframeOnly,
 		NeedAuth:        dest.NeedAuth,
+		IsVisible:       dest.IsVisible,
 		NetworkName:     dest.NetworkName,
 	}); err != nil {
 		return ModulePage{}, fmt.Errorf("failed to insert module in DB: %w", err)
@@ -883,10 +908,12 @@ func DeleteModulePage(pageID string) error {
 }
 
 func UpdateModulePage(pageID string, name *string,
+	slug *string, slugSet bool,
 	targetContainer *string, targetContainerSet bool,
 	targetPort *int, targetPortSet bool,
 	iframeOnly *bool,
 	needAuth *bool,
+	isVisible *bool,
 	network *string, networkSet bool,
 ) (ModulePage, error) {
 	var sanitizedContainer *string
@@ -932,22 +959,27 @@ func UpdateModulePage(pageID string, name *string,
 		}
 	}
 
+	if slugSet {
+		sanitizedSlug, err := ensurePageSlugAvailable(strings.TrimSpace(ptrValue(slug)), pageID)
+		if err != nil {
+			return ModulePage{}, err
+		}
+		slug = &sanitizedSlug
+	}
+
 	patch := database.ModulePagePatch{
 		ID:                 pageID,
 		Name:               name,
+		Slug:               slug,
 		TargetContainer:    sanitizedContainer,
 		TargetContainerSet: targetContainerSet,
 		TargetPort:         sanitizedPort,
 		TargetPortSet:      targetPortSet,
 		IframeOnly:         iframeOnly,
 		NeedAuth:           needAuth,
+		IsVisible:          isVisible,
 		Network:            sanitizedNetwork,
 		NetworkSet:         networkSet,
-	}
-
-	if name != nil {
-		newSlug := GeneratePageSlug(*name)
-		patch.Slug = &newSlug
 	}
 
 	dbPage, err := database.PatchModulePage(patch)
@@ -957,6 +989,13 @@ func UpdateModulePage(pageID string, name *string,
 
 	page := DatabaseModulePageToModulePage(dbPage)
 	return page, nil
+}
+
+func ptrValue(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
 }
 
 func toNullString(value *string) sql.NullString {

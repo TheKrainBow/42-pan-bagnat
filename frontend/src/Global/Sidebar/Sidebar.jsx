@@ -3,22 +3,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
-
-function loadPrefsFor(login) {
-  try {
-    const raw = localStorage.getItem(`pb:sidebar:${login}`);
-    return raw ? JSON.parse(raw) : { order: [], hidden: {} };
-  } catch {
-    return { order: [], hidden: {} };
-  }
-}
+import { loadSidebarPrefs, getVisibleSidebarPages } from '../../utils/sidebarPrefs';
 
 export default function Sidebar({ currentPage, user, pages }) {
   const navigate = useNavigate();
   const mode = currentPage.startsWith('/admin/') ? 'admin' : 'user';
 
   const [selectedPage, setSelectedPage] = useState(null);
-  const [prefs, setPrefs] = useState(() => (user?.ft_login ? loadPrefsFor(user.ft_login) : { order: [], hidden: {} }));
+  const [prefs, setPrefs] = useState(() => loadSidebarPrefs(user?.ft_login));
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('pb:sidebar:collapsed') === '1');
   const [anim, setAnim] = useState(''); // '' | 'collapsing' | 'expanding'
   const location = useLocation();
@@ -35,12 +27,12 @@ export default function Sidebar({ currentPage, user, pages }) {
 
   // Reload prefs when user changes
   useEffect(() => {
-    if (user?.ft_login) setPrefs(loadPrefsFor(user.ft_login));
+    if (user?.ft_login) setPrefs(loadSidebarPrefs(user.ft_login));
   }, [user?.ft_login]);
 
   // Reload prefs on navigation (so returning from /settings reflects changes)
   useEffect(() => {
-    if (user?.ft_login) setPrefs(loadPrefsFor(user.ft_login));
+    if (user?.ft_login) setPrefs(loadSidebarPrefs(user.ft_login));
   }, [location.pathname, user?.ft_login]);
 
   // Live updates from settings page
@@ -49,7 +41,7 @@ export default function Sidebar({ currentPage, user, pages }) {
       if (!user?.ft_login) return;
       const login = e?.detail?.login;
       if (!login || login === user.ft_login) {
-        setPrefs(loadPrefsFor(user.ft_login));
+        setPrefs(loadSidebarPrefs(user.ft_login));
       }
     }
     window.addEventListener('pb:prefs:sidebarChanged', onPrefsChanged);
@@ -67,6 +59,7 @@ export default function Sidebar({ currentPage, user, pages }) {
         if (!remote || cancelled) return;
         setPrefs(remote);
         try { localStorage.setItem(`pb:sidebar:${user.ft_login}`, JSON.stringify(remote)); } catch {}
+        window.dispatchEvent(new CustomEvent('pb:prefs:sidebarChanged', { detail: { login: user.ft_login } }));
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -83,6 +76,7 @@ export default function Sidebar({ currentPage, user, pages }) {
         if (!remote || cancelled) return;
         setPrefs(remote);
         try { localStorage.setItem(`pb:sidebar:${user.ft_login}`, JSON.stringify(remote)); } catch {}
+        window.dispatchEvent(new CustomEvent('pb:prefs:sidebarChanged', { detail: { login: user.ft_login } }));
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -91,18 +85,7 @@ export default function Sidebar({ currentPage, user, pages }) {
   // Apply prefs to pages (order + hidden)
   const displayPages = useMemo(() => {
     if (mode !== 'user') return pages;
-    const order = Array.isArray(prefs.order) ? prefs.order : [];
-    const hidden = prefs.hidden || {};
-    const bySlug = new Map(pages.map(p => [p.slug, p]));
-    const ordered = [];
-    for (const s of order) {
-      if (bySlug.has(s)) ordered.push(bySlug.get(s));
-      bySlug.delete(s);
-    }
-    for (const p of pages) {
-      if (!ordered.find(x => x.slug === p.slug)) ordered.push(p);
-    }
-    return ordered.filter(p => !hidden[p.slug]);
+    return getVisibleSidebarPages(pages, prefs);
   }, [pages, prefs, mode]);
 
   // On click

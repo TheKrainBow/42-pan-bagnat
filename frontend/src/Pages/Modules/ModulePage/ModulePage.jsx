@@ -4,18 +4,39 @@ import './ModulePage.css';
 import Button from 'Global/Button/Button';
 import { getModulesDomain, getModulesProtocol } from '../../../utils/modules';
 import { exchangeModuleSession } from '../../../utils/moduleSession';
+import { loadSidebarPrefs, getVisibleSidebarPages } from '../../../utils/sidebarPrefs';
 
-export default function ModulePage({ pages }) {
+export default function ModulePage({ pages, user }) {
   const { slug } = useParams();
   const [status, setStatus] = useState('loading');
   const [retryKey, setRetryKey] = useState(0);
   const [authReady, setAuthReady] = useState(false);
+  const [prefs, setPrefs] = useState(() => loadSidebarPrefs(user?.ft_login));
 
-  const page = pages.find((p) => p.slug === slug);
+  const visiblePages = useMemo(() => getVisibleSidebarPages(pages, prefs), [pages, prefs]);
+  const page = visiblePages.find((p) => p.slug === slug);
   const modulesDomain = useMemo(() => getModulesDomain(), []);
   const modulesProtocol = useMemo(() => getModulesProtocol(modulesDomain), [modulesDomain]);
   const moduleOrigin = page ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
   const iframeSrc = moduleOrigin ? `${moduleOrigin}/` : '';
+
+  useEffect(() => {
+    if (user?.ft_login) {
+      setPrefs(loadSidebarPrefs(user.ft_login));
+    }
+  }, [user?.ft_login]);
+
+  useEffect(() => {
+    function onPrefsChanged(e) {
+      if (!user?.ft_login) return;
+      if (!e?.detail?.login || e.detail.login === user.ft_login) {
+        setPrefs(loadSidebarPrefs(user.ft_login));
+      }
+    }
+
+    window.addEventListener('pb:prefs:sidebarChanged', onPrefsChanged);
+    return () => window.removeEventListener('pb:prefs:sidebarChanged', onPrefsChanged);
+  }, [user?.ft_login]);
 
   useEffect(() => {
     if (pages.length === 0) return;
@@ -100,14 +121,14 @@ export default function ModulePage({ pages }) {
   }, [page, retryKey, authReady]);
 
   if (!slug) {
-    if (pages.length > 0) {
-      return <Navigate to={`/modules/${pages[0].slug}`} replace />;
+    if (visiblePages.length > 0) {
+      return <Navigate to={`/modules/${visiblePages[0].slug}`} replace />;
     }
     return <div className="module-page-placeholder">No accessible modules.</div>;
   }
 
-  if (!page && pages.length > 0) {
-    return <Navigate to={`/modules/${pages[0].slug}`} replace />;
+  if (!page && visiblePages.length > 0) {
+    return <Navigate to={`/modules/${visiblePages[0].slug}`} replace />;
   }
 
   if (!page) {

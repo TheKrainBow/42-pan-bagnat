@@ -3,6 +3,7 @@ import Button from 'Global/Button/Button';
 import './DockerPageSection.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
 import PageIconModal from 'Pages/Modules/Components/ModuleIconModal/ModuleIconModal';
+import { getModulesDomain } from '../../../../../utils/modules';
 
 export default function ModulePageSection({ moduleId }) {
   const [pages, setPages] = useState([]);            // holds both existing & new rows
@@ -11,7 +12,14 @@ export default function ModulePageSection({ moduleId }) {
   const [iconTarget, setIconTarget] = useState(null);
   const [networks, setNetworks] = useState([]);
   const [containers, setContainers] = useState([]);
+  const modulesDomain = getModulesDomain();
   const hasUnsaved = Object.values(edits).some(e => e.dirty);
+
+  const slugify = (value) => String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
 
   const fetchNetworks = async () => {
     try {
@@ -93,9 +101,11 @@ export default function ModulePageSection({ moduleId }) {
         targetPort: typeof p.target_port === 'number' ? p.target_port : null,
         iframeOnly: !!p.iframe_only,
         needAuth: !!p.need_auth,
+        isVisible: p.is_visible !== false,
         icon_url: p.icon_url,
         network: p.network_name || '',
         isNew: false,
+        slugManual: true,
       }));
       setPages(list);
 
@@ -127,9 +137,11 @@ export default function ModulePageSection({ moduleId }) {
       targetPort: null,
       iframeOnly: true,
       needAuth: true,
+      isVisible: true,
       icon_url: '',
       network: '',
       isNew: true,
+      slugManual: false,
     };
 
     setPages(ps => [...ps, newRow]);
@@ -148,6 +160,36 @@ export default function ModulePageSection({ moduleId }) {
         [field]: value,
         dirty: true
       }
+    }));
+  };
+
+  const handleNameChange = (id, value) => {
+    setEdits((prev) => {
+      const current = prev[id] || {};
+      const next = {
+        ...current,
+        name: value,
+        dirty: true,
+      };
+      if (current.isNew && !current.slugManual) {
+        next.slug = slugify(value);
+      }
+      return {
+        ...prev,
+        [id]: next,
+      };
+    });
+  };
+
+  const handleSlugChange = (id, value) => {
+    setEdits((prev) => ({
+      ...prev,
+      [id]: {
+        ...prev[id],
+        slug: slugify(value),
+        slugManual: true,
+        dirty: true,
+      },
     }));
   };
 
@@ -186,8 +228,8 @@ export default function ModulePageSection({ moduleId }) {
 
   // save either POST (new) or PATCH (existing)
   const handleSave = async (id) => {
-    const { name, targetContainer, targetPort, iframeOnly, needAuth, isNew } = edits[id];
-    if (!name) return;
+    const { name, slug, targetContainer, targetPort, iframeOnly, needAuth, isVisible, isNew } = edits[id];
+    if (!name || !slug) return;
 
     setIsSaving(true);
     try {
@@ -195,10 +237,12 @@ export default function ModulePageSection({ moduleId }) {
       const hasTarget = trimmedContainer !== '' && typeof targetPort === 'number';
       const payload = {
         name,
+        slug,
         target_container: hasTarget ? trimmedContainer : null,
         target_port: hasTarget ? targetPort : null,
         iframe_only: !!iframeOnly,
         need_auth: !!needAuth,
+        is_visible: !!isVisible,
         network_name: (edits[id].network || '').trim() || null,
       };
       if (isNew) {
@@ -273,7 +317,23 @@ export default function ModulePageSection({ moduleId }) {
       {pages.length === 0 ? (
         <div className="no-pages">No pages added yet.</div>
       ) : (
-        <ul className="page-list">
+        <div className="page-table-wrap">
+        <table className="page-table">
+          <thead>
+            <tr>
+              <th className="icon-col">Icon</th>
+              <th>Nom</th>
+              <th>Slug</th>
+              <th>Container</th>
+              <th>Port</th>
+              <th>Network</th>
+              <th>Iframe</th>
+              <th>Auth</th>
+              <th>Visible</th>
+              <th className="actions-col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
           {pages.map(({ id }) => {
             const edit = edits[id] || {};
             const containerPorts = getContainerPorts(edit.targetContainer);
@@ -281,20 +341,38 @@ export default function ModulePageSection({ moduleId }) {
             const missingContainer = !(edit.targetContainer || '').trim();
             const missingPort = typeof edit.targetPort !== 'number';
             const missingNetwork = !(edit.network || '').trim();
+            const missingName = !(edit.name || '').trim();
+            const missingSlug = !(edit.slug || '').trim();
             return (
-              <li
+              <tr
                 key={id}
                 className={`page-item${edit.dirty ? ' dirty' : ''}`}
               >
-                <div className="page-info">
+                <td className="page-cell page-icon-cell">
                   <img src={edit.icon_url || '/icons/modules.png'} className="page-icon-preview" alt="icon" title="Click to change icon" onClick={()=> setIconTarget(id)} />
+                </td>
+                <td className="page-cell">
                   <input
-                    className="page-name-input"
+                    className={`page-text-input${missingName ? ' missing-field' : ''}`}
                     type="text"
-                    placeholder="Name"
+                    placeholder="Display name"
                     value={edit.name || ''}
-                    onChange={e => handleChange(id, 'name', e.target.value)}
+                    onChange={e => handleNameChange(id, e.target.value)}
                   />
+                </td>
+                <td className="page-cell">
+                  <div className={`slug-input${missingSlug ? ' missing-field' : ''}`}>
+                    <input
+                      className="page-text-input slug-input-field"
+                      type="text"
+                      placeholder="slug"
+                      value={edit.slug || ''}
+                      onChange={e => handleSlugChange(id, e.target.value)}
+                    />
+                    <span className="slug-suffix">.{modulesDomain}</span>
+                  </div>
+                </td>
+                <td className="page-cell">
                   <div className="select-with-warning">
                     <select
                       className="page-select"
@@ -317,6 +395,8 @@ export default function ModulePageSection({ moduleId }) {
                       <span className="field-warning" title="Container not set">!</span>
                     )}
                   </div>
+                </td>
+                <td className="page-cell">
                   <div className="select-with-warning">
                     <select
                       className="page-select"
@@ -344,6 +424,8 @@ export default function ModulePageSection({ moduleId }) {
                       <span className="field-warning" title="Port not set">!</span>
                     )}
                   </div>
+                </td>
+                <td className="page-cell">
                   <div className="select-with-warning">
                     <select
                       className={`page-network-select${edit.network && !networks.includes(edit.network) ? ' missing-network' : ''}`}
@@ -364,42 +446,55 @@ export default function ModulePageSection({ moduleId }) {
                       <span className="field-warning" title="Network not set">!</span>
                     )}
                   </div>
-                  <div className="page-access-toggles">
-                    <label className="page-access-toggle">
-                      <input
-                        type="checkbox"
-                        checked={edit.iframeOnly || false}
-                        onChange={e => handleChange(id, 'iframeOnly', e.target.checked)}
-                      />
-                      Iframe only
-                    </label>
-                    <label className="page-access-toggle">
-                      <input
-                        type="checkbox"
-                        checked={edit.needAuth || false}
-                        onChange={e => handleChange(id, 'needAuth', e.target.checked)}
-                      />
-                      Need auth
-                    </label>
-                  </div>
-                </div>
-                <div className="page-actions">
+                </td>
+                <td className="page-cell page-flag-cell">
+                  <label className="page-access-toggle">
+                    <input
+                      type="checkbox"
+                      checked={edit.iframeOnly || false}
+                      onChange={e => handleChange(id, 'iframeOnly', e.target.checked)}
+                    />
+                  </label>
+                </td>
+                <td className="page-cell page-flag-cell">
+                  <label className="page-access-toggle">
+                    <input
+                      type="checkbox"
+                      checked={edit.needAuth || false}
+                      onChange={e => handleChange(id, 'needAuth', e.target.checked)}
+                    />
+                  </label>
+                </td>
+                <td className="page-cell page-flag-cell">
+                  <label className="page-access-toggle">
+                    <input
+                      type="checkbox"
+                      checked={edit.isVisible !== false}
+                      onChange={e => handleChange(id, 'isVisible', e.target.checked)}
+                    />
+                  </label>
+                </td>
+                <td className="page-cell">
+                  <div className="page-actions">
                   <Button
                     label="Save"
                     color="green"
                     onClick={() => handleSave(id)}
-                    disabled={!edit.dirty || isSaving}
+                    disabled={!edit.dirty || isSaving || missingName || missingSlug}
                   />
                   <Button
                     label="Delete"
                     color="red"
                     onClick={() => handleDelete(id)}
                   />
-                </div>
-              </li>
+                  </div>
+                </td>
+              </tr>
             );
           })}
-        </ul>
+          </tbody>
+        </table>
+        </div>
       )}
       {iconTarget && (
         <PageIconModal
