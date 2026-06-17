@@ -131,7 +131,9 @@ type ModulePage struct {
 	TargetContainer *string `json:"target_container,omitempty"`
 	TargetPort      *int    `json:"target_port,omitempty"`
 	IframeOnly      bool    `json:"iframe_only"`
+	PageOnly        bool    `json:"page_only"`
 	NeedAuth        bool    `json:"need_auth"`
+	IsVisible       bool    `json:"is_visible"`
 	ModuleID        string  `json:"module_id"`
 	IconURL         string  `json:"icon_url,omitempty"`
 	NetworkName     string  `json:"network_name,omitempty"`

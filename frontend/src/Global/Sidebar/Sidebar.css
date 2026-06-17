@@ -131,6 +131,13 @@
   height: 20px;
 }
 
+.sidebar-tab-icon {
+  width: 16px;
+  height: 16px;
+  margin-left: auto;
+  opacity: 0.9;
+}
+
 /* Built-in dark PNGs → lighten for dark theme (footer only) */
 .sidebar-footer .builtin-icon { filter: invert(0.95) brightness(1.2); }
 

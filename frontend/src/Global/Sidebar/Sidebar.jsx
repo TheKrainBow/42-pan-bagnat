@@ -3,45 +3,56 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import './Sidebar.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
-
-function loadPrefsFor(login) {
-  try {
-    const raw = localStorage.getItem(`pb:sidebar:${login}`);
-    return raw ? JSON.parse(raw) : { order: [], hidden: {} };
-  } catch {
-    return { order: [], hidden: {} };
-  }
-}
+import { loadSidebarPrefs, getVisibleSidebarPages } from '../../utils/sidebarPrefs';
+import { getModulePageMode } from '../../utils/modulePageMode';
+import { getModulesDomain, getModulesProtocol } from '../../utils/modules';
 
 export default function Sidebar({ currentPage, user, pages }) {
   const navigate = useNavigate();
   const mode = currentPage.startsWith('/admin/') ? 'admin' : 'user';
 
-  const [selectedPage, setSelectedPage] = useState(null);
-  const [prefs, setPrefs] = useState(() => (user?.ft_login ? loadPrefsFor(user.ft_login) : { order: [], hidden: {} }));
+  const [prefs, setPrefs] = useState(() => loadSidebarPrefs(user?.ft_login));
+  const [isCtrlPressed, setIsCtrlPressed] = useState(false);
   const [collapsed, setCollapsed] = useState(() => localStorage.getItem('pb:sidebar:collapsed') === '1');
   const [anim, setAnim] = useState(''); // '' | 'collapsing' | 'expanding'
   const location = useLocation();
   const match = location.pathname.match(/(?<!\/admin)\/modules\/([^/]+)/);
   const currentSlug = match ? match[1] : null;
-
-  // Sync selected page based on slug or fallback
-  useEffect(() => {
-    if (pages.length === 0) return;
-
-    const found = pages.find((p) => p.slug === currentSlug);
-    setSelectedPage(found || pages[0]);
-  }, [pages, currentSlug]);
+  const modulesDomain = useMemo(() => getModulesDomain(), []);
+  const modulesProtocol = useMemo(() => getModulesProtocol(modulesDomain), [modulesDomain]);
 
   // Reload prefs when user changes
   useEffect(() => {
-    if (user?.ft_login) setPrefs(loadPrefsFor(user.ft_login));
+    if (user?.ft_login) setPrefs(loadSidebarPrefs(user.ft_login));
   }, [user?.ft_login]);
 
   // Reload prefs on navigation (so returning from /settings reflects changes)
   useEffect(() => {
-    if (user?.ft_login) setPrefs(loadPrefsFor(user.ft_login));
+    if (user?.ft_login) setPrefs(loadSidebarPrefs(user.ft_login));
   }, [location.pathname, user?.ft_login]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      if (event.key === 'Control') {
+        setIsCtrlPressed(true);
+      }
+    };
+    const onKeyUp = (event) => {
+      if (event.key === 'Control') {
+        setIsCtrlPressed(false);
+      }
+    };
+    const onBlur = () => setIsCtrlPressed(false);
+
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', onBlur);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', onBlur);
+    };
+  }, []);
 
   // Live updates from settings page
   useEffect(() => {
@@ -49,7 +60,7 @@ export default function Sidebar({ currentPage, user, pages }) {
       if (!user?.ft_login) return;
       const login = e?.detail?.login;
       if (!login || login === user.ft_login) {
-        setPrefs(loadPrefsFor(user.ft_login));
+        setPrefs(loadSidebarPrefs(user.ft_login));
       }
     }
     window.addEventListener('pb:prefs:sidebarChanged', onPrefsChanged);
@@ -67,6 +78,7 @@ export default function Sidebar({ currentPage, user, pages }) {
         if (!remote || cancelled) return;
         setPrefs(remote);
         try { localStorage.setItem(`pb:sidebar:${user.ft_login}`, JSON.stringify(remote)); } catch {}
+        window.dispatchEvent(new CustomEvent('pb:prefs:sidebarChanged', { detail: { login: user.ft_login } }));
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -83,6 +95,7 @@ export default function Sidebar({ currentPage, user, pages }) {
         if (!remote || cancelled) return;
         setPrefs(remote);
         try { localStorage.setItem(`pb:sidebar:${user.ft_login}`, JSON.stringify(remote)); } catch {}
+        window.dispatchEvent(new CustomEvent('pb:prefs:sidebarChanged', { detail: { login: user.ft_login } }));
       })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -91,23 +104,17 @@ export default function Sidebar({ currentPage, user, pages }) {
   // Apply prefs to pages (order + hidden)
   const displayPages = useMemo(() => {
     if (mode !== 'user') return pages;
-    const order = Array.isArray(prefs.order) ? prefs.order : [];
-    const hidden = prefs.hidden || {};
-    const bySlug = new Map(pages.map(p => [p.slug, p]));
-    const ordered = [];
-    for (const s of order) {
-      if (bySlug.has(s)) ordered.push(bySlug.get(s));
-      bySlug.delete(s);
-    }
-    for (const p of pages) {
-      if (!ordered.find(x => x.slug === p.slug)) ordered.push(p);
-    }
-    return ordered.filter(p => !hidden[p.slug]);
+    return getVisibleSidebarPages(pages, prefs);
   }, [pages, prefs, mode]);
 
   // On click
-  const handleSelect = (page) => {
-    setSelectedPage(page);
+  const handleSelect = (page, event) => {
+    const pageMode = getModulePageMode(page);
+    const externalUrl = `${modulesProtocol}://${page.slug}.${modulesDomain}`;
+    if (pageMode === 'page_only' || (pageMode === 'both' && event?.ctrlKey)) {
+      window.location.assign(externalUrl);
+      return;
+    }
     navigate(`/modules/${page.slug}`);
   };
 
@@ -198,11 +205,14 @@ export default function Sidebar({ currentPage, user, pages }) {
               <li
                 key={page.slug}
                 className={`sidebar-item ${currentSlug === page.slug ? 'active' : 'inactive'}`}
-                onClick={() => handleSelect(page)}
+                onClick={(event) => handleSelect(page, event)}
                 title={collapsed ? page.name : undefined}
               >
                 <img className="sidebar-icon" src={page.icon_url || '/icons/modules.png'} alt="" />
                 <span className="sidebar-label">{page.name}</span>
+                {(getModulePageMode(page) === 'page_only' || (getModulePageMode(page) === 'both' && isCtrlPressed)) && (
+                  <img src="/icons/tab.png" alt="" className="sidebar-tab-icon" />
+                )}
               </li>
             ))}
           </ul>

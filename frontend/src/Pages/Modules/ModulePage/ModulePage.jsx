@@ -4,18 +4,42 @@ import './ModulePage.css';
 import Button from 'Global/Button/Button';
 import { getModulesDomain, getModulesProtocol } from '../../../utils/modules';
 import { exchangeModuleSession } from '../../../utils/moduleSession';
+import { loadSidebarPrefs, getVisibleSidebarPages } from '../../../utils/sidebarPrefs';
+import { getModulePageMode } from '../../../utils/modulePageMode';
 
-export default function ModulePage({ pages }) {
+export default function ModulePage({ pages, user }) {
   const { slug } = useParams();
   const [status, setStatus] = useState('loading');
   const [retryKey, setRetryKey] = useState(0);
   const [authReady, setAuthReady] = useState(false);
+  const [prefs, setPrefs] = useState(() => loadSidebarPrefs(user?.ft_login));
 
-  const page = pages.find((p) => p.slug === slug);
+  const visiblePages = useMemo(() => getVisibleSidebarPages(pages, prefs), [pages, prefs]);
+  const page = visiblePages.find((p) => p.slug === slug);
+  const pageMode = getModulePageMode(page);
   const modulesDomain = useMemo(() => getModulesDomain(), []);
   const modulesProtocol = useMemo(() => getModulesProtocol(modulesDomain), [modulesDomain]);
-  const moduleOrigin = page ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
+  const moduleOrigin = page && pageMode !== 'page_only' ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
   const iframeSrc = moduleOrigin ? `${moduleOrigin}/` : '';
+  const externalUrl = page ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
+
+  useEffect(() => {
+    if (user?.ft_login) {
+      setPrefs(loadSidebarPrefs(user.ft_login));
+    }
+  }, [user?.ft_login]);
+
+  useEffect(() => {
+    function onPrefsChanged(e) {
+      if (!user?.ft_login) return;
+      if (!e?.detail?.login || e.detail.login === user.ft_login) {
+        setPrefs(loadSidebarPrefs(user.ft_login));
+      }
+    }
+
+    window.addEventListener('pb:prefs:sidebarChanged', onPrefsChanged);
+    return () => window.removeEventListener('pb:prefs:sidebarChanged', onPrefsChanged);
+  }, [user?.ft_login]);
 
   useEffect(() => {
     if (pages.length === 0) return;
@@ -30,12 +54,12 @@ export default function ModulePage({ pages }) {
   }, [slug]);
 
   useEffect(() => {
-    if (!page) return;
+    if (!page || pageMode === 'page_only') return;
     setStatus('loading');
-  }, [page, retryKey]);
+  }, [page, pageMode, retryKey]);
 
   useEffect(() => {
-    if (!page) {
+    if (!page || pageMode === 'page_only') {
       setAuthReady(false);
       return;
     }
@@ -80,10 +104,10 @@ export default function ModulePage({ pages }) {
     return () => {
       canceled = true;
     };
-  }, [page, moduleOrigin, retryKey]);
+  }, [page, pageMode, moduleOrigin, retryKey]);
 
   useEffect(() => {
-    if (!page || !authReady) return;
+    if (!page || pageMode === 'page_only' || !authReady) return;
     const iframe = document.getElementById('moduleIframe');
     if (!iframe) return;
 
@@ -97,21 +121,36 @@ export default function ModulePage({ pages }) {
       setStatus('error');
     };
     return () => clearTimeout(timeout);
-  }, [page, retryKey, authReady]);
+  }, [page, pageMode, retryKey, authReady]);
 
   if (!slug) {
-    if (pages.length > 0) {
-      return <Navigate to={`/modules/${pages[0].slug}`} replace />;
+    if (visiblePages.length > 0) {
+      return <Navigate to={`/modules/${visiblePages[0].slug}`} replace />;
     }
     return <div className="module-page-placeholder">No accessible modules.</div>;
   }
 
-  if (!page && pages.length > 0) {
-    return <Navigate to={`/modules/${pages[0].slug}`} replace />;
+  if (!page && visiblePages.length > 0) {
+    return <Navigate to={`/modules/${visiblePages[0].slug}`} replace />;
   }
 
   if (!page) {
     return <div className="module-page-placeholder">Module not found or access denied.</div>;
+  }
+
+  if (pageMode === 'page_only') {
+    return (
+      <div className="module-page-container">
+        <div className="module-page-status module-page-status-page-only">
+          <p>Ce module n&apos;est pas disponible en iframe.</p>
+          <Button
+            label="Acceder au site"
+            color="blue"
+            onClick={() => window.location.assign(externalUrl)}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
