@@ -11,6 +11,7 @@ import ModuleWarningSection from 'Pages/Modules/Components/ModuleWarningSection/
 import ModuleStatusBadge from 'Pages/Modules/Components/ModuleStatusBadge/ModuleStatusBadge';
 import ModuleDockerSection from '../Components/ModuleDockerSection/ModuleDockerSection';
 import ModuleGitSection from 'Pages/Modules/Components/ModuleGitSection/ModuleGitSection';
+import ModuleOIDCSection from 'Pages/Modules/Components/ModuleOIDCSection/ModuleOIDCSection';
 import { setModuleStatusUpdater, socketService } from 'Global/SocketService/SocketService';
 import ModuleUninstallModal from 'Pages/Modules/Components/ModuleUninstallModal/ModuleUninstallModal';
 import { fetchWithAuth } from 'Global/utils/Auth';
@@ -205,6 +206,14 @@ const ModuleDetails = () => {
                 setSearchParams({ tab: 'settings' }); // or the corresponding value
               }}
             />
+            <Button
+              label="OIDC"
+              color={`${activeTab === 'oidc' ? 'blue' : 'gray'}`}
+              onClick={() => {
+                setActiveTab('oidc');
+                setSearchParams({ tab: 'oidc' });
+              }}
+            />
           </div>
 
           <div className="tab-content">
@@ -227,6 +236,9 @@ const ModuleDetails = () => {
                 onUninstall={() => setShowConfirmUninstall(true)}
                 onUpdate={fetchModule}
               />
+            )}
+            {activeTab === 'oidc' && (
+              <ModuleOIDCSection moduleId={module.id} />
             )}
             {activeTab === 'containers' && (
               <ModuleDockerSection
