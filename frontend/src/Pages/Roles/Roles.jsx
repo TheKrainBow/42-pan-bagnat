@@ -14,6 +14,7 @@ import ArrayHeader from 'Global/ArrayHeader/ArrayHeader';
 import Button from 'Global/Button/Button';
 import RoleImport from './RoleImport/RoleImport';
 import { fetchWithAuth } from 'Global/utils/Auth';
+import { isMiddleClick, openInNewTab } from 'Global/utils/navigation';
 
 const Roles = () => {
   const [filterQuery, setFilterQuery] = useState('');
@@ -131,15 +132,15 @@ const Roles = () => {
         );
       },
     },
-    {
-      header: 'Role',
-      accessorKey: 'name',
-      cell: info => (
-        <RoleBadge role={info.row.original} onClick={() => navigate(`/admin/roles/${info.row.original.id}`)}>
+      {
+        header: 'Role',
+        accessorKey: 'name',
+        cell: info => (
+        <RoleBadge role={info.row.original} href={`/admin/roles/${info.row.original.id}`}>
           {info.getValue()}
         </RoleBadge>
-      ),
-    },
+        ),
+      },
     {
       header: 'Modules',
       accessorKey: 'modules',
@@ -204,6 +205,7 @@ const Roles = () => {
                 key={row.id}
                 className="role-row clickable-row"
                 onClick={() => navigate(`/admin/roles/${row.original.id}`)}
+                onAuxClick={(e) => isMiddleClick(e) && openInNewTab(`/admin/roles/${row.original.id}`)}
               >
                 {row.getVisibleCells().map(cell => {
                   return (

@@ -33,5 +33,5 @@ export function getOrderedSidebarPages(pages, prefs) {
 }
 
 export function getVisibleSidebarPages(pages, prefs) {
-  return getOrderedSidebarPages(pages, prefs).filter(page => !page._hidden);
+  return getOrderedSidebarPages(pages, prefs).filter(page => !page._hidden && page?.is_visible !== false);
 }

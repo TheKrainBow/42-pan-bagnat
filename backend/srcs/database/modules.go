@@ -1151,8 +1151,14 @@ func GetUserPages(identifier string) ([]ModulePage, error) {
         CROSS JOIN module_page mp
         JOIN modules m ON m.id = mp.module_id
         WHERE (u.id = $1 OR u.ft_login = $1)
-          AND mp.is_visible = TRUE
           AND (
+                EXISTS (
+                    SELECT 1
+                      FROM user_roles ur_admin
+                     WHERE ur_admin.user_id = u.id
+                       AND ur_admin.role_id = 'roles_admin'
+                )
+                OR
                 mp.need_auth = FALSE
                 OR EXISTS (
                     SELECT 1
@@ -1202,15 +1208,22 @@ func UserCanAccessPage(identifier, slug string) (bool, error) {
 		SELECT EXISTS (
 			SELECT 1
 			  FROM module_page mp
+			  JOIN users u ON (u.id = $1 OR u.ft_login = $1)
 			 WHERE mp.slug = $2
 			   AND (
+			        EXISTS (
+			            SELECT 1
+			              FROM user_roles ur_admin
+			             WHERE ur_admin.user_id = u.id
+			               AND ur_admin.role_id = 'roles_admin'
+			        )
+			        OR
 			        mp.need_auth = FALSE
 			        OR EXISTS (
 			            SELECT 1
-			              FROM users u
-			              JOIN user_roles ur ON u.id = ur.user_id
+			              FROM user_roles ur
 			              JOIN module_page_roles pr ON pr.role_id = ur.role_id
-			             WHERE (u.id = $1 OR u.ft_login = $1)
+			             WHERE ur.user_id = u.id
 			               AND pr.page_id = mp.id
 			        )
 			   )

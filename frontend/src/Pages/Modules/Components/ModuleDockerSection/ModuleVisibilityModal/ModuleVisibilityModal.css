@@ -1,0 +1,63 @@
+.module-visibility-modal {
+  width: min(620px, 100%);
+  background: var(--background, #1f1f1f);
+  color: var(--text-primary, #f0f0f0);
+  border: 1px solid var(--border, #444);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+.module-visibility-summary {
+  color: var(--text-secondary, #a7a7a7);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+
+.module-visibility-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.module-visibility-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.module-visibility-field span,
+.module-visibility-check span {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #d6d6d6;
+}
+
+.module-visibility-field select {
+  width: 100%;
+  background: #111;
+  color: #f0f0f0;
+  border: 1px solid #555;
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  box-sizing: border-box;
+}
+
+.module-visibility-check {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.module-visibility-check input {
+  accent-color: #4caf50;
+  width: 16px;
+  height: 16px;
+}

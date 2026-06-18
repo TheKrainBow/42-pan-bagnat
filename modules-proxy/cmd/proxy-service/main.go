@@ -550,11 +550,23 @@ func (p *proxyService) userCanAccessPage(ctx context.Context, userID, slug strin
 		SELECT EXISTS (
 			SELECT 1
 			  FROM users u
-			  JOIN user_roles ur ON u.id = ur.user_id
-			  JOIN module_roles mr ON ur.role_id = mr.role_id
-			  JOIN module_page mp ON mp.module_id = mr.module_id
 			 WHERE u.id = $1
-			   AND mp.slug = $2
+			   AND (
+			        EXISTS (
+			            SELECT 1
+			              FROM user_roles ur_admin
+			             WHERE ur_admin.user_id = u.id
+			               AND ur_admin.role_id = 'roles_admin'
+			        )
+			        OR EXISTS (
+			            SELECT 1
+			              FROM user_roles ur
+			              JOIN module_roles mr ON ur.role_id = mr.role_id
+			              JOIN module_page mp ON mp.module_id = mr.module_id
+			             WHERE ur.user_id = u.id
+			               AND mp.slug = $2
+			        )
+			   )
 		)
 	`
 	var exists bool

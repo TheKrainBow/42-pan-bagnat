@@ -15,7 +15,7 @@ export default function ModulePage({ pages, user }) {
   const [prefs, setPrefs] = useState(() => loadSidebarPrefs(user?.ft_login));
 
   const visiblePages = useMemo(() => getVisibleSidebarPages(pages, prefs), [pages, prefs]);
-  const page = visiblePages.find((p) => p.slug === slug);
+  const page = pages.find((p) => p.slug === slug);
   const pageMode = getModulePageMode(page);
   const modulesDomain = useMemo(() => getModulesDomain(), []);
   const modulesProtocol = useMemo(() => getModulesProtocol(modulesDomain), [modulesDomain]);
@@ -130,10 +130,6 @@ export default function ModulePage({ pages, user }) {
     return <div className="module-page-placeholder">No accessible modules.</div>;
   }
 
-  if (!page && visiblePages.length > 0) {
-    return <Navigate to={`/modules/${visiblePages[0].slug}`} replace />;
-  }
-
   if (!page) {
     return <div className="module-page-placeholder">Module not found or access denied.</div>;
   }
@@ -146,6 +142,7 @@ export default function ModulePage({ pages, user }) {
           <Button
             label="Acceder au site"
             color="blue"
+            href={externalUrl}
             onClick={() => window.location.assign(externalUrl)}
           />
         </div>

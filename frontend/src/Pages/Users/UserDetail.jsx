@@ -1,9 +1,8 @@
 import { useEffect, useState, useRef } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { fetchWithAuth } from "Global/utils/Auth";
 import RoleBadge from "Global/RoleBadge/RoleBadge";
 import ModuleBadge from "Global/ModuleBadge/ModuleBadge";
-import { toast } from 'react-toastify';
 import './UserDetail.css';
 
 const ADMIN_ROLE_ID = 'roles_admin';
@@ -18,9 +17,6 @@ export default function UserDetail() {
   const [showRoleSearch, setShowRoleSearch] = useState(false);
   const [searchRoleTerm, setSearchRoleTerm] = useState("");
   const dropdownRef = useRef();
-  const navigate = useNavigate();
-
-
   const reloadModules = async (roles) => {
     const moduleMap = new Map();
     for (const role of roles || []) {
@@ -210,7 +206,7 @@ export default function UserDetail() {
                   <RoleBadge
                     key={role.id}
                     role={role}
-                    onClick={() => navigate(`/admin/roles/${role.id}`)}
+                    href={`/admin/roles/${role.id}`}
                     onDelete={() => handleRoleRemove(role)}
                   >
                     {role.name}

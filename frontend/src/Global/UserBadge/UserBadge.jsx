@@ -2,12 +2,14 @@
 import React from 'react';
 import './UserBadge.css';
 
-export default function UserBadge({ user, onClick, onDelete}) {
-  const withHover = onClick != null;
+export default function UserBadge({ user, onClick, onDelete, href }) {
+  const withHover = onClick != null || href != null;
+  const Tag = href ? 'a' : 'div';
   return (
-    <div
+    <Tag
       className={`user-badge${withHover ? ' with-hover' : ''}`}
       onClick={onClick}
+      href={href}
       role="button"
       tabIndex={0}
     >
@@ -29,6 +31,6 @@ export default function UserBadge({ user, onClick, onDelete}) {
           ×
         </button>
       )}
-    </div>
+    </Tag>
   );
 }

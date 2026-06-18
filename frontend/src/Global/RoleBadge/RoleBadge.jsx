@@ -3,7 +3,7 @@ import React from 'react';
 import { getReadableStyles } from 'Global/utils/ColorUtils';
 import './RoleBadge.css';
 
-const RoleBadge = ({ role, children, onClick, onDelete }) => {
+const RoleBadge = ({ role, children, onClick, onDelete, href }) => {
   const styles = getReadableStyles(role.color);
   const withHover = onClick != null;
 
@@ -12,13 +12,16 @@ const RoleBadge = ({ role, children, onClick, onDelete }) => {
     onDelete?.();
   };
 
+  const Tag = href ? 'a' : 'span';
+
   return (
-    <span
-      className={`role-badge${withHover ? ' with-hover' : ''}`}
+    <Tag
+      className={`role-badge${withHover || href ? ' with-hover' : ''}`}
       style={styles}
       onClick={onClick}
-      role="button"
-      tabIndex={0}
+      href={href}
+      role={href || onClick ? 'button' : undefined}
+      tabIndex={href || onClick ? 0 : undefined}
     >
       {children}
       {onDelete && (
@@ -30,7 +33,7 @@ const RoleBadge = ({ role, children, onClick, onDelete }) => {
           ✕
         </button>
       )}
-    </span>
+    </Tag>
   );
 };
 
