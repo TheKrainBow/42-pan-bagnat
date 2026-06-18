@@ -39,6 +39,4 @@ type RoleCreateInput struct {
 	Color string `json:"color"     example:"#00FF00"`
 	// IsDefault indicates whether this role is the default for new users.
 	IsDefault bool `json:"is_default" example:"false"`
-	// Modules lists the IDs of modules this role should have access to.
-	Modules []string `json:"modules"   example:"[\"module_01\",\"module_02\"]"`
 }

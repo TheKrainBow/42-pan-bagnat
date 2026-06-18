@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import Button from 'Global/Button/Button';
+import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import './DockerPageSection.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
 import PageIconModal from 'Pages/Modules/Components/ModuleIconModal/ModuleIconModal';
 import { getModulesDomain } from '../../../../../utils/modules';
 import { getModulePageMode, pageModeToFlags } from '../../../../../utils/modulePageMode';
+import ModulePageRolesModal from '../../ModulePageRolesModal/ModulePageRolesModal';
 
 export default function ModulePageSection({ moduleId }) {
   const [pages, setPages] = useState([]);            // holds both existing & new rows
   const [edits, setEdits] = useState({});            // keyed by row.id
   const [isSaving, setIsSaving] = useState(false);
   const [iconTarget, setIconTarget] = useState(null);
+  const [rolesTarget, setRolesTarget] = useState(null);
   const [networks, setNetworks] = useState([]);
   const [containers, setContainers] = useState([]);
   const modulesDomain = getModulesDomain();
@@ -105,6 +108,7 @@ export default function ModulePageSection({ moduleId }) {
         isVisible: p.is_visible !== false,
         icon_url: p.icon_url,
         network: p.network_name || '',
+        roles: Array.isArray(p.roles) ? p.roles : [],
         isNew: false,
         slugAuto: false,
       }));
@@ -141,6 +145,7 @@ export default function ModulePageSection({ moduleId }) {
       isVisible: true,
       icon_url: '',
       network: '',
+      roles: [],
       isNew: true,
       slugAuto: true,
     };
@@ -332,6 +337,7 @@ export default function ModulePageSection({ moduleId }) {
               <th>Network</th>
               <th>Mode</th>
               <th>Auth</th>
+              <th className="roles-col">Roles</th>
               <th>Visible</th>
               <th className="actions-col">Actions</th>
             </tr>
@@ -470,6 +476,26 @@ export default function ModulePageSection({ moduleId }) {
                     />
                   </label>
                 </td>
+                <td className="page-cell">
+                  <div className="page-roles-cell">
+                    <div className="page-roles-preview">
+                      {(edit.roles || []).length === 0 ? (
+                        <span className="page-roles-empty">Public</span>
+                      ) : (
+                        (edit.roles || []).slice(0, 3).map((role) => (
+                          <RoleBadge key={role.id} role={role}>
+                            {role.name}
+                          </RoleBadge>
+                        ))
+                      )}
+                    </div>
+                    <Button
+                      label="Set roles"
+                      color="gray"
+                      onClick={() => setRolesTarget(edit)}
+                    />
+                  </div>
+                </td>
                 <td className="page-cell page-flag-cell">
                   <label className="page-access-toggle">
                     <input
@@ -508,6 +534,15 @@ export default function ModulePageSection({ moduleId }) {
           currentIcon={(edits[iconTarget] && edits[iconTarget].icon_url) || ''}
           onClose={()=> setIconTarget(null)}
           onUpdated={()=> { setIconTarget(null); fetchPages(); }}
+        />
+      )}
+      {rolesTarget && (
+        <ModulePageRolesModal
+          open={!!rolesTarget}
+          moduleId={moduleId}
+          page={rolesTarget}
+          onClose={() => setRolesTarget(null)}
+          onUpdated={fetchPages}
         />
       )}
     </div>

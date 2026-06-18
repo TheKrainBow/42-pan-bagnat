@@ -143,6 +143,12 @@
   /* any other label styles */
 }
 
+.section-help {
+  margin: 0 0 12px;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+}
+
 .section-header button {
   flex-shrink: 0;   /* don’t let the button shrink */
   padding: 6px 12px;

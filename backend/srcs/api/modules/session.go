@@ -43,15 +43,24 @@ func IssueModulePageSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	allowed, err := core.UserCanAccessPage(u.ID, slug)
+	page, err := core.GetPage(slug)
 	if err != nil {
-		log.Printf("module session: failed to check access for user %s on %s: %v", u.ID, slug, err)
+		log.Printf("module session: failed to load page %s: %v", slug, err)
 		auth.WriteJSONError(w, http.StatusInternalServerError, "access_check_failed", "Unable to verify if you can access this module page.")
 		return
 	}
-	if !allowed {
-		auth.WriteJSONError(w, http.StatusForbidden, "forbidden", "You are not allowed to access this module page.")
-		return
+
+	if page.NeedAuth {
+		allowed, err := core.UserCanAccessPage(u.ID, slug)
+		if err != nil {
+			log.Printf("module session: failed to check access for user %s on %s: %v", u.ID, slug, err)
+			auth.WriteJSONError(w, http.StatusInternalServerError, "access_check_failed", "Unable to verify if you can access this module page.")
+			return
+		}
+		if !allowed {
+			auth.WriteJSONError(w, http.StatusForbidden, "forbidden", "You are not allowed to access this module page.")
+			return
+		}
 	}
 
 	sessionID := core.ReadSessionIDFromCookie(r)

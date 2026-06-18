@@ -55,6 +55,10 @@
   width: 170px;
 }
 
+.page-table .roles-col {
+  width: 260px;
+}
+
 .page-item td {
   background: #2a2a2a;
   padding: 0.65rem 0.75rem;
@@ -193,6 +197,7 @@
   align-items: center;
   justify-content: flex-end;
   gap: 0.5rem;
+  flex-wrap: wrap;
 }
 
 .page-actions button {
@@ -204,4 +209,36 @@
   text-align: center;
   color: #aaa;
   font-style: italic;
+}
+
+.page-roles-cell {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.page-roles-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.page-roles-empty {
+  color: #9aa0a6;
+  font-style: italic;
+}
+
+.page-roles-cell .button-wrapper {
+  flex: 0 0 auto;
+}
+
+.page-roles-cell .button-wrapper .custom-btn {
+  padding: 6px 10px;
+  font-size: 0.85rem;
+  border-radius: 6px;
 }

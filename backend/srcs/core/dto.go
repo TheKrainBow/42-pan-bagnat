@@ -143,6 +143,7 @@ func DatabaseModulePageToModulePage(dbPage database.ModulePage) ModulePage {
 		IsVisible:       dbPage.IsVisible,
 		IconURL:         dbPage.IconURL,
 		NetworkName:     dbPage.NetworkName,
+		Roles:           []Role{},
 	}
 }
 

@@ -543,30 +543,3 @@ func DeleteModuleContainer(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(http.StatusNoContent)
 }
-
-// PostModuleRole grants a role to a module.
-// @Summary      Add Role to Module
-// @Description  Assigns the specified role to the given module.
-// @Tags         Modules,Roles
-// @Accept       json
-// @Produce      json
-// @Param        moduleID  path      string  true  "Module ID"
-// @Param        roleID    path      string  true  "Role ID"
-// @Success      201       {string}  string  "Role successfully assigned to module"
-// @Failure      400       {string}  string  "Bad request"
-// @Failure      500       {string}  string  "Internal server error"
-// @Router       /admin/modules/{moduleID}/roles/{roleID} [post]
-func PostModuleRole(w http.ResponseWriter, r *http.Request) {
-	moduleID := chi.URLParam(r, "moduleID")
-	roleID := chi.URLParam(r, "roleID")
-
-	err := core.AddRoleToModule(roleID, moduleID)
-	if err != nil {
-		http.Error(w, fmt.Sprintf("Failed to assign role: %v", err), http.StatusInternalServerError)
-		fmt.Printf("Error assigning role %s to module %s: %v\n", roleID, moduleID, err)
-		return
-	}
-
-	w.WriteHeader(http.StatusCreated)
-	fmt.Fprintf(w, "Role %s successfully assigned to module %s\n", roleID, moduleID)
-}

@@ -38,7 +38,6 @@ type Module struct {
 	LatestVersion        string       `json:"latest_Version"`
 	LateCommits          int          `json:"late_commits"`
 	LastUpdate           time.Time    `json:"last_update"`
-	Roles                []Role       `json:"roles"`
 	IsDeploying          bool         `json:"is_deploying"`
 	LastDeploy           time.Time    `json:"last_deploy"`
 	LastDeployStatus     string       `json:"last_deploy_status"`
@@ -129,6 +128,7 @@ type ModulePage struct {
 	ModuleID        string  `json:"module_id"`
 	IconURL         string  `json:"icon_url"`
 	NetworkName     string  `json:"network_name,omitempty"`
+	Roles           []Role  `json:"roles,omitempty"`
 }
 
 type ModulePagesPagination struct {
@@ -342,14 +342,7 @@ func GetModules(pagination ModulePagination) ([]Module, string, error) {
 	}
 
 	for _, module := range modules {
-		apiModule := DatabaseModuleToModule(module)
-		roles, err := database.GetModuleRoles(apiModule.ID)
-		if err != nil {
-			fmt.Printf("couldn't get modules for user %s: %s\n", apiModule.ID, err.Error())
-		} else if len(roles) > 0 {
-			apiModule.Roles = DatabaseRolesToRoles(roles)
-		}
-		dest = append(dest, apiModule)
+		dest = append(dest, DatabaseModuleToModule(module))
 	}
 
 	if !hasMore {
@@ -375,11 +368,6 @@ func GetModule(moduleID string) (Module, error) {
 		return Module{}, nil
 	}
 	dest = DatabaseModuleToModule(module)
-	roles, err := database.GetModuleRoles(moduleID)
-	if err != nil {
-		return dest, fmt.Errorf("couldn't get module's roles in db: %w", err)
-	}
-	dest.Roles = DatabaseRolesToRoles(roles)
 	return dest, nil
 }
 
@@ -392,11 +380,6 @@ func GetModuleBySlug(slug string) (Module, error) {
 		return Module{}, fmt.Errorf("module slug %s not found", slug)
 	}
 	module := DatabaseModuleToModule(dbModule)
-	roles, err := database.GetModuleRoles(module.ID)
-	if err != nil {
-		return module, err
-	}
-	module.Roles = DatabaseRolesToRoles(roles)
 	return module, nil
 }
 
@@ -457,6 +440,13 @@ func GetUserPages(userIdentifier string) ([]ModulePage, error) {
 	}
 
 	dest = DatabaseModulePagesToModulePages(pages)
+	for i := range dest {
+		roles, err := database.GetPageRoles(dest[i].ID)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't get page roles in db: %w", err)
+		}
+		dest[i].Roles = DatabaseRolesToRoles(roles)
+	}
 	return dest, nil
 }
 
@@ -478,6 +468,11 @@ func GetPage(pageName string) (ModulePage, error) {
 		return ModulePage{}, nil
 	}
 	dest = DatabaseModulePageToModulePage(*module)
+	roles, err := database.GetPageRoles(dest.ID)
+	if err != nil {
+		return dest, fmt.Errorf("couldn't get page roles in db: %w", err)
+	}
+	dest.Roles = DatabaseRolesToRoles(roles)
 	return dest, nil
 }
 
@@ -792,6 +787,13 @@ func GetModulePages(pagination ModulePagesPagination) ([]ModulePage, string, err
 	}
 
 	dest = DatabaseModulePagesToModulePages(moduleLogs)
+	for i := range dest {
+		roles, err := database.GetPageRoles(dest[i].ID)
+		if err != nil {
+			return nil, "", fmt.Errorf("couldn't get page roles in db: %w", err)
+		}
+		dest[i].Roles = DatabaseRolesToRoles(roles)
+	}
 
 	if !hasMore {
 		return dest, "", nil
@@ -876,6 +878,10 @@ func ImportModulePage(moduleID, name string, slug *string, targetContainer *stri
 		NetworkName:     dest.NetworkName,
 	}); err != nil {
 		return ModulePage{}, fmt.Errorf("failed to insert module in DB: %w", err)
+	}
+
+	if err := database.AssignRoleToPage(RoleIDAdmin, dest.ID); err != nil {
+		return ModulePage{}, fmt.Errorf("failed to assign default role to page: %w", err)
 	}
 
 	return dest, nil
