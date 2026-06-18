@@ -407,9 +407,10 @@ func GetUserModuleRoles(userID, moduleID string) ([]Role, error) {
 	rows, err := mainDB.Query(`
 		SELECT DISTINCT r.id, r.name, r.color, r.is_default
 		FROM roles r
-		JOIN module_roles mr ON mr.role_id = r.id
 		JOIN user_roles ur ON ur.role_id = r.id
-		WHERE ur.user_id = $1 AND mr.module_id = $2
+		JOIN module_page_roles pr ON pr.role_id = r.id
+		JOIN module_page mp ON mp.id = pr.page_id
+		WHERE ur.user_id = $1 AND mp.module_id = $2
 		ORDER BY r.name ASC
 	`, userID, moduleID)
 	if err != nil {
@@ -433,11 +434,19 @@ func UserCanAccessModule(identifier, moduleID string) (bool, error) {
 	err := mainDB.QueryRow(`
 		SELECT EXISTS (
 			SELECT 1
-			FROM users u
-			JOIN user_roles ur ON ur.user_id = u.id
-			JOIN module_roles mr ON mr.role_id = ur.role_id
-			WHERE (u.id = $1 OR u.ft_login = $1)
-			  AND mr.module_id = $2
+			FROM module_page mp
+			WHERE mp.module_id = $2
+			  AND (
+			      mp.need_auth = FALSE
+			      OR EXISTS (
+			          SELECT 1
+			            FROM users u
+			            JOIN user_roles ur ON ur.user_id = u.id
+			            JOIN module_page_roles pr ON pr.role_id = ur.role_id
+			           WHERE (u.id = $1 OR u.ft_login = $1)
+			             AND pr.page_id = mp.id
+			      )
+			  )
 		)
 	`, identifier, moduleID).Scan(&exists)
 	return exists, err

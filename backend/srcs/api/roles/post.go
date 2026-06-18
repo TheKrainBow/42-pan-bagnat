@@ -12,7 +12,7 @@ import (
 
 // PostRole creates a new role for your campus.
 // @Summary      Create Role
-// @Description  Imports a new role with the given name, color, default status, and module assignments.
+// @Description  Imports a new role with the given name, color, and default status.
 // @Tags         Roles
 // @Accept       json
 // @Produce      json
@@ -29,7 +29,6 @@ func PostRole(w http.ResponseWriter, r *http.Request) {
 		Name      string   `json:"name"`
 		Color     string   `json:"color"`
 		IsDefault bool     `json:"is_default"`
-		Modules   []string `json:"modules"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
 		http.Error(w, "Invalid JSON input", http.StatusBadRequest)
@@ -40,7 +39,7 @@ func PostRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	role, err := core.ImportRole(input.Name, input.Color, input.IsDefault, input.Modules)
+	role, err := core.ImportRole(input.Name, input.Color, input.IsDefault)
 	if err != nil {
 		log.Printf("failed to import role: %v", err)
 		http.Error(w, "Failed to import role", http.StatusInternalServerError)

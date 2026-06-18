@@ -153,16 +153,16 @@ func GetRoles(pagination RolePagination) ([]Role, string, error) {
 	return dest, token, nil
 }
 
-func ImportRole(name string, color string, isDefault bool, moduleIDs []string) (Role, error) {
+func ImportRole(name string, color string, isDefault bool) (Role, error) {
 	var dest Role
 
 	// Generate a ULID for the role
 	roleID, err := GenerateULID(RoleKind)
 	if err != nil {
-		return Role{}, fmt.Errorf("failed to generate module ID: %w", err)
+		return Role{}, fmt.Errorf("failed to generate role ID: %w", err)
 	}
 
-	// Prepare module struct
+	// Prepare role struct
 	dest = Role{
 		ID:        roleID,
 		Name:      name,
@@ -177,11 +177,7 @@ func ImportRole(name string, color string, isDefault bool, moduleIDs []string) (
 		Color:     dest.Color,
 		IsDefault: dest.IsDefault,
 	}); err != nil {
-		return Role{}, fmt.Errorf("failed to insert module in DB: %w", err)
-	}
-
-	for _, id := range moduleIDs {
-		_ = database.AssignRoleToModule(roleID, id)
+		return Role{}, fmt.Errorf("failed to insert role in DB: %w", err)
 	}
 
 	modules, err := database.GetRoleModules(roleID)
@@ -267,14 +263,6 @@ func DeleteRoleFromUser(roleID, userIdentifier string) error {
 		}
 	}
 	return database.RemoveRoleFromUser(roleID, userIdentifier)
-}
-
-func AddRoleToModule(roleID, moduleID string) error {
-	return database.AssignRoleToModule(roleID, moduleID)
-}
-
-func DeleteRoleFromModule(roleID, moduleID string) error {
-	return database.RemoveRoleFromModule(roleID, moduleID)
 }
 
 func DeleteRole(roleID string) error {

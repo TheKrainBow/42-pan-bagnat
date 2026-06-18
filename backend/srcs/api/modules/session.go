@@ -2,7 +2,6 @@ package modules
 
 import (
 	"backend/api/auth"
-	"backend/database"
 	"backend/core"
 	"encoding/json"
 	"errors"
@@ -52,23 +51,15 @@ func IssueModulePageSession(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if page.NeedAuth {
-		roles, err := database.GetModuleRoles(page.ModuleID)
+		allowed, err := core.UserCanAccessPage(u.ID, slug)
 		if err != nil {
-			log.Printf("module session: failed to load roles for page %s (module %s): %v", slug, page.ModuleID, err)
+			log.Printf("module session: failed to check access for user %s on %s: %v", u.ID, slug, err)
 			auth.WriteJSONError(w, http.StatusInternalServerError, "access_check_failed", "Unable to verify if you can access this module page.")
 			return
 		}
-		if len(roles) > 0 {
-			allowed, err := core.UserCanAccessPage(u.ID, slug)
-			if err != nil {
-				log.Printf("module session: failed to check access for user %s on %s: %v", u.ID, slug, err)
-				auth.WriteJSONError(w, http.StatusInternalServerError, "access_check_failed", "Unable to verify if you can access this module page.")
-				return
-			}
-			if !allowed {
-				auth.WriteJSONError(w, http.StatusForbidden, "forbidden", "You are not allowed to access this module page.")
-				return
-			}
+		if !allowed {
+			auth.WriteJSONError(w, http.StatusForbidden, "forbidden", "You are not allowed to access this module page.")
+			return
 		}
 	}
 

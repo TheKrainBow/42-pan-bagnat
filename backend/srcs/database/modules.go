@@ -332,6 +332,44 @@ func GetPage(pageName string) (*ModulePage, error) {
 	return &page, nil
 }
 
+func GetPageByID(pageID string) (*ModulePage, error) {
+	row := mainDB.QueryRow(`
+		SELECT id,
+		       name,
+		       slug,
+		       module_id,
+		       iframe_only,
+		       page_only,
+		       need_auth,
+		       is_visible,
+		       target_container,
+		       target_port,
+		       COALESCE(network_name, '') AS network_name,
+		       COALESCE(icon_url, '') AS icon_url
+		FROM module_page
+		WHERE id = $1
+	`, pageID)
+
+	var page ModulePage
+	if err := row.Scan(
+		&page.ID,
+		&page.Name,
+		&page.Slug,
+		&page.ModuleID,
+		&page.IframeOnly,
+		&page.PageOnly,
+		&page.NeedAuth,
+		&page.IsVisible,
+		&page.TargetContainer,
+		&page.TargetPort,
+		&page.NetworkName,
+		&page.IconURL,
+	); err != nil {
+		return nil, err
+	}
+	return &page, nil
+}
+
 func IsPageSlugTaken(slug string) (bool, error) {
 	var exists bool
 	err := mainDB.QueryRow(`
@@ -418,13 +456,14 @@ func IsModuleSlugTaken(slug string) (bool, error) {
 	return exists, nil
 }
 
-func GetModuleRoles(moduleID string) ([]Role, error) {
+func GetPageRoles(pageID string) ([]Role, error) {
 	rows, err := mainDB.Query(`
 		SELECT r.id, r.name, r.color
 		FROM roles r
-		JOIN module_roles ur ON ur.role_id = r.id
-		WHERE ur.module_id = $1
-	`, moduleID)
+		JOIN module_page_roles pr ON pr.role_id = r.id
+		WHERE pr.page_id = $1
+		ORDER BY r.name ASC
+	`, pageID)
 	if err != nil {
 		return nil, err
 	}
@@ -439,6 +478,23 @@ func GetModuleRoles(moduleID string) ([]Role, error) {
 		roles = append(roles, role)
 	}
 	return roles, nil
+}
+
+func AssignRoleToPage(roleID, pageID string) error {
+	_, err := mainDB.Exec(`
+		INSERT INTO module_page_roles (page_id, role_id)
+		VALUES ($1, $2)
+		ON CONFLICT DO NOTHING
+	`, pageID, roleID)
+	return err
+}
+
+func RemoveRoleFromPage(roleID, pageID string) error {
+	_, err := mainDB.Exec(`
+		DELETE FROM module_page_roles
+		WHERE page_id = $1 AND role_id = $2
+	`, pageID, roleID)
+	return err
 }
 
 func GetAllModules(
@@ -1092,12 +1148,20 @@ func GetUserPages(identifier string) ([]ModulePage, error) {
                         COALESCE(mp.icon_url, m.icon_url, '') AS icon_url,
                         COALESCE(mp.network_name, '') AS network_name
         FROM users u
-        JOIN user_roles ur ON u.id = ur.user_id
-        JOIN module_roles mr ON ur.role_id = mr.role_id
-        JOIN module_page mp ON mp.module_id = mr.module_id
+        CROSS JOIN module_page mp
         JOIN modules m ON m.id = mp.module_id
         WHERE (u.id = $1 OR u.ft_login = $1)
           AND mp.is_visible = TRUE
+          AND (
+                mp.need_auth = FALSE
+                OR EXISTS (
+                    SELECT 1
+                      FROM user_roles ur
+                      JOIN module_page_roles pr ON pr.role_id = ur.role_id
+                     WHERE ur.user_id = u.id
+                       AND pr.page_id = mp.id
+                )
+              )
     `, identifier)
 	if err != nil {
 		return nil, err
@@ -1137,12 +1201,19 @@ func UserCanAccessPage(identifier, slug string) (bool, error) {
 	err := mainDB.QueryRow(`
 		SELECT EXISTS (
 			SELECT 1
-			  FROM users u
-			  JOIN user_roles ur ON u.id = ur.user_id
-			  JOIN module_roles mr ON ur.role_id = mr.role_id
-			  JOIN module_page mp ON mp.module_id = mr.module_id
-			 WHERE (u.id = $1 OR u.ft_login = $1)
-			   AND mp.slug = $2
+			  FROM module_page mp
+			 WHERE mp.slug = $2
+			   AND (
+			        mp.need_auth = FALSE
+			        OR EXISTS (
+			            SELECT 1
+			              FROM users u
+			              JOIN user_roles ur ON u.id = ur.user_id
+			              JOIN module_page_roles pr ON pr.role_id = ur.role_id
+			             WHERE (u.id = $1 OR u.ft_login = $1)
+			               AND pr.page_id = mp.id
+			        )
+			   )
 		)
 	`, identifier, slug).Scan(&exists)
 	if err != nil {

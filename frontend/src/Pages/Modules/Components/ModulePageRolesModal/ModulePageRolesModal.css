@@ -1,0 +1,77 @@
+.page-roles-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 80;
+  padding: 24px;
+}
+
+.page-roles-modal {
+  width: min(720px, 100%);
+  max-height: min(80vh, 820px);
+  overflow: auto;
+  background: var(--background, #1f1f1f);
+  color: var(--text-primary, #f0f0f0);
+  border: 1px solid var(--border, #444);
+  border-radius: 16px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+}
+
+.page-roles-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+}
+
+.page-roles-header h3 {
+  margin: 0 0 4px;
+}
+
+.page-roles-header p {
+  margin: 0;
+  color: var(--text-secondary, #a7a7a7);
+}
+
+.page-roles-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.page-roles-assigned,
+.page-roles-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.page-roles-search {
+  width: 100%;
+  background: #111;
+  color: #f0f0f0;
+  border: 1px solid #555;
+  border-radius: 10px;
+  padding: 0.7rem 0.8rem;
+  box-sizing: border-box;
+}
+
+.page-roles-item {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+}
+
+.page-roles-empty {
+  color: var(--text-secondary, #9a9a9a);
+  font-style: italic;
+}

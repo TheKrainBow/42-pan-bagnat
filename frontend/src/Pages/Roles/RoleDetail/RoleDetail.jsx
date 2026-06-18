@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef, useMemo } from "react";
-import { useParams } from "react-router-dom";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { fetchWithAuth } from "Global/utils/Auth";
 import Field from "Global/Field/Field";
 import Button from "Global/Button/Button";
@@ -7,22 +7,16 @@ import ModuleSimpleBadge from 'Global/ModuleSimpleBadge/ModuleSimpleBadge';
 import UserBadge from "Global/UserBadge/UserBadge";
 import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import { Wheel } from '@uiw/react-color';
-import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import './RoleDetail.css';
 
 export default function RoleDetail() {
   const { roleId } = useParams();
   const [role, setRole] = useState(null);
-  const [modules, setModules] = useState([]); // assigned modules
+  const [modules, setModules] = useState([]); // modules impacted by at least one page
   const [users, setUsers] = useState([]);     // assigned users
 
-  const [allModules, setAllModules] = useState([]);
   const [allUsers, setAllUsers] = useState([]);
-
-  const [showModuleSearch, setShowModuleSearch] = useState(false);
-  const [moduleSearchTerm, setModuleSearchTerm] = useState("");
-  const moduleDropdownRef = useRef();
 
   const [showUserSearch, setShowUserSearch] = useState(false);
   const [userSearchTerm, setUserSearchTerm] = useState("");
@@ -68,25 +62,16 @@ export default function RoleDetail() {
   // Only allow editing name/color/advanced rules when NOT assigned by default
   const canEditBasics = !isDefault; // false when the checkbox is ticked
 
-  // load all modules & users on mount
+  // load users on mount
   useEffect(() => {
-    fetchWithAuth('/api/v1/admin/modules?limit=1000')
-      .then(res => res.json())
-      .then(data => setAllModules(data.modules || []))
-      .catch(console.error);
     fetchWithAuth('/api/v1/admin/users?limit=1000')
       .then(res => res.json())
       .then(data => setAllUsers(data.users || []))
       .catch(console.error);
   }, []);
 
-  // close clicks
   useEffect(() => {
     function handleClickOutside(e) {
-      if (showModuleSearch && moduleDropdownRef.current && !moduleDropdownRef.current.contains(e.target)) {
-        setShowModuleSearch(false);
-        setModuleSearchTerm("");
-      }
       if (showUserSearch && userDropdownRef.current && !userDropdownRef.current.contains(e.target)) {
         setShowUserSearch(false);
         setUserSearchTerm("");
@@ -94,49 +79,13 @@ export default function RoleDetail() {
     }
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showModuleSearch, showUserSearch]);
-
-  // filtered lists
-  const filteredModules = useMemo(() => allModules.filter(m =>
-    m.name.toLowerCase().includes(moduleSearchTerm.toLowerCase()) &&
-    !modules.some(assigned => assigned.id === m.id)
-  ), [allModules, moduleSearchTerm, modules]);
+  }, [showUserSearch]);
 
   const filteredUsers = useMemo(() => allUsers.filter(u =>
     u.ft_login.toLowerCase().includes(userSearchTerm.toLowerCase()) &&
     !users.some(assigned => assigned.id === u.id)
   ), [allUsers, userSearchTerm, users]);
 
-  // add/remove handlers
-  const handleAddModule = async mod => {
-    try {
-      const res = await fetchWithAuth(`/api/v1/admin/modules/${mod.id}/roles/${roleId}`, { method: 'POST' });
-      if (!res.ok) throw new Error();
-      setModules(prev => {
-        const updated = [...prev, mod];
-        // Recalculate filteredRoles manually
-        const remaining = allModules.filter(m =>
-            m.name.toLowerCase().includes(moduleSearchTerm.toLowerCase()) &&
-            !updated.some(assigned => assigned.id === m.id)
-        );
-
-        if (remaining.length === 0) {
-          setShowModuleSearch(false);
-          setModuleSearchTerm("");
-        }
-
-        return updated;
-      });
-    } catch (err) { console.error(err); }
-  };
-
-  const handleRemoveModule = async mod => {
-    try {
-      const res = await fetchWithAuth(`/api/v1/admin/modules/${mod.id}/roles/${roleId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error();
-      setModules(prev => prev.filter(m => m.id !== mod.id));
-    } catch (err) { console.error(err); }
-  };
   const handleAddUser = async u => {
     try {
       const res = await fetchWithAuth(`/api/v1/admin/users/${u.id}/roles/${roleId}`, { method: 'POST' });
@@ -240,20 +189,21 @@ export default function RoleDetail() {
             <Button
               label={'🔧 Advanced rules'}
               color="gray"
-              disabled={!canEditBasics}
+              disabled={!canEditBasics || loading}
               disabledMessage={"Disable 'Assign this role to new users' to edit rules"}
               onClick={() => navigate(`/admin/roles/${roleId}/rule-builder`)}
             />
             <Button
               label={'Save Changes'}
               color="blue"
+              disabled={loading}
               onClick={handleSave}
             />
             <Button
               label={'🗑️ Delete Role'}
               color="red"
+              disabled={isProtectedRole || loading}
               onClick={handleDelete}
-              disabled={isProtectedRole}
               disabledMessage={"This system role cannot be deleted"}
             />
           </div>
@@ -311,12 +261,10 @@ export default function RoleDetail() {
       <section className="assign-section">
         <div className="section-header">
           <label>Modules</label>
-          <Button
-            label={"+ Add Module"}
-            color="blue"
-            onClick={() => setShowModuleSearch(true)}
-          />
         </div>
+        <p className="section-help">
+          These modules are derived from the pages that grant this role.
+        </p>
         <div className="assigned-list modules-list">
           {modules.length === 0 ? (
             <div className="empty-message">No modules assigned</div>
@@ -326,38 +274,10 @@ export default function RoleDetail() {
                 key={m.id}
                 module={m}
                 onClick={() => navigate(`/admin/modules/${m.id}?tab=settings`)}
-                onDelete={() => handleRemoveModule(m)}
               />
             ))
           )}
         </div>
-
-        {showModuleSearch && (
-          <div className="role-search-dropdown" ref={moduleDropdownRef}>
-            <input
-              type="text"
-              placeholder="Search modules..."
-              value={moduleSearchTerm}
-              onChange={e => setModuleSearchTerm(e.target.value)}
-            />
-            <ul className="role-search-list">
-              {filteredModules.length === 0 ? (
-                <li className="role-line no-result">No more modules available</li>
-              ) : (
-                filteredModules.map(m => (
-                  <li key={m.id}>
-                    <div
-                      className="role-line role-line-clickable"
-                      onClick={() => handleAddModule(m)}
-                    >
-                      <ModuleSimpleBadge module={m} />
-                    </div>
-                  </li>
-                ))
-              )}
-            </ul>
-          </div>
-        )}
       </section>
 
       {/* Users */}
@@ -367,6 +287,7 @@ export default function RoleDetail() {
           <Button
             label={"+ Add User"}
             color="blue"
+            disabled={loading}
             onClick={() => setShowUserSearch(true)}
           />
         </div>

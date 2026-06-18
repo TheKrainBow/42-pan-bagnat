@@ -285,10 +285,12 @@ func GetRoleUserCount(roleID string) (int, error) {
 
 func GetRoleModules(roleID string) ([]Module, error) {
 	rows, err := mainDB.Query(`
-		SELECT mod.id, mod.name, mod.version, mod.status, mod.git_url, mod.icon_url, mod.latest_version, mod.late_commits, mod.last_update
+		SELECT DISTINCT mod.id, mod.name, mod.version, mod.status, mod.git_url, mod.icon_url, mod.latest_version, mod.late_commits, mod.last_update
 		FROM modules mod
-		JOIN module_roles ur ON ur.module_id = mod.id
-		WHERE ur.role_id = $1
+		JOIN module_page mp ON mp.module_id = mod.id
+		JOIN module_page_roles pr ON pr.page_id = mp.id
+		WHERE pr.role_id = $1
+		ORDER BY mod.name ASC
 	`, roleID)
 	if err != nil {
 		return nil, err
@@ -363,26 +365,6 @@ func DeleteAllRolesForUser(userID string) error {
         DELETE FROM user_roles
         WHERE user_id = $1
     `, userID)
-	return err
-}
-
-func AssignRoleToModule(roleID, moduleID string) error {
-	fmt.Printf("Adding module_roles for module (%s) and role (%s)\n", moduleID, roleID)
-	_, err := mainDB.Exec(`
-		INSERT INTO module_roles (module_id, role_id)
-		VALUES ($1, $2)
-		ON CONFLICT DO NOTHING
-	`, moduleID, roleID)
-
-	return err
-}
-
-func RemoveRoleFromModule(roleID, moduleID string) error {
-	_, err := mainDB.Exec(`
-		DELETE FROM module_roles
-		WHERE module_id = $1 AND role_id = $2
-	`, moduleID, roleID)
-
 	return err
 }
 

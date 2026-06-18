@@ -99,9 +99,6 @@ type Module struct {
 	// LastUpdate is the UTC timestamp of the module’s last update check
 	LastUpdate time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
 
-	// Roles lists the roles that have access to this module
-	Roles []Role `json:"roles,omitempty"`
-
 	// IsDeploying indicates a deployment is currently running
 	IsDeploying bool `json:"is_deploying" example:"false"`
 
@@ -137,6 +134,8 @@ type ModulePage struct {
 	ModuleID        string  `json:"module_id"`
 	IconURL         string  `json:"icon_url,omitempty"`
 	NetworkName     string  `json:"network_name,omitempty"`
+	// Roles lists the roles that can access this page.
+	Roles           []Role  `json:"roles,omitempty"`
 }
 
 // Session represents a user session (device) in the system

@@ -64,7 +64,6 @@ func ModuleToAPIModule(module core.Module) Module {
 		GitBranch:        module.GitBranch,
 		IconURL:          module.IconURL,
 		Status:           ModuleStatus(module.Status),
-		Roles:            RolesToAPIRoles(module.Roles),
 		IsDeploying:      module.IsDeploying,
 		LastDeploy:       module.LastDeploy,
 		LastDeployStatus: module.LastDeployStatus,
@@ -116,6 +115,7 @@ func ModulePageToAPIModulePage(modulePage core.ModulePage) ModulePage {
 		IsVisible:       modulePage.IsVisible,
 		IconURL:         modulePage.IconURL,
 		NetworkName:     modulePage.NetworkName,
+		Roles:           RolesToAPIRoles(modulePage.Roles),
 	}
 }
 

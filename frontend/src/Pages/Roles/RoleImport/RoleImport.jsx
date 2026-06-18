@@ -1,7 +1,6 @@
 // src/components/RoleImport.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { Wheel } from '@uiw/react-color';
-import AppIcon from 'Global/AppIcon/AppIcon';
 import Field from 'Global/Field/Field';
 import './RoleImport.css';
 import { fetchWithAuth } from 'Global/utils/Auth';
@@ -11,8 +10,6 @@ export default function RoleImport({ show, onClose, onCreateSuccess }) {
   const [name, setName] = useState('');
   const [color, setColor] = useState('#7c3aed');
   const [isDefault, setIsDefault] = useState(false);
-  const [modulesList, setModulesList] = useState([]);
-  const [selectedModules, setSelectedModules] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -25,28 +22,12 @@ export default function RoleImport({ show, onClose, onCreateSuccess }) {
     setName('');
     setColor('#7c3aed');
     setIsDefault(false);
-    setSelectedModules([]);
     setError('');
     setLoading(false);
   };
   const handleCloseModal = () => {
     resetForm();
     onClose();
-  };
-
-  // fetch modules when modal opens
-  useEffect(() => {
-    if (!show) return;
-    fetchWithAuth('/api/v1/admin/modules?limit=1000')
-      .then(res => res.json())
-      .then(body => setModulesList(Array.isArray(body.modules) ? body.modules : []))
-      .catch(err => console.error('Failed to load modules', err));
-  }, [show]);
-
-  const toggleModule = id => {
-    setSelectedModules(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
   };
 
   if (!show) return null;
@@ -72,7 +53,6 @@ export default function RoleImport({ show, onClose, onCreateSuccess }) {
           name: name.trim(),
           color,
           is_default: isDefault,
-          modules: selectedModules,
         }),
       });
       if (!res.ok) throw new Error(await res.text());
@@ -139,25 +119,6 @@ export default function RoleImport({ show, onClose, onCreateSuccess }) {
                 style={{ background: color }}
               />
             </div>
-          </div>
-        </div>
-
-        <div className="form-row">
-          <label>Applications*</label>
-          <div className="modules-picker">
-            {modulesList.map(mod => (
-              <div
-                key={mod.id}
-                className={
-                  'module-item' +
-                  (selectedModules.includes(mod.id) ? ' selected' : '')
-                }
-                title={mod.name}
-                onClick={() => toggleModule(mod.id)}
-              >
-                <AppIcon app={mod} fallback="/icons/modules.png" />
-              </div>
-            ))}
           </div>
         </div>
 
