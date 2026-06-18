@@ -174,7 +174,6 @@ export default function ModulePage({ pages, user }) {
         frameBorder="0"
         className="module-iframe"
         referrerPolicy="strict-origin-when-cross-origin"
-        sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-popups-to-escape-sandbox"
         style={{ display: status === "ready" ? "block" : "none" }}
       />
     </div>

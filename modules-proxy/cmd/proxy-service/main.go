@@ -62,6 +62,7 @@ type cachedPage struct {
 	ModuleSlug      string
 	IframeOnly      bool
 	NeedAuth        bool
+	HasModuleRoles  bool
 	Network         string
 	TargetContainer string
 	TargetPort      int
@@ -237,6 +238,11 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 		       mp.module_id,
 		       mp.iframe_only,
 		       mp.need_auth,
+		       EXISTS (
+		           SELECT 1
+		             FROM module_roles mr
+		            WHERE mr.module_id = mp.module_id
+		       ) AS has_module_roles,
 		       m.slug AS module_slug,
 		       COALESCE(mp.network_name, '') AS network_name
 		FROM module_page mp
@@ -251,6 +257,7 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 		ModuleID        string `db:"module_id"`
 		IframeOnly      bool   `db:"iframe_only"`
 		NeedAuth        bool   `db:"need_auth"`
+		HasModuleRoles  bool   `db:"has_module_roles"`
 		ModuleSlug      string `db:"module_slug"`
 		NetworkName     string `db:"network_name"`
 	}
@@ -270,6 +277,7 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 			ModuleSlug:      r.ModuleSlug,
 			IframeOnly:      r.IframeOnly,
 			NeedAuth:        r.NeedAuth,
+			HasModuleRoles:  r.HasModuleRoles,
 			Network:         strings.TrimSpace(r.NetworkName),
 			TargetContainer: strings.TrimSpace(r.TargetContainer),
 			TargetPort:      r.TargetPort,
@@ -504,15 +512,28 @@ func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Reque
 		writeJSONError(w, http.StatusForbidden, "iframe_required", "This page must be loaded from Pan Bagnat.")
 		return nil, false, "missing iframe referer"
 	}
-	if page.NeedAuth && user == nil {
+	requiresLogin := page.NeedAuth
+	if requiresLogin && user == nil {
 		if authDebugEnabled {
-			log.Printf("[proxy-service][auth-debug] user nil but referer=%q need_auth=%v", r.Header.Get("Referer"), page.NeedAuth)
+			log.Printf("[proxy-service][auth-debug] user nil but referer=%q need_auth=%v has_module_roles=%v", r.Header.Get("Referer"), page.NeedAuth, page.HasModuleRoles)
 		}
 		if p.redirectToLoginIfPossible(w, r, r.Header.Get("Referer")) {
 			return nil, false, "redirect_login"
 		}
 		writeJSONError(w, http.StatusUnauthorized, "unauthorized", "Please sign in.")
 		return nil, false, "not authenticated"
+	}
+	if user != nil && page.NeedAuth && page.HasModuleRoles {
+		allowed, err := p.userCanAccessPage(ctx, user.ID, page.Slug)
+		if err != nil {
+			log.Printf("[proxy-service] access check failed for user %s on %s: %v", user.ID, page.Slug, err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return nil, false, "access lookup failed"
+		}
+		if !allowed {
+			writeJSONError(w, http.StatusForbidden, "forbidden", "You are not allowed to access this module page.")
+			return nil, false, "forbidden"
+		}
 	}
 	if authDebugEnabled {
 		userID := "<nil>"
@@ -522,6 +543,25 @@ func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Reque
 		log.Printf("[proxy-service][auth-debug] access granted slug=%s user=%s", page.Slug, userID)
 	}
 	return user, true, ""
+}
+
+func (p *proxyService) userCanAccessPage(ctx context.Context, userID, slug string) (bool, error) {
+	const query = `
+		SELECT EXISTS (
+			SELECT 1
+			  FROM users u
+			  JOIN user_roles ur ON u.id = ur.user_id
+			  JOIN module_roles mr ON ur.role_id = mr.role_id
+			  JOIN module_page mp ON mp.module_id = mr.module_id
+			 WHERE u.id = $1
+			   AND mp.slug = $2
+		)
+	`
+	var exists bool
+	if err := p.db.QueryRowContext(ctx, query, userID, slug).Scan(&exists); err != nil {
+		return false, err
+	}
+	return exists, nil
 }
 
 func (p *proxyService) isRefererFromParent(raw string) bool {
