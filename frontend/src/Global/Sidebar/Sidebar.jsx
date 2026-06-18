@@ -6,6 +6,7 @@ import { fetchWithAuth } from 'Global/utils/Auth';
 import { loadSidebarPrefs, getVisibleSidebarPages } from '../../utils/sidebarPrefs';
 import { getModulePageMode } from '../../utils/modulePageMode';
 import { getModulesDomain, getModulesProtocol } from '../../utils/modules';
+import { isMiddleClick, openInNewTab } from 'Global/utils/navigation';
 
 export default function Sidebar({ currentPage, user, pages }) {
   const navigate = useNavigate();
@@ -111,11 +112,16 @@ export default function Sidebar({ currentPage, user, pages }) {
   const handleSelect = (page, event) => {
     const pageMode = getModulePageMode(page);
     const externalUrl = `${modulesProtocol}://${page.slug}.${modulesDomain}`;
+    const internalUrl = `/modules/${page.slug}`;
+    if (isMiddleClick(event) || event?.metaKey || event?.ctrlKey) {
+      openInNewTab(pageMode === 'page_only' ? externalUrl : internalUrl);
+      return;
+    }
     if (pageMode === 'page_only' || (pageMode === 'both' && event?.ctrlKey)) {
       window.location.assign(externalUrl);
       return;
     }
-    navigate(`/modules/${page.slug}`);
+    navigate(internalUrl);
   };
 
   const isActive = (path) =>
@@ -162,32 +168,32 @@ export default function Sidebar({ currentPage, user, pages }) {
         <>
           <div className="sidebar-section-title">{collapsed ? 'ADM' : 'Admin'}</div>
           <ul className="sidebar-user-modules">
-            <li className={`sidebar-item ${isActive('/admin/modules')}`} onClick={() => navigate('/admin/modules')} title={collapsed ? 'Modules' : undefined}>
+            <li className={`sidebar-item ${isActive('/admin/modules')}`} onClick={() => navigate('/admin/modules')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/admin/modules')} title={collapsed ? 'Modules' : undefined}>
               <img src="/icons/modules.png" alt="" className="sidebar-icon" />
               <span className="sidebar-label">Modules</span>
             </li>
-            <li className={`sidebar-item ${isActive('/admin/roles')}`} onClick={() => navigate('/admin/roles')} title={collapsed ? 'Roles' : undefined}>
+            <li className={`sidebar-item ${isActive('/admin/roles')}`} onClick={() => navigate('/admin/roles')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/admin/roles')} title={collapsed ? 'Roles' : undefined}>
               <img src="/icons/roles.png" alt="" className="sidebar-icon" />
               <span className="sidebar-label">Roles</span>
             </li>
-            <li className={`sidebar-item ${isActive('/admin/users')}`} onClick={() => navigate('/admin/users')} title={collapsed ? 'Users' : undefined}>
+            <li className={`sidebar-item ${isActive('/admin/users')}`} onClick={() => navigate('/admin/users')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/admin/users')} title={collapsed ? 'Users' : undefined}>
               <img src="/icons/users.png" alt="" className="sidebar-icon" />
               <span className="sidebar-label">Users</span>
             </li>
-            <li className={`sidebar-item ${isActive('/admin/ssh-keys')}`} onClick={() => navigate('/admin/ssh-keys')} title={collapsed ? 'SSH Keys' : undefined}>
+            <li className={`sidebar-item ${isActive('/admin/ssh-keys')}`} onClick={() => navigate('/admin/ssh-keys')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/admin/ssh-keys')} title={collapsed ? 'SSH Keys' : undefined}>
               <span className="sidebar-icon" role="img" aria-label="SSH Keys">🔑</span>
               <span className="sidebar-label">SSH Keys</span>
             </li>
           </ul>
           <div className="sidebar-footer">
             <div className="sidebar-sep" />
-            <div className="sidebar-item" onClick={() => navigate('/modules')} title={collapsed ? 'User Dashboard' : undefined}>
+            <div className="sidebar-item" onClick={() => navigate('/modules')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/modules')} title={collapsed ? 'User Dashboard' : undefined}>
               <img src="/icons/42.svg" className="sidebar-icon builtin-icon" alt="" />
               <span className="sidebar-label">User Dashboard</span>
             </div>
             <div className="sidebar-sep" />
             {user && (
-              <div className="sidebar-userfooter" onClick={() => navigate('/settings')} title={collapsed ? user.ft_login : undefined}>
+              <div className="sidebar-userfooter" onClick={() => navigate('/settings')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/settings')} title={collapsed ? user.ft_login : undefined}>
                 <div className="avatar-wrap">
                   <img src={user.ft_photo} alt={user.ft_login} className="sidebar-avatar" />
                   <span className="sidebar-status online" />
@@ -220,7 +226,7 @@ export default function Sidebar({ currentPage, user, pages }) {
             {user?.is_staff && (
               <>
                 <div className="sidebar-sep" />
-                <div className="sidebar-item" onClick={() => navigate('/admin/modules')} title={collapsed ? 'Admin Dashboard' : undefined}>
+                <div className="sidebar-item" onClick={() => navigate('/admin/modules')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/admin/modules')} title={collapsed ? 'Admin Dashboard' : undefined}>
                   <img src="/icons/admin-dashboard.svg" className="sidebar-icon themed-icon" alt="" />
                   <span className="sidebar-label">Admin Dashboard</span>
                 </div>
@@ -228,7 +234,7 @@ export default function Sidebar({ currentPage, user, pages }) {
             )}
             <div className="sidebar-sep" />
             {user && (
-              <div className="sidebar-userfooter" onClick={() => navigate('/settings')} title={collapsed ? user.ft_login : undefined}>
+              <div className="sidebar-userfooter" onClick={() => navigate('/settings')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/settings')} title={collapsed ? user.ft_login : undefined}>
                 <div className="avatar-wrap">
                   <img src={user.ft_photo} alt={user.ft_login} className="sidebar-avatar" />
                   <span className="sidebar-status online" />

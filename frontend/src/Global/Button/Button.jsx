@@ -7,6 +7,7 @@ const Button = forwardRef(({
     label,
     icon,
     color = 'gray',
+    href,
     onClick,
     disabled = false,
     onClickDisabled,
@@ -74,12 +75,20 @@ const Button = forwardRef(({
   }
 };
 
+  const handleAuxClick = (e) => {
+    if (!href || disabled) return;
+    if (e.button !== 1) return;
+    e.preventDefault();
+    window.open(href, '_blank', 'noopener,noreferrer');
+  };
+
 return (
   <div className="button-wrapper">
     <button
       type="button"
       className={`custom-btn ${color} ${isIconAndText ? 'icon-txt-btn' : ''} ${isIcon ? 'icon-btn' : ''} ${isSquare ? 'square' : ''}${disabled ? 'disabled' : ''} ${shake ? 'shake' : ''} ${highlight ? 'highlighted' : ''} ${attention ? 'attention' : ''} ${ripple ? 'ripple' : ''}`}
       onClick={handleClick}
+      onAuxClick={handleAuxClick}
       aria-disabled={disabled}
       tabIndex={disabled ? -1 : 0}
       {...props}

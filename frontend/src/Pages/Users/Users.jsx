@@ -10,6 +10,7 @@ import Header from 'Global/Header/Header';
 import RoleBadge from 'Global/RoleBadge/RoleBadge';
 import ArrayHeader from 'Global/ArrayHeader/ArrayHeader';
 import { fetchWithAuth } from 'Global/utils/Auth';
+import { isMiddleClick, openInNewTab } from 'Global/utils/navigation';
 
 const ADMIN_ROLE_ID = 'roles_admin';
 
@@ -178,6 +179,7 @@ const Users = () => {
                   key={row.id}
                   className="user-row"
                   onClick={() => window.location.href = `/admin/users/${login}`}
+                  onAuxClick={(e) => isMiddleClick(e) && openInNewTab(`/admin/users/${login}`)}
                   style={{ cursor: 'pointer' }}
                 >
                   {row.getVisibleCells().map(cell => (

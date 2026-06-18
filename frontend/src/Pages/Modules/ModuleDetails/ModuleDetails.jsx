@@ -152,6 +152,7 @@ const ModuleDetails = () => {
             <Button
               label="Logs"
               className={`custom-btn ${activeTab === 'logs' ? 'blue' : 'gray'}`}
+              href={`/admin/modules/${module.id}?tab=logs`}
               onClick={() => {
                 setActiveTab('logs'); // or 'docker', 'settings'
                 setSearchParams({ tab: 'logs' }); // or the corresponding value
@@ -160,6 +161,7 @@ const ModuleDetails = () => {
             <Button
               label={hasConflicts ? 'Git !' : 'Git'}
               color={`${activeTab === 'git' ? 'blue' : 'gray'}`}
+              href={`/admin/modules/${module.id}?tab=git`}
               onClick={() => {
                 setActiveTab('git');
                 setSearchParams({ tab: 'git' });
@@ -168,6 +170,7 @@ const ModuleDetails = () => {
             <Button
               label={hasConflicts ? 'IDE !' : 'IDE'}
               color={`${activeTab === 'ide' ? 'blue' : 'gray'}`}
+              href={`/admin/modules/${module.id}?tab=ide`}
               onClick={() => {
                 setActiveTab('ide');
                 setSearchParams({ tab: 'ide' });
@@ -179,6 +182,7 @@ const ModuleDetails = () => {
             <Button
               label="Containers"
               color={`${activeTab === 'containers' ? 'blue' : 'gray'}`}
+              href={`/admin/modules/${module.id}?tab=containers`}
               onClick={() => {
                 setActiveTab('containers');
                 setSearchParams({ tab: 'containers' });
@@ -190,6 +194,7 @@ const ModuleDetails = () => {
             <Button
               label="Pages"
               color={`${activeTab === 'pages' ? 'blue' : 'gray'}`}
+              href={`/admin/modules/${module.id}?tab=pages`}
               onClick={() => {
                 setActiveTab('pages');
                 setSearchParams({ tab: 'pages' });
@@ -201,6 +206,7 @@ const ModuleDetails = () => {
             <Button
               label="Settings"
               color={`${activeTab === 'settings' ? 'blue' : 'gray'}`}
+              href={`/admin/modules/${module.id}?tab=settings`}
               onClick={() => {
                 setActiveTab('settings'); // or 'docker', 'settings'
                 setSearchParams({ tab: 'settings' }); // or the corresponding value
@@ -209,6 +215,7 @@ const ModuleDetails = () => {
             <Button
               label="OIDC"
               color={`${activeTab === 'oidc' ? 'blue' : 'gray'}`}
+              href={`/admin/modules/${module.id}?tab=oidc`}
               onClick={() => {
                 setActiveTab('oidc');
                 setSearchParams({ tab: 'oidc' });

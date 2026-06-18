@@ -189,6 +189,7 @@ export default function RoleDetail() {
             <Button
               label={'🔧 Advanced rules'}
               color="gray"
+              href={`/admin/roles/${roleId}/rule-builder`}
               disabled={!canEditBasics || loading}
               disabledMessage={"Disable 'Assign this role to new users' to edit rules"}
               onClick={() => navigate(`/admin/roles/${roleId}/rule-builder`)}
@@ -273,7 +274,7 @@ export default function RoleDetail() {
               <ModuleSimpleBadge
                 key={m.id}
                 module={m}
-                onClick={() => navigate(`/admin/modules/${m.id}?tab=settings`)}
+                href={`/admin/modules/${m.id}?tab=settings`}
               />
             ))
           )}
@@ -298,7 +299,7 @@ export default function RoleDetail() {
           ) : (
             users.map(u => (
               <div key={u.id} className="assigned-item">
-                <UserBadge user={u} onClick={() => navigate(`/admin/users/${u.id}`)} onDelete={() => handleRemoveUser(u)} />
+                <UserBadge user={u} href={`/admin/users/${u.id}`} onDelete={() => handleRemoveUser(u)} />
               </div>
             ))
           )}

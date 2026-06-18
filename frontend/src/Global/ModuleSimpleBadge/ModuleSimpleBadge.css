@@ -11,6 +11,8 @@
   font-size: 1rem;
   cursor: pointer;
   height: 48px;             /* match module badge height */
+  color: inherit;
+  text-decoration: none;
 }
 
 .module-simple-badge-avatar {

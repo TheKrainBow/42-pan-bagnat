@@ -2,12 +2,14 @@ import React from 'react';
 import AppIcon from 'Global/AppIcon/AppIcon';
 import './ModuleSimpleBadge.css';
 
-export default function ModuleSimpleBadge({ module, onClick, onDelete }) {
-  const withHover = onClick != null;
+export default function ModuleSimpleBadge({ module, onClick, onDelete, href }) {
+  const withHover = onClick != null || href != null;
+  const Tag = href ? 'a' : 'div';
   return (
-    <div
+    <Tag
       className={`module-simple-badge${withHover ? ' with-hover' : ''}`}
       onClick={onClick}
+      href={href}
       tabIndex={0}
       role="button"
     >
@@ -29,6 +31,6 @@ export default function ModuleSimpleBadge({ module, onClick, onDelete }) {
           ×
         </button>
       )}
-    </div>
+    </Tag>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { fetchWithAuth } from 'Global/utils/Auth';
 import Button from 'Global/Button/Button';
+import { isMiddleClick, openInNewTab } from 'Global/utils/navigation';
 import './ContainersGraph.css';
 
 export default function ContainersGraph({ moduleId }) {
@@ -236,6 +237,11 @@ export default function ContainersGraph({ moduleId }) {
                 <div
                   className={`cg-group-title ${g.key !== 'orphans' && g.module_id && g.module_id !== moduleId ? 'link' : ''}`}
                   onClick={() => { if (g.key !== 'orphans' && g.module_id && g.module_id !== moduleId) window.location.href = `/admin/modules/${g.module_id}`; }}
+                  onAuxClick={(e) => {
+                    if (isMiddleClick(e) && g.key !== 'orphans' && g.module_id && g.module_id !== moduleId) {
+                      openInNewTab(`/admin/modules/${g.module_id}`);
+                    }
+                  }}
                   title={g.key !== 'orphans' && g.module_id && g.module_id !== moduleId ? 'Open module page' : undefined}
                 >
                   {g.project || 'external'}

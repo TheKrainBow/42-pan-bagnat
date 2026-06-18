@@ -7,6 +7,8 @@ import PageIconModal from 'Pages/Modules/Components/ModuleIconModal/ModuleIconMo
 import { getModulesDomain } from '../../../../../utils/modules';
 import { getModulePageMode, pageModeToFlags } from '../../../../../utils/modulePageMode';
 import ModulePageRolesModal from '../../ModulePageRolesModal/ModulePageRolesModal';
+import ModuleContainerModal from '../ModuleContainerModal/ModuleContainerModal';
+import ModuleVisibilityModal from '../ModuleVisibilityModal/ModuleVisibilityModal';
 
 export default function ModulePageSection({ moduleId }) {
   const [pages, setPages] = useState([]);            // holds both existing & new rows
@@ -14,6 +16,8 @@ export default function ModulePageSection({ moduleId }) {
   const [isSaving, setIsSaving] = useState(false);
   const [iconTarget, setIconTarget] = useState(null);
   const [rolesTarget, setRolesTarget] = useState(null);
+  const [containerTarget, setContainerTarget] = useState(null);
+  const [visibilityTarget, setVisibilityTarget] = useState(null);
   const [networks, setNetworks] = useState([]);
   const [containers, setContainers] = useState([]);
   const modulesDomain = getModulesDomain();
@@ -56,38 +60,6 @@ export default function ModulePageSection({ moduleId }) {
   useEffect(() => {
     fetchContainers();
   }, [moduleId]);
-
-  const getContainerPorts = (containerName) => {
-    if (!containerName) return [];
-    const container = containers.find((c) => c.name === containerName);
-    if (!container || !Array.isArray(container.ports)) return [];
-    const normalizeProto = (value) => {
-      const proto = String(value || '').trim().toLowerCase();
-      return proto || 'tcp';
-    };
-    const unique = new Map();
-    for (const port of container.ports) {
-      if (!Number.isInteger(port?.container_port) || port.container_port <= 0) continue;
-      const normalized = {
-        ...port,
-        protocol: normalizeProto(port.protocol),
-      };
-      const key = `${normalized.container_port}/${normalized.protocol}`;
-      if (!unique.has(key)) {
-        unique.set(key, normalized);
-      }
-    }
-    return Array.from(unique.values());
-  };
-
-  const formatPortLabel = (port) => {
-    if (!port) return '';
-    const proto = port.protocol ? `/${port.protocol}` : '';
-    if (port.scope === 'host' && port.host_port) {
-      return `${port.container_port}${proto} • host ${port.host_port}`;
-    }
-    return `${port.container_port}${proto} • network`;
-  };
 
   // load existing pages
   const fetchPages = async () => {
@@ -199,39 +171,6 @@ export default function ModulePageSection({ moduleId }) {
       }));
   };
 
-  const handleContainerSelect = (id, containerName) => {
-    const availablePorts = getContainerPorts(containerName);
-    setEdits((prev) => {
-      const existing = prev[id] || {};
-      const keepCurrent =
-        availablePorts.find((p) => p.container_port === existing.targetPort)?.container_port ??
-        null;
-      const fallbackPort =
-        keepCurrent !== null ? keepCurrent : (availablePorts[0]?.container_port ?? null);
-      return {
-        ...prev,
-        [id]: {
-          ...existing,
-          targetContainer: containerName,
-          targetPort: containerName ? fallbackPort : null,
-          dirty: true,
-        },
-      };
-    });
-  };
-
-  const handlePortSelect = (id, value) => {
-    const parsed = value === '' ? null : Number(value);
-    setEdits(prev => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        targetPort: Number.isNaN(parsed) ? null : parsed,
-        dirty: true,
-      },
-    }));
-  };
-
   // save either POST (new) or PATCH (existing)
   const handleSave = async (id) => {
     const { name, slug, targetContainer, targetPort, pageMode, needAuth, isVisible, isNew } = edits[id];
@@ -278,6 +217,38 @@ export default function ModulePageSection({ moduleId }) {
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleContainerSave = (id, next) => {
+    setEdits((prev) => {
+      const current = prev[id] || {};
+      return {
+        ...prev,
+        [id]: {
+          ...current,
+          targetContainer: next.targetContainer || '',
+          targetPort: typeof next.targetPort === 'number' ? next.targetPort : null,
+          network: next.network || '',
+          dirty: true,
+        },
+      };
+    });
+  };
+
+  const handleVisibilitySave = (id, next) => {
+    setEdits((prev) => {
+      const current = prev[id] || {};
+      return {
+        ...prev,
+        [id]: {
+          ...current,
+          pageMode: next.pageMode || 'both',
+          isVisible: next.isVisible !== false,
+          needAuth: !!next.needAuth,
+          dirty: true,
+        },
+      };
+    });
   };
 
   // delete row
@@ -332,26 +303,37 @@ export default function ModulePageSection({ moduleId }) {
               <th className="icon-col">Icon</th>
               <th>Nom</th>
               <th>Slug</th>
-              <th>Container</th>
-              <th>Port</th>
-              <th>Network</th>
-              <th>Mode</th>
-              <th>Auth</th>
-              <th className="roles-col">Roles</th>
-              <th>Visible</th>
+              <th className="container-col">Container</th>
+              <th className="visibility-col">Visibility</th>
+              <th className="roles-col">Role</th>
               <th className="actions-col">Actions</th>
             </tr>
           </thead>
           <tbody>
           {pages.map(({ id }) => {
             const edit = edits[id] || {};
-            const containerPorts = getContainerPorts(edit.targetContainer);
-            const hasKnownContainer = !!containers.find(c => c.name === edit.targetContainer);
             const missingContainer = !(edit.targetContainer || '').trim();
             const missingPort = typeof edit.targetPort !== 'number';
-            const missingNetwork = !(edit.network || '').trim();
             const missingName = !(edit.name || '').trim();
             const missingSlug = !(edit.slug || '').trim();
+            const portProtocol = edit.targetPort
+              ? (containers
+                .find((container) => container.name === edit.targetContainer)
+                ?.ports
+                ?.find((port) => port.container_port === edit.targetPort)
+                ?.protocol || 'tcp')
+              : '';
+            const containerLabel = missingContainer
+              ? 'Pas de conteneur'
+              : edit.targetPort
+                ? `${edit.targetContainer}:${edit.targetPort}/${portProtocol}`
+                : edit.targetContainer;
+            const containerHasWarning = !missingContainer && (missingPort || !(edit.network || '').trim());
+            const visibilitySummary = [
+              edit.pageMode === 'iframe_only' ? 'Iframe only' : edit.pageMode === 'page_only' ? 'Page only' : 'Both',
+              edit.isVisible !== false ? 'Sidebar on' : 'Sidebar off',
+              edit.needAuth ? 'Login on' : 'Login off',
+            ].join(' • ');
             return (
               <tr
                 key={id}
@@ -382,142 +364,65 @@ export default function ModulePageSection({ moduleId }) {
                   </div>
                 </td>
                 <td className="page-cell">
-                  <div className="select-with-warning">
-                    <select
-                      className="page-select"
-                      value={edit.targetContainer || ''}
-                      onChange={e => handleContainerSelect(id, e.target.value)}
-                    >
-                      <option value="">Select container</option>
-                      {containers.map(container => (
-                        <option key={container.name} value={container.name}>
-                          {container.name}
-                        </option>
-                      ))}
-                      {edit.targetContainer && !hasKnownContainer && (
-                        <option value={edit.targetContainer} className="missing-option">
-                          {edit.targetContainer} (!)
-                        </option>
-                      )}
-                    </select>
-                    {missingContainer && (
-                      <span className="field-warning" title="Container not set">!</span>
-                    )}
-                  </div>
-                </td>
-                <td className="page-cell">
-                  <div className="select-with-warning">
-                    <select
-                      className="page-select"
-                      value={typeof edit.targetPort === 'number' ? String(edit.targetPort) : ''}
-                      onChange={e => handlePortSelect(id, e.target.value)}
-                      disabled={!edit.targetContainer || containerPorts.length === 0}
-                    >
-                      <option value="">
-                        {!edit.targetContainer
-                          ? 'Pick a container first'
-                          : containerPorts.length === 0
-                            ? 'No ports detected'
-                            : 'Select a port'}
-                      </option>
-                      {containerPorts.map((port, idx) => (
-                        <option
-                          key={`${port.container_port}-${port.host_port || 0}-${port.protocol || 'tcp'}-${idx}`}
-                          value={port.container_port}
-                        >
-                          {formatPortLabel(port)}
-                        </option>
-                      ))}
-                    </select>
-                    {missingPort && (
-                      <span className="field-warning" title="Port not set">!</span>
-                    )}
-                  </div>
-                </td>
-                <td className="page-cell">
-                  <div className="select-with-warning">
-                    <select
-                      className={`page-network-select${edit.network && !networks.includes(edit.network) ? ' missing-network' : ''}`}
-                      value={edit.network || ''}
-                      onChange={e => handleChange(id, 'network', e.target.value)}
-                    >
-                      <option value="">No network</option>
-                      {networks.map(net => (
-                        <option key={net} value={net}>{net}</option>
-                      ))}
-                      {edit.network && !networks.includes(edit.network) && (
-                        <option value={edit.network} className="missing-option">
-                          {edit.network} (!)
-                        </option>
-                      )}
-                    </select>
-                    {missingNetwork && (
-                      <span className="field-warning" title="Network not set">!</span>
-                    )}
-                  </div>
-                </td>
-                <td className="page-cell page-flag-cell">
-                  <select
-                    className="page-select"
-                    value={edit.pageMode || 'both'}
-                    onChange={e => handleChange(id, 'pageMode', e.target.value)}
+                  <button
+                    type="button"
+                    className={`page-container-button${containerHasWarning ? ' has-warning' : ''}`}
+                    onClick={() => setContainerTarget(edit)}
+                    title="Configure container, port and network"
                   >
-                    <option value="iframe_only">Iframe only</option>
-                    <option value="both">Both</option>
-                    <option value="page_only">Page only</option>
-                  </select>
-                </td>
-                <td className="page-cell page-flag-cell">
-                  <label className="page-access-toggle">
-                    <input
-                      type="checkbox"
-                      checked={edit.needAuth || false}
-                      onChange={e => handleChange(id, 'needAuth', e.target.checked)}
-                    />
-                  </label>
+                    {missingContainer ? (
+                      <span className="page-container-empty">Pas de conteneur</span>
+                    ) : (
+                      <span className="page-container-summary">{containerLabel}</span>
+                    )}
+                    {containerHasWarning && (
+                      <span className="field-warning page-container-warning" title="Container, port or network missing">!</span>
+                    )}
+                  </button>
                 </td>
                 <td className="page-cell">
-                  <div className="page-roles-cell">
-                    <div className="page-roles-preview">
+                  <button
+                    type="button"
+                    className="page-visibility-button"
+                    onClick={() => setVisibilityTarget(edit)}
+                    title="Configure mode, sidebar and page access"
+                  >
+                    <span className="page-visibility-summary">{visibilitySummary}</span>
+                  </button>
+                </td>
+                <td className="page-cell">
+                  <button
+                    type="button"
+                    className="page-role-cell"
+                    onClick={() => setRolesTarget(edit)}
+                    title="Open role editor"
+                  >
+                    <div className="page-role-preview">
                       {(edit.roles || []).length === 0 ? (
-                        <span className="page-roles-empty">Public</span>
+                        <span className="page-role-empty">Public</span>
                       ) : (
-                        (edit.roles || []).slice(0, 3).map((role) => (
+                        (edit.roles || []).map((role) => (
                           <RoleBadge key={role.id} role={role}>
                             {role.name}
                           </RoleBadge>
                         ))
                       )}
                     </div>
-                    <Button
-                      label="Set roles"
-                      color="gray"
-                      onClick={() => setRolesTarget(edit)}
-                    />
-                  </div>
-                </td>
-                <td className="page-cell page-flag-cell">
-                  <label className="page-access-toggle">
-                    <input
-                      type="checkbox"
-                      checked={edit.isVisible !== false}
-                      onChange={e => handleChange(id, 'isVisible', e.target.checked)}
-                    />
-                  </label>
+                  </button>
                 </td>
                 <td className="page-cell">
                   <div className="page-actions">
-                  <Button
-                    label="Save"
-                    color="green"
-                    onClick={() => handleSave(id)}
-                    disabled={!edit.dirty || isSaving || missingName || missingSlug}
-                  />
-                  <Button
-                    label="Delete"
-                    color="red"
-                    onClick={() => handleDelete(id)}
-                  />
+                    <Button
+                      label="Save"
+                      color="green"
+                      onClick={() => handleSave(id)}
+                      disabled={!edit.dirty || isSaving || missingName || missingSlug}
+                    />
+                    <Button
+                      label="Delete"
+                      color="red"
+                      onClick={() => handleDelete(id)}
+                    />
                   </div>
                 </td>
               </tr>
@@ -543,6 +448,30 @@ export default function ModulePageSection({ moduleId }) {
           page={rolesTarget}
           onClose={() => setRolesTarget(null)}
           onUpdated={fetchPages}
+        />
+      )}
+      {containerTarget && (
+        <ModuleContainerModal
+          open={!!containerTarget}
+          containers={containers}
+          networks={networks}
+          value={containerTarget}
+          onClose={() => setContainerTarget(null)}
+          onSave={(next) => {
+            handleContainerSave(containerTarget.id, next);
+            setContainerTarget(null);
+          }}
+        />
+      )}
+      {visibilityTarget && (
+        <ModuleVisibilityModal
+          open={!!visibilityTarget}
+          value={visibilityTarget}
+          onClose={() => setVisibilityTarget(null)}
+          onSave={(next) => {
+            handleVisibilitySave(visibilityTarget.id, next);
+            setVisibilityTarget(null);
+          }}
         />
       )}
     </div>
