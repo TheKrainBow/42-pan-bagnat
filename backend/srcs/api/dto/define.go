@@ -47,6 +47,9 @@ type User struct {
 	// PhotoURL is the URL to the user’s 42-intranet profile picture
 	PhotoURL string `json:"ft_photo" example:"https://intra.42.fr/some-login/some-id"`
 
+	// Email is the email address returned by the 42 API for this user
+	Email string `json:"email,omitempty" example:"heinz@student.42nice.fr"`
+
 	// LastSeen is the UTC timestamp of the user’s last activity
 	LastSeen time.Time `json:"last_seen" example:"2025-02-18T15:00:00Z"`
 
@@ -135,7 +138,7 @@ type ModulePage struct {
 	IconURL         string  `json:"icon_url,omitempty"`
 	NetworkName     string  `json:"network_name,omitempty"`
 	// Roles lists the roles that can access this page.
-	Roles           []Role  `json:"roles,omitempty"`
+	Roles []Role `json:"roles,omitempty"`
 }
 
 // Session represents a user session (device) in the system

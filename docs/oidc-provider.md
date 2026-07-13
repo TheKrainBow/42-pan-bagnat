@@ -58,10 +58,7 @@ Scopes: openid profile email roles
 - `roles`
 - `role_slugs`
 
-`email` is derived from the Pan Bagnat login:
-
-- `login@student.42nice.fr` for non-staff users
-- `login@42nice.fr` for staff users
+`email` is read from the Pan Bagnat user record, which is populated from the 42 API when users are created or backfilled. Older records without a stored email fall back to the legacy login-derived address.
 
 ## Limits
 

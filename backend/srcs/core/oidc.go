@@ -365,6 +365,9 @@ func BuildOIDCUserClaims(user User, module Module, _ database.OIDCClient, scopes
 }
 
 func buildOIDCEmail(user User) string {
+	if email := strings.TrimSpace(strings.ToLower(user.Email)); email != "" {
+		return email
+	}
 	login := strings.TrimSpace(strings.ToLower(user.FtLogin))
 	if login == "" {
 		return ""

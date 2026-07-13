@@ -34,6 +34,7 @@ func UserToAPIUser(user core.User) User {
 		FtIsStaff: user.FtIsStaff,
 		IsStaff:   user.IsStaff,
 		PhotoURL:  user.PhotoURL,
+		Email:     user.Email,
 		LastSeen:  user.LastSeen,
 		Roles:     RolesToAPIRoles(user.Roles),
 	}

@@ -4,7 +4,9 @@ import (
 	"backend/core"
 	"backend/database"
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"net/url"
 	"os"
@@ -70,17 +72,7 @@ func Callback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Token exchange failed: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	ua := r.UserAgent()
-	ip := r.Header.Get("X-Forwarded-For")
-	if ip == "" {
-		ip = strings.Split(r.RemoteAddr, ":")[0]
-	}
-
-	sessionID, err := core.HandleUser42Connection(r.Context(), token, core.DeviceMeta{
-		UserAgent: ua,
-		IP:        ip,
-		// DeviceLabel: optionally read from a cookie/query param for named devices
-	})
+	sessionID, err := core.HandleUser42Connection(r.Context(), token, requestDeviceMeta(r))
 	if err != nil {
 		http.Error(w, "Auth failed: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -108,6 +100,72 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	}
 	core.ClearSessionCookie(w)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+type magicLinkRequest struct {
+	Email string `json:"email"`
+	Next  string `json:"next"`
+}
+
+// POST /auth/magic-link
+func RequestMagicLink(w http.ResponseWriter, r *http.Request) {
+	var input magicLinkRequest
+	if err := json.NewDecoder(r.Body).Decode(&input); err != nil {
+		WriteJSONError(w, http.StatusBadRequest, "bad_request", "Invalid JSON input")
+		return
+	}
+
+	next := ""
+	if target, ok := sanitizeRedirectURL(input.Next); ok {
+		next = target
+	}
+
+	email := input.Email
+	bgCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	go func() {
+		defer cancel()
+		if err := core.RequestMagicLink(bgCtx, email, next); err != nil {
+			log.Printf("magic link request failed: %v", err)
+		}
+	}()
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusAccepted)
+	_ = json.NewEncoder(w).Encode(map[string]string{
+		"message": "If an account exists for this email, a sign-in link has been sent.",
+	})
+}
+
+// GET /auth/magic/callback
+func MagicCallback(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	sessionID, nextRedirect, err := core.ConsumeMagicLink(r.Context(), token, requestDeviceMeta(r))
+	if err != nil {
+		http.Error(w, "Invalid or expired magic link", http.StatusUnauthorized)
+		return
+	}
+
+	isHTTPS := isHTTPSRequest(r)
+	core.WriteSessionCookie(w, sessionID, 24*time.Hour, isHTTPS)
+
+	if target, ok := sanitizeRedirectURL(nextRedirect); ok {
+		w.Header().Set("Cache-Control", "no-store")
+		http.Redirect(w, r, target, http.StatusSeeOther)
+		return
+	}
+	w.Header().Set("Cache-Control", "no-store")
+	http.Redirect(w, r, "/me", http.StatusSeeOther)
+}
+
+func requestDeviceMeta(r *http.Request) core.DeviceMeta {
+	ip := r.Header.Get("X-Forwarded-For")
+	if ip == "" {
+		ip = strings.Split(r.RemoteAddr, ":")[0]
+	}
+	return core.DeviceMeta{
+		UserAgent: r.UserAgent(),
+		IP:        ip,
+	}
 }
 
 func setLoginRedirectCookie(w http.ResponseWriter, raw string, secure bool) {

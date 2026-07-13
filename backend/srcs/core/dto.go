@@ -30,6 +30,7 @@ func DatabaseUserToUser(dbUser database.User) User {
 		FtIsStaff: dbUser.FtIsStaff,
 		LastSeen:  dbUser.LastSeen,
 		PhotoURL:  dbUser.PhotoURL,
+		Email:     dbUser.Email,
 		Roles:     []Role{},
 	}
 }

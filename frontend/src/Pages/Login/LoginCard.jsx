@@ -5,17 +5,29 @@ import Button from "Global/Button/Button";
 import Field from "Global/Field/Field";
 import { toast } from "react-toastify";
 
-export default function LoginCard({ onLogin }) {
+export default function LoginCard({ onLogin, onMagicLink }) {
   const [email, setEmail] = useState("");
+  const [sendingEmail, setSendingEmail] = useState(false);
   const emailFieldRef = useRef(null);
 
-  const handleEmailSubmit = () => {
+  const handleEmailSubmit = async () => {
     const emailOk = emailFieldRef.current?.isValid(true);
     if (!emailOk) {
       emailFieldRef.current?.triggerShake();
       return;
     }
-    toast.info("Email/password login isn't enabled yet. Please keep using OAuth.");
+    if (sendingEmail) {
+      return;
+    }
+    setSendingEmail(true);
+    try {
+      await onMagicLink?.(email);
+      toast.info("If an account exists for this email, a sign-in link has been sent.");
+    } catch (err) {
+      toast.error(err.message || "Unable to send sign-in link.");
+    } finally {
+      setSendingEmail(false);
+    }
   };
 
   return (
@@ -70,9 +82,10 @@ export default function LoginCard({ onLogin }) {
             </button> */}
             <div className="email-button">
               <Button
-                label="Continue with email"
+                label={sendingEmail ? "Sending..." : "Continue with email"}
                 color="green"
                 onClick={handleEmailSubmit}
+                disabled={sendingEmail}
               />
             </div>
           </div>

@@ -20,6 +20,7 @@ type User struct {
 	FtID      int       `json:"ft_id"`
 	FtIsStaff bool      `json:"ft_is_staff"`
 	PhotoURL  string    `json:"photo_url"`
+	Email     string    `json:"email"`
 	LastSeen  time.Time `json:"last_update"`
 	IsStaff   bool      `json:"is_staff"`
 	Roles     []Role    `json:"roles"`
@@ -31,6 +32,7 @@ type UserPatch struct {
 	FtID      *int       `json:"ft_id"`
 	FtIsStaff *bool      `json:"ft_is_staff"`
 	PhotoURL  *string    `json:"photo_url"`
+	Email     *string    `json:"email"`
 	LastSeen  *time.Time `json:"last_update"`
 	IsStaff   *bool      `json:"is_staff"`
 	Roles     []string   `json:"roles,omitempty"`
@@ -241,6 +243,7 @@ func HandleUser42Connection(ctx context.Context, token *oauth2.Token, meta Devic
 				FtID:      intra.ID,
 				FtIsStaff: intra.Staff,
 				PhotoURL:  intra.Image.Link,
+				Email:     strings.TrimSpace(intra.Email),
 				LastSeen:  time.Now(),
 			}
 			if err := database.AddUser(user); err != nil {
@@ -255,6 +258,11 @@ func HandleUser42Connection(ctx context.Context, token *oauth2.Token, meta Devic
 		} else {
 			return "", fmt.Errorf("failed to get user: %w", err)
 		}
+	}
+
+	if email := strings.TrimSpace(intra.Email); email != "" && !strings.EqualFold(email, user.Email) {
+		_ = database.UpdateUserEmail(user.ID, email)
+		user.Email = email
 	}
 
 	user.LastSeen = time.Now()
@@ -292,6 +300,7 @@ func PatchUser(patch UserPatch) (*User, error) {
 		FtID:      patch.FtID,
 		FtIsStaff: patch.FtIsStaff,
 		PhotoURL:  patch.PhotoURL,
+		Email:     patch.Email,
 		LastSeen:  patch.LastSeen,
 	}
 
