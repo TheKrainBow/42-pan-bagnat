@@ -80,6 +80,11 @@ export default function ModulePageSection({ moduleId }) {
         isVisible: p.is_visible !== false,
         icon_url: p.icon_url,
         network: p.network_name || '',
+        maxUploadBodySize: p.max_upload_body_size || '1m',
+        proxyTimeoutSeconds: typeof p.proxy_timeout_seconds === 'number' ? p.proxy_timeout_seconds : 60,
+        rateLimitRPS: typeof p.rate_limit_rps === 'number' ? p.rate_limit_rps : 0,
+        rateLimitBurst: typeof p.rate_limit_burst === 'number' ? p.rate_limit_burst : 0,
+        disableRequestBuffering: !!p.disable_request_buffering,
         roles: Array.isArray(p.roles) ? p.roles : [],
         isNew: false,
         slugAuto: false,
@@ -117,6 +122,11 @@ export default function ModulePageSection({ moduleId }) {
       isVisible: true,
       icon_url: '',
       network: '',
+      maxUploadBodySize: '1m',
+      proxyTimeoutSeconds: 60,
+      rateLimitRPS: 0,
+      rateLimitBurst: 0,
+      disableRequestBuffering: false,
       roles: [],
       isNew: true,
       slugAuto: true,
@@ -191,6 +201,11 @@ export default function ModulePageSection({ moduleId }) {
         need_auth: !!needAuth,
         is_visible: !!isVisible,
         network_name: (edits[id].network || '').trim() || null,
+        max_upload_body_size: (edits[id].maxUploadBodySize || '').trim() || null,
+        proxy_timeout_seconds: edits[id].proxyTimeoutSeconds ?? null,
+        rate_limit_rps: edits[id].rateLimitRPS ?? null,
+        rate_limit_burst: edits[id].rateLimitBurst ?? null,
+        disable_request_buffering: !!edits[id].disableRequestBuffering,
       };
       if (isNew) {
         await fetchWithAuth(
@@ -229,6 +244,11 @@ export default function ModulePageSection({ moduleId }) {
           targetContainer: next.targetContainer || '',
           targetPort: typeof next.targetPort === 'number' ? next.targetPort : null,
           network: next.network || '',
+          maxUploadBodySize: next.maxUploadBodySize || '1m',
+          proxyTimeoutSeconds: typeof next.proxyTimeoutSeconds === 'number' ? next.proxyTimeoutSeconds : 60,
+          rateLimitRPS: typeof next.rateLimitRPS === 'number' ? next.rateLimitRPS : 0,
+          rateLimitBurst: typeof next.rateLimitBurst === 'number' ? next.rateLimitBurst : 0,
+          disableRequestBuffering: !!next.disableRequestBuffering,
           dirty: true,
         },
       };
@@ -368,12 +388,15 @@ export default function ModulePageSection({ moduleId }) {
                     type="button"
                     className={`page-container-button${containerHasWarning ? ' has-warning' : ''}`}
                     onClick={() => setContainerTarget(edit)}
-                    title="Configure container, port and network"
+                    title="Configure container, port, network and max upload size"
                   >
                     {missingContainer ? (
                       <span className="page-container-empty">Pas de conteneur</span>
                     ) : (
-                      <span className="page-container-summary">{containerLabel}</span>
+                      <span className="page-container-summary">
+                        {containerLabel} &bull; max {edit.maxUploadBodySize || '1m'}
+                        {edit.rateLimitRPS ? ` • ${edit.rateLimitRPS}r/s` : ''}
+                      </span>
                     )}
                     {containerHasWarning && (
                       <span className="field-warning page-container-warning" title="Container, port or network missing">!</span>
@@ -455,6 +478,7 @@ export default function ModulePageSection({ moduleId }) {
           open={!!containerTarget}
           containers={containers}
           networks={networks}
+          gatewayPort={8080}
           value={containerTarget}
           onClose={() => setContainerTarget(null)}
           onSave={(next) => {

@@ -132,19 +132,24 @@ func DatabaseModulePageToModulePage(dbPage database.ModulePage) ModulePage {
 	}
 
 	return ModulePage{
-		ID:              dbPage.ID,
-		ModuleID:        dbPage.ModuleID,
-		Name:            dbPage.Name,
-		Slug:            dbPage.Slug,
-		TargetContainer: targetContainer,
-		TargetPort:      targetPort,
-		IframeOnly:      dbPage.IframeOnly,
-		PageOnly:        dbPage.PageOnly,
-		NeedAuth:        dbPage.NeedAuth,
-		IsVisible:       dbPage.IsVisible,
-		IconURL:         dbPage.IconURL,
-		NetworkName:     dbPage.NetworkName,
-		Roles:           []Role{},
+		ID:                      dbPage.ID,
+		ModuleID:                dbPage.ModuleID,
+		Name:                    dbPage.Name,
+		Slug:                    dbPage.Slug,
+		TargetContainer:         targetContainer,
+		TargetPort:              targetPort,
+		IframeOnly:              dbPage.IframeOnly,
+		PageOnly:                dbPage.PageOnly,
+		NeedAuth:                dbPage.NeedAuth,
+		IsVisible:               dbPage.IsVisible,
+		IconURL:                 dbPage.IconURL,
+		NetworkName:             dbPage.NetworkName,
+		MaxUploadBodySize:       dbPage.MaxUploadBodySize,
+		ProxyTimeoutSeconds:     dbPage.ProxyTimeoutSeconds,
+		RateLimitRPS:            dbPage.RateLimitRPS,
+		RateLimitBurst:          dbPage.RateLimitBurst,
+		DisableRequestBuffering: dbPage.DisableRequestBuffering,
+		Roles:                   []Role{},
 	}
 }
 

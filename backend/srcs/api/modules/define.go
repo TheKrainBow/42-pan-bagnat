@@ -94,6 +94,25 @@ type ModulePageUpdateInput struct {
 
 	// NetworkName is the docker network to which the reverse proxy must attach.
 	NetworkName *string `json:"network_name,omitempty" example:"piscine-monitor-net"`
+
+	// MaxUploadBodySize is the nginx-style max request body size accepted by
+	// this page's gateway (e.g. "1m", "50m"). Defaults to "1m" when unset.
+	MaxUploadBodySize *string `json:"max_upload_body_size,omitempty" example:"10m"`
+
+	// ProxyTimeoutSeconds is the read/send timeout applied by this page's gateway.
+	// Defaults to 60s when unset.
+	ProxyTimeoutSeconds *int `json:"proxy_timeout_seconds,omitempty" example:"60"`
+
+	// RateLimitRPS is the max requests/second allowed per client IP. 0 or unset
+	// disables rate limiting.
+	RateLimitRPS *int `json:"rate_limit_rps,omitempty" example:"0"`
+
+	// RateLimitBurst is the burst allowance on top of RateLimitRPS.
+	RateLimitBurst *int `json:"rate_limit_burst,omitempty" example:"0"`
+
+	// DisableRequestBuffering streams uploads directly to the module instead of
+	// buffering the full request body first.
+	DisableRequestBuffering *bool `json:"disable_request_buffering,omitempty" example:"false"`
 }
 
 // ModuleGitInput describes the payload for importing a new module.
@@ -144,4 +163,22 @@ type ModulePageInput struct {
 	IsVisible bool `json:"is_visible" example:"true"`
 	// NetworkName is the docker network the proxy should join for this page (optional)
 	NetworkName *string `json:"network_name,omitempty" example:"piscine-monitor-net"`
+	// MaxUploadBodySize is the nginx-style max request body size accepted by
+	// this page's gateway (e.g. "1m", "50m"). Defaults to "1m" when omitted.
+	MaxUploadBodySize *string `json:"max_upload_body_size,omitempty" example:"10m"`
+
+	// ProxyTimeoutSeconds is the read/send timeout applied by this page's gateway.
+	// Defaults to 60s when omitted.
+	ProxyTimeoutSeconds *int `json:"proxy_timeout_seconds,omitempty" example:"60"`
+
+	// RateLimitRPS is the max requests/second allowed per client IP. 0 or
+	// omitted disables rate limiting.
+	RateLimitRPS *int `json:"rate_limit_rps,omitempty" example:"0"`
+
+	// RateLimitBurst is the burst allowance on top of RateLimitRPS.
+	RateLimitBurst *int `json:"rate_limit_burst,omitempty" example:"0"`
+
+	// DisableRequestBuffering streams uploads directly to the module instead of
+	// buffering the full request body first.
+	DisableRequestBuffering *bool `json:"disable_request_buffering,omitempty" example:"false"`
 }

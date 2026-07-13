@@ -118,35 +118,46 @@ type ModuleLogPagination struct {
 }
 
 type ModulePagePatch struct {
-	ID                 string  `json:"id"`
-	Name               *string `json:"name"`
-	Slug               *string `json:"slug"`
-	IframeOnly         *bool   `json:"iframe_only"`
-	PageOnly           *bool   `json:"page_only"`
-	NeedAuth           *bool   `json:"need_auth"`
-	IsVisible          *bool   `json:"is_visible"`
-	IconURL            *string `json:"icon_url"`
-	Network            *string `json:"network_name"`
-	NetworkSet         bool
-	TargetContainer    *string `json:"target_container"`
-	TargetContainerSet bool
-	TargetPort         *int `json:"target_port"`
-	TargetPortSet      bool
+	ID                      string  `json:"id"`
+	Name                    *string `json:"name"`
+	Slug                    *string `json:"slug"`
+	IframeOnly              *bool   `json:"iframe_only"`
+	PageOnly                *bool   `json:"page_only"`
+	NeedAuth                *bool   `json:"need_auth"`
+	IsVisible               *bool   `json:"is_visible"`
+	IconURL                 *string `json:"icon_url"`
+	Network                 *string `json:"network_name"`
+	NetworkSet              bool
+	TargetContainer         *string `json:"target_container"`
+	TargetContainerSet      bool
+	TargetPort              *int `json:"target_port"`
+	TargetPortSet           bool
+	MaxUploadBodySize       *string `json:"max_upload_body_size"`
+	MaxUploadBodySizeSet    bool
+	ProxyTimeoutSeconds     *int
+	RateLimitRPS            *int
+	RateLimitBurst          *int
+	DisableRequestBuffering *bool
 }
 
 type ModulePage struct {
-	ID              string         `json:"id" db:"id"`
-	Name            string         `json:"name" db:"name"`
-	Slug            string         `json:"slug" db:"slug"`
-	IframeOnly      bool           `json:"iframe_only" db:"iframe_only"`
-	PageOnly        bool           `json:"page_only" db:"page_only"`
-	NeedAuth        bool           `json:"need_auth" db:"need_auth"`
-	IsVisible       bool           `json:"is_visible" db:"is_visible"`
-	ModuleID        string         `json:"module_id" db:"module_id"`
-	IconURL         string         `json:"icon_url" db:"icon_url"`
-	NetworkName     string         `json:"network_name" db:"network_name"`
-	TargetContainer sql.NullString `json:"target_container" db:"target_container"`
-	TargetPort      sql.NullInt32  `json:"target_port" db:"target_port"`
+	ID                      string         `json:"id" db:"id"`
+	Name                    string         `json:"name" db:"name"`
+	Slug                    string         `json:"slug" db:"slug"`
+	IframeOnly              bool           `json:"iframe_only" db:"iframe_only"`
+	PageOnly                bool           `json:"page_only" db:"page_only"`
+	NeedAuth                bool           `json:"need_auth" db:"need_auth"`
+	IsVisible               bool           `json:"is_visible" db:"is_visible"`
+	ModuleID                string         `json:"module_id" db:"module_id"`
+	IconURL                 string         `json:"icon_url" db:"icon_url"`
+	NetworkName             string         `json:"network_name" db:"network_name"`
+	TargetContainer         sql.NullString `json:"target_container" db:"target_container"`
+	TargetPort              sql.NullInt32  `json:"target_port" db:"target_port"`
+	MaxUploadBodySize       string         `json:"max_upload_body_size" db:"max_upload_body_size"`
+	ProxyTimeoutSeconds     int            `json:"proxy_timeout_seconds" db:"proxy_timeout_seconds"`
+	RateLimitRPS            int            `json:"rate_limit_rps" db:"rate_limit_rps"`
+	RateLimitBurst          int            `json:"rate_limit_burst" db:"rate_limit_burst"`
+	DisableRequestBuffering bool           `json:"disable_request_buffering" db:"disable_request_buffering"`
 }
 
 type ModulePagesOrderField string
@@ -307,7 +318,12 @@ func GetPage(pageName string) (*ModulePage, error) {
 		       target_container,
 		       target_port,
 		       COALESCE(network_name, '') AS network_name,
-		       COALESCE(icon_url, '') AS icon_url
+		       COALESCE(icon_url, '') AS icon_url,
+		       max_upload_body_size,
+		       proxy_timeout_seconds,
+		       rate_limit_rps,
+		       rate_limit_burst,
+		       disable_request_buffering
 		FROM module_page
 		WHERE slug = $1
 	`, pageName)
@@ -326,6 +342,11 @@ func GetPage(pageName string) (*ModulePage, error) {
 		&page.TargetPort,
 		&page.NetworkName,
 		&page.IconURL,
+		&page.MaxUploadBodySize,
+		&page.ProxyTimeoutSeconds,
+		&page.RateLimitRPS,
+		&page.RateLimitBurst,
+		&page.DisableRequestBuffering,
 	); err != nil {
 		return nil, err
 	}
@@ -345,7 +366,12 @@ func GetPageByID(pageID string) (*ModulePage, error) {
 		       target_container,
 		       target_port,
 		       COALESCE(network_name, '') AS network_name,
-		       COALESCE(icon_url, '') AS icon_url
+		       COALESCE(icon_url, '') AS icon_url,
+		       max_upload_body_size,
+		       proxy_timeout_seconds,
+		       rate_limit_rps,
+		       rate_limit_burst,
+		       disable_request_buffering
 		FROM module_page
 		WHERE id = $1
 	`, pageID)
@@ -364,6 +390,11 @@ func GetPageByID(pageID string) (*ModulePage, error) {
 		&page.TargetPort,
 		&page.NetworkName,
 		&page.IconURL,
+		&page.MaxUploadBodySize,
+		&page.ProxyTimeoutSeconds,
+		&page.RateLimitRPS,
+		&page.RateLimitBurst,
+		&page.DisableRequestBuffering,
 	); err != nil {
 		return nil, err
 	}
@@ -406,10 +437,19 @@ func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
                               END,
                icon_url  = CASE WHEN ($9)::text IS NULL THEN icon_url
                                  WHEN ($9)::text = ''  THEN NULL
-                                 ELSE ($9)::text END
+                                 ELSE ($9)::text END,
+               max_upload_body_size = CASE
+                                         WHEN $15 THEN $16
+                                         ELSE max_upload_body_size
+                                      END,
+               proxy_timeout_seconds = COALESCE($17, proxy_timeout_seconds),
+               rate_limit_rps = COALESCE($18, rate_limit_rps),
+               rate_limit_burst = COALESCE($19, rate_limit_burst),
+               disable_request_buffering = COALESCE($20, disable_request_buffering)
          WHERE id = $10
-     RETURNING id, name, slug, iframe_only, page_only, need_auth, is_visible, module_id, COALESCE(icon_url, '') as icon_url, COALESCE(network_name, '') as network_name, target_container, target_port;
-    `, p.Name, p.Slug, p.TargetContainer, p.TargetPort, p.IframeOnly, p.PageOnly, p.NeedAuth, p.Network, p.IconURL, p.ID, p.TargetContainerSet, p.TargetPortSet, p.NetworkSet, p.IsVisible,
+     RETURNING id, name, slug, iframe_only, page_only, need_auth, is_visible, module_id, COALESCE(icon_url, '') as icon_url, COALESCE(network_name, '') as network_name, target_container, target_port, max_upload_body_size, proxy_timeout_seconds, rate_limit_rps, rate_limit_burst, disable_request_buffering;
+    `, p.Name, p.Slug, p.TargetContainer, p.TargetPort, p.IframeOnly, p.PageOnly, p.NeedAuth, p.Network, p.IconURL, p.ID, p.TargetContainerSet, p.TargetPortSet, p.NetworkSet, p.IsVisible, p.MaxUploadBodySizeSet, p.MaxUploadBodySize,
+		p.ProxyTimeoutSeconds, p.RateLimitRPS, p.RateLimitBurst, p.DisableRequestBuffering,
 	)
 
 	var out ModulePage
@@ -426,6 +466,11 @@ func PatchModulePage(p ModulePagePatch) (ModulePage, error) {
 		&out.NetworkName,
 		&out.TargetContainer,
 		&out.TargetPort,
+		&out.MaxUploadBodySize,
+		&out.ProxyTimeoutSeconds,
+		&out.RateLimitRPS,
+		&out.RateLimitBurst,
+		&out.DisableRequestBuffering,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return ModulePage{}, fmt.Errorf("ModulePage %s doesn't exist", p.ID)
@@ -714,9 +759,10 @@ func UpdateModuleSSHKey(moduleID, sshKeyID string) error {
 
 func InsertModulePage(m ModulePage) error {
 	_, err := mainDB.Exec(`
-		INSERT INTO module_page (id, module_id, name, slug, target_container, target_port, iframe_only, page_only, need_auth, is_visible, network_name)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULLIF($11, ''))
-	`, m.ID, m.ModuleID, m.Name, m.Slug, m.TargetContainer, m.TargetPort, m.IframeOnly, m.PageOnly, m.NeedAuth, m.IsVisible, m.NetworkName)
+		INSERT INTO module_page (id, module_id, name, slug, target_container, target_port, iframe_only, page_only, need_auth, is_visible, network_name, max_upload_body_size, proxy_timeout_seconds, rate_limit_rps, rate_limit_burst, disable_request_buffering)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NULLIF($11, ''), $12, $13, $14, $15, $16)
+	`, m.ID, m.ModuleID, m.Name, m.Slug, m.TargetContainer, m.TargetPort, m.IframeOnly, m.PageOnly, m.NeedAuth, m.IsVisible, m.NetworkName, m.MaxUploadBodySize,
+		m.ProxyTimeoutSeconds, m.RateLimitRPS, m.RateLimitBurst, m.DisableRequestBuffering)
 	return err
 }
 
@@ -1086,7 +1132,12 @@ SELECT mp.id,
        mp.is_visible,
        mp.module_id,
        COALESCE(mp.icon_url, m.icon_url, '') AS icon_url,
-       COALESCE(mp.network_name, '') AS network_name
+       COALESCE(mp.network_name, '') AS network_name,
+       mp.max_upload_body_size,
+       mp.proxy_timeout_seconds,
+       mp.rate_limit_rps,
+       mp.rate_limit_burst,
+       mp.disable_request_buffering
   FROM module_page mp
   JOIN modules m ON m.id = mp.module_id`)
 	if len(whereConds) > 0 {
@@ -1124,6 +1175,11 @@ SELECT mp.id,
 			&pg.ModuleID,
 			&pg.IconURL,
 			&pg.NetworkName,
+			&pg.MaxUploadBodySize,
+			&pg.ProxyTimeoutSeconds,
+			&pg.RateLimitRPS,
+			&pg.RateLimitBurst,
+			&pg.DisableRequestBuffering,
 		); err != nil {
 			return nil, err
 		}
