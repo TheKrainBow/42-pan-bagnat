@@ -195,8 +195,10 @@ swagger:
 # Config (override if needed)
 ENV_FILE        ?= .env
 MIGRATE_NETWORK ?= pan-bagnat-core
+APP_NETWORK     ?= pan-bagnat-host
 MIGRATIONS_DIR  ?= db/migrations
 MIGRATE_IMAGE   ?= migrate/migrate:latest
+GO_IMAGE        ?= golang:1.25
 POSTGRES_URL    ?= ${POSTGRES_URL}
 
 # Internal: docker-run wrapper; expands $$POSTGRES_URL inside the container
@@ -245,3 +247,18 @@ migrate-new:                                 ## Migrations | Create new pair: 00
 	printf "BEGIN;\n-- TODO: write migration\nCOMMIT;\n" > "$$up"; \
 	printf "BEGIN;\n-- TODO: write rollback\nCOMMIT;\n" > "$$down"; \
 	echo "Created: $$up and $$down"
+
+.PHONY: backfill-user-emails
+backfill-user-emails: migrate-up             ## Migrations | Apply migrations then fetch missing user emails from 42
+	@bash -lc 'set -a; source $(ENV_FILE); set +a; \
+	cid=$$(docker run -d \
+	  --network $(MIGRATE_NETWORK) \
+	  -v "$(PWD)/backend/srcs":/app \
+	  -w /app \
+	  -e POSTGRES_URL \
+	  -e FT_CLIENT_ID \
+	  -e FT_CLIENT_SECRET \
+	  $(GO_IMAGE) sleep 3600); \
+	trap "docker rm -f $$cid >/dev/null 2>&1 || true" EXIT; \
+	docker network connect $(APP_NETWORK) $$cid >/dev/null 2>&1 || true; \
+	docker exec $$cid sh -lc "export PATH=/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin; go run ./cmd/backfill-user-emails $(BACKFILL_ARGS)"'

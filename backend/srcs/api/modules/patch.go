@@ -139,6 +139,10 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 	if _, ok := raw["network_name"]; ok {
 		networkSet = true
 	}
+	maxUploadBodySizeSet := false
+	if _, ok := raw["max_upload_body_size"]; ok {
+		maxUploadBodySizeSet = true
+	}
 
 	// trim & validate required fields
 	if input.Name != nil {
@@ -173,8 +177,17 @@ func PatchModulePage(w http.ResponseWriter, r *http.Request) {
 		input.IframeOnly = &off
 	}
 
+	advanced := core.GatewayAdvancedPatch{
+		MaxUploadBodySize:       input.MaxUploadBodySize,
+		MaxUploadBodySizeSet:    maxUploadBodySizeSet,
+		ProxyTimeoutSeconds:     input.ProxyTimeoutSeconds,
+		RateLimitRPS:            input.RateLimitRPS,
+		RateLimitBurst:          input.RateLimitBurst,
+		DisableRequestBuffering: input.DisableRequestBuffering,
+	}
+
 	// perform update
-	modulePage, err := core.UpdateModulePage(pageID, input.Name, input.Slug, slugSet, input.TargetContainer, targetContainerSet, input.TargetPort, targetPortSet, input.IframeOnly, input.PageOnly, input.NeedAuth, input.IsVisible, input.NetworkName, networkSet)
+	modulePage, err := core.UpdateModulePage(pageID, input.Name, input.Slug, slugSet, input.TargetContainer, targetContainerSet, input.TargetPort, targetPortSet, input.IframeOnly, input.PageOnly, input.NeedAuth, input.IsVisible, input.NetworkName, networkSet, advanced)
 	if err != nil {
 		core.LogModule(moduleID, "ERROR", "Failed to update module page", nil, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)

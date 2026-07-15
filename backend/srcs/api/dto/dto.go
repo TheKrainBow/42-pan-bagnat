@@ -34,6 +34,7 @@ func UserToAPIUser(user core.User) User {
 		FtIsStaff: user.FtIsStaff,
 		IsStaff:   user.IsStaff,
 		PhotoURL:  user.PhotoURL,
+		Email:     user.Email,
 		LastSeen:  user.LastSeen,
 		Roles:     RolesToAPIRoles(user.Roles),
 	}
@@ -103,19 +104,24 @@ func ModuleLogsToAPIModuleLogs(logs []core.ModuleLog) (dest []ModuleLog) {
 
 func ModulePageToAPIModulePage(modulePage core.ModulePage) ModulePage {
 	return ModulePage{
-		ID:              modulePage.ID,
-		ModuleID:        modulePage.ModuleID,
-		Name:            modulePage.Name,
-		Slug:            modulePage.Slug,
-		TargetContainer: modulePage.TargetContainer,
-		TargetPort:      modulePage.TargetPort,
-		IframeOnly:      modulePage.IframeOnly,
-		PageOnly:        modulePage.PageOnly,
-		NeedAuth:        modulePage.NeedAuth,
-		IsVisible:       modulePage.IsVisible,
-		IconURL:         modulePage.IconURL,
-		NetworkName:     modulePage.NetworkName,
-		Roles:           RolesToAPIRoles(modulePage.Roles),
+		ID:                      modulePage.ID,
+		ModuleID:                modulePage.ModuleID,
+		Name:                    modulePage.Name,
+		Slug:                    modulePage.Slug,
+		TargetContainer:         modulePage.TargetContainer,
+		TargetPort:              modulePage.TargetPort,
+		IframeOnly:              modulePage.IframeOnly,
+		PageOnly:                modulePage.PageOnly,
+		NeedAuth:                modulePage.NeedAuth,
+		IsVisible:               modulePage.IsVisible,
+		IconURL:                 modulePage.IconURL,
+		NetworkName:             modulePage.NetworkName,
+		MaxUploadBodySize:       modulePage.MaxUploadBodySize,
+		ProxyTimeoutSeconds:     modulePage.ProxyTimeoutSeconds,
+		RateLimitRPS:            modulePage.RateLimitRPS,
+		RateLimitBurst:          modulePage.RateLimitBurst,
+		DisableRequestBuffering: modulePage.DisableRequestBuffering,
+		Roles:                   RolesToAPIRoles(modulePage.Roles),
 	}
 }
 

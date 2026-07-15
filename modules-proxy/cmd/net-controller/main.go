@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -28,12 +29,92 @@ import (
 )
 
 const (
-	gatewayLabel        = "com.panbagnat.gateway"
-	gatewaySlugLabel    = "com.panbagnat.gateway.slug"
-	gatewayTargetLabel  = "com.panbagnat.gateway.target"
-	gatewayNetworkLabel = "com.panbagnat.gateway.network"
-	defaultGatewayPort  = 8080
+	gatewayLabel            = "com.panbagnat.gateway"
+	gatewaySlugLabel        = "com.panbagnat.gateway.slug"
+	gatewayTargetLabel      = "com.panbagnat.gateway.target"
+	gatewayNetworkLabel     = "com.panbagnat.gateway.network"
+	gatewayMaxBodyLabel     = "com.panbagnat.gateway.max-body-size"
+	gatewayTimeoutLabel     = "com.panbagnat.gateway.timeout-seconds"
+	gatewayRateLimitLabel   = "com.panbagnat.gateway.rate-limit"
+	gatewayBufferingLabel   = "com.panbagnat.gateway.request-buffering-disabled"
+	defaultGatewayPort      = 8080
+	defaultMaxBodySize      = "1m"
+	defaultProxyTimeoutSecs = 60
+	minProxyTimeoutSecs     = 1
+	maxProxyTimeoutSecs     = 600
+	maxRateLimitRPS         = 1000
+	maxRateLimitBurst       = 10000
 )
+
+// maxBodySizeRe mirrors the backend's validation for nginx client_max_body_size
+// values (a positive number optionally suffixed with k/m/g).
+var maxBodySizeRe = regexp.MustCompile(`(?i)^[1-9][0-9]*[kmg]?$`)
+
+// maxBodySizeCapBytes mirrors the backend's hard ceiling (core.maxUploadBodySizeCapBytes).
+// This service re-validates independently since it's what actually renders the
+// value into a shell heredoc.
+const maxBodySizeCapBytes int64 = 2 * 1024 * 1024 * 1024 // 2 GiB
+
+func maxBodySizeToBytes(value string) int64 {
+	if value == "" {
+		return 0
+	}
+	unit := value[len(value)-1]
+	multiplier := int64(1)
+	numPart := value
+	switch unit {
+	case 'k':
+		multiplier = 1024
+		numPart = value[:len(value)-1]
+	case 'm':
+		multiplier = 1024 * 1024
+		numPart = value[:len(value)-1]
+	case 'g':
+		multiplier = 1024 * 1024 * 1024
+		numPart = value[:len(value)-1]
+	}
+	n, err := strconv.ParseInt(numPart, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return n * multiplier
+}
+
+func sanitizeMaxBodySize(raw string) string {
+	trimmed := strings.ToLower(strings.TrimSpace(raw))
+	if trimmed == "" || !maxBodySizeRe.MatchString(trimmed) || maxBodySizeToBytes(trimmed) > maxBodySizeCapBytes {
+		return defaultMaxBodySize
+	}
+	return trimmed
+}
+
+func sanitizeProxyTimeoutSeconds(raw int) int {
+	if raw < minProxyTimeoutSecs || raw > maxProxyTimeoutSecs {
+		return defaultProxyTimeoutSecs
+	}
+	return raw
+}
+
+func sanitizeRateLimit(rps, burst int) (int, int) {
+	if rps <= 0 || rps > maxRateLimitRPS {
+		return 0, 0
+	}
+	if burst < 0 || burst > maxRateLimitBurst {
+		burst = 0
+	}
+	return rps, burst
+}
+
+func rateLimitLabelValue(rps, burst int) string {
+	return fmt.Sprintf("%d:%d", rps, burst)
+}
+
+func boolLabelValue(b bool) string {
+	if b {
+		return "1"
+	}
+	return "0"
+}
 
 type config struct {
 	PostgresURL string
@@ -45,12 +126,17 @@ type config struct {
 }
 
 type gatewaySpec struct {
-	Slug            string
-	ModuleSlug      string
-	ModuleID        string
-	Network         string
-	TargetContainer string
-	TargetPort      int
+	Slug                    string
+	ModuleSlug              string
+	ModuleID                string
+	Network                 string
+	TargetContainer         string
+	TargetPort              int
+	MaxBodySize             string
+	ProxyTimeoutSeconds     int
+	RateLimitRPS            int
+	RateLimitBurst          int
+	DisableRequestBuffering bool
 }
 
 type controller struct {
@@ -215,7 +301,11 @@ func (c *controller) ensureGateway(ctx context.Context, spec gatewaySpec, curren
 
 	if !needsCreate {
 		if !strings.EqualFold(strings.TrimSpace(current.Network), spec.Network) ||
-			strings.TrimSpace(current.Target) != targetString {
+			strings.TrimSpace(current.Target) != targetString ||
+			!strings.EqualFold(strings.TrimSpace(current.MaxBodySize), spec.MaxBodySize) ||
+			strings.TrimSpace(current.ProxyTimeout) != strconv.Itoa(spec.ProxyTimeoutSeconds) ||
+			strings.TrimSpace(current.RateLimit) != rateLimitLabelValue(spec.RateLimitRPS, spec.RateLimitBurst) ||
+			strings.TrimSpace(current.RequestBuffering) != boolLabelValue(spec.DisableRequestBuffering) {
 			log.Printf("[net-controller] gateway %s spec changed, recreating", current.Name)
 			if err := c.removeGateway(ctx, current.ID); err != nil {
 				log.Printf("[net-controller] remove gateway failed: %v", err)
@@ -275,7 +365,12 @@ func (c *controller) fetchSpecs(ctx context.Context) ([]gatewaySpec, error) {
 		       mp.target_port,
 		       mp.module_id,
 		       m.slug AS module_slug,
-		       COALESCE(mp.network_name, '') AS network_name
+		       COALESCE(mp.network_name, '') AS network_name,
+		       mp.max_upload_body_size,
+		       mp.proxy_timeout_seconds,
+		       mp.rate_limit_rps,
+		       mp.rate_limit_burst,
+		       mp.disable_request_buffering
 		FROM module_page mp
 		JOIN modules m ON m.id = mp.module_id
         WHERE mp.target_container IS NOT NULL
@@ -283,12 +378,17 @@ func (c *controller) fetchSpecs(ctx context.Context) ([]gatewaySpec, error) {
 	`
 
 	type row struct {
-		Slug            string `db:"slug"`
-		TargetContainer string `db:"target_container"`
-		TargetPort      int    `db:"target_port"`
-		ModuleID        string `db:"module_id"`
-		ModuleSlug      string `db:"module_slug"`
-		NetworkName     string `db:"network_name"`
+		Slug                    string `db:"slug"`
+		TargetContainer         string `db:"target_container"`
+		TargetPort              int    `db:"target_port"`
+		ModuleID                string `db:"module_id"`
+		ModuleSlug              string `db:"module_slug"`
+		NetworkName             string `db:"network_name"`
+		MaxUploadBodySize       string `db:"max_upload_body_size"`
+		ProxyTimeoutSeconds     int    `db:"proxy_timeout_seconds"`
+		RateLimitRPS            int    `db:"rate_limit_rps"`
+		RateLimitBurst          int    `db:"rate_limit_burst"`
+		DisableRequestBuffering bool   `db:"disable_request_buffering"`
 	}
 
 	var rows []row
@@ -302,23 +402,33 @@ func (c *controller) fetchSpecs(ctx context.Context) ([]gatewaySpec, error) {
 		if slug == "" {
 			continue
 		}
+		rps, burst := sanitizeRateLimit(r.RateLimitRPS, r.RateLimitBurst)
 		specs = append(specs, gatewaySpec{
-			Slug:            slug,
-			ModuleSlug:      r.ModuleSlug,
-			ModuleID:        r.ModuleID,
-			Network:         strings.TrimSpace(r.NetworkName),
-			TargetContainer: strings.TrimSpace(r.TargetContainer),
-			TargetPort:      r.TargetPort,
+			Slug:                    slug,
+			ModuleSlug:              r.ModuleSlug,
+			ModuleID:                r.ModuleID,
+			Network:                 strings.TrimSpace(r.NetworkName),
+			TargetContainer:         strings.TrimSpace(r.TargetContainer),
+			TargetPort:              r.TargetPort,
+			MaxBodySize:             sanitizeMaxBodySize(r.MaxUploadBodySize),
+			ProxyTimeoutSeconds:     sanitizeProxyTimeoutSeconds(r.ProxyTimeoutSeconds),
+			RateLimitRPS:            rps,
+			RateLimitBurst:          burst,
+			DisableRequestBuffering: r.DisableRequestBuffering,
 		})
 	}
 	return specs, nil
 }
 
 type containerSummary struct {
-	ID      string
-	Name    string
-	Target  string
-	Network string
+	ID               string
+	Name             string
+	Target           string
+	Network          string
+	MaxBodySize      string
+	ProxyTimeout     string
+	RateLimit        string
+	RequestBuffering string
 }
 
 func (c *controller) listGateways(ctx context.Context) (map[string]containerSummary, error) {
@@ -338,10 +448,14 @@ func (c *controller) listGateways(ctx context.Context) (map[string]containerSumm
 			continue
 		}
 		result[slug] = containerSummary{
-			ID:      cont.ID,
-			Name:    strings.TrimPrefix(cont.Names[0], "/"),
-			Target:  cont.Labels[gatewayTargetLabel],
-			Network: cont.Labels[gatewayNetworkLabel],
+			ID:               cont.ID,
+			Name:             strings.TrimPrefix(cont.Names[0], "/"),
+			Target:           cont.Labels[gatewayTargetLabel],
+			Network:          cont.Labels[gatewayNetworkLabel],
+			MaxBodySize:      cont.Labels[gatewayMaxBodyLabel],
+			ProxyTimeout:     cont.Labels[gatewayTimeoutLabel],
+			RateLimit:        cont.Labels[gatewayRateLimitLabel],
+			RequestBuffering: cont.Labels[gatewayBufferingLabel],
 		}
 	}
 	return result, nil
@@ -384,10 +498,14 @@ func (c *controller) createGateway(ctx context.Context, spec gatewaySpec, target
 	config := &container.Config{
 		Image: c.gatewayImg,
 		Labels: map[string]string{
-			gatewayLabel:        "true",
-			gatewaySlugLabel:    spec.Slug,
-			gatewayTargetLabel:  target,
-			gatewayNetworkLabel: spec.Network,
+			gatewayLabel:          "true",
+			gatewaySlugLabel:      spec.Slug,
+			gatewayTargetLabel:    target,
+			gatewayNetworkLabel:   spec.Network,
+			gatewayMaxBodyLabel:   spec.MaxBodySize,
+			gatewayTimeoutLabel:   strconv.Itoa(spec.ProxyTimeoutSeconds),
+			gatewayRateLimitLabel: rateLimitLabelValue(spec.RateLimitRPS, spec.RateLimitBurst),
+			gatewayBufferingLabel: boolLabelValue(spec.DisableRequestBuffering),
 		},
 		Cmd: []string{"sh", "-c", cmd},
 	}
@@ -467,8 +585,22 @@ func (c *controller) gatewayCommand(target string, spec gatewaySpec) string {
 	buf.WriteString("        default $host;\n")
 	buf.WriteString("        ~\\.modules\\.localhost$ localhost;\n")
 	buf.WriteString("    }\n")
+	rps, burst := sanitizeRateLimit(spec.RateLimitRPS, spec.RateLimitBurst)
+	if rps > 0 {
+		fmt.Fprintf(&buf, "    limit_req_zone $binary_remote_addr zone=gw_limit:10m rate=%dr/s;\n", rps)
+	}
 	fmt.Fprintf(&buf, "    server {\n        listen %d;\n", c.gatewayPort)
 	buf.WriteString("        location / {\n")
+	fmt.Fprintf(&buf, "            client_max_body_size %s;\n", sanitizeMaxBodySize(spec.MaxBodySize))
+	if rps > 0 {
+		fmt.Fprintf(&buf, "            limit_req zone=gw_limit burst=%d nodelay;\n", burst)
+	}
+	timeout := sanitizeProxyTimeoutSeconds(spec.ProxyTimeoutSeconds)
+	fmt.Fprintf(&buf, "            proxy_read_timeout %ds;\n", timeout)
+	fmt.Fprintf(&buf, "            proxy_send_timeout %ds;\n", timeout)
+	if spec.DisableRequestBuffering {
+		buf.WriteString("            proxy_request_buffering off;\n")
+	}
 	fmt.Fprintf(&buf, "            proxy_pass %s;\n", target)
 	buf.WriteString("            proxy_http_version 1.1;\n")
 	buf.WriteString("            proxy_set_header Host $module_target_host;\n")

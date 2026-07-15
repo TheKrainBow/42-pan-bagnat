@@ -13,6 +13,7 @@ type User struct {
 	FtID      int       `json:"ft_id" example:"1492" db:"ft_id"`
 	FtIsStaff bool      `json:"ft_is_staff" example:"true" db:"ft_is_staff"`
 	PhotoURL  string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id" db:"photo_url"`
+	Email     string    `json:"email" example:"heinz@student.42nice.fr" db:"email"`
 	LastSeen  time.Time `json:"last_update" example:"2025-02-18T15:00:00Z" db:"last_update"`
 }
 
@@ -22,6 +23,7 @@ type UserPatch struct {
 	FtID      *int       `json:"ft_id" example:"1492"`
 	FtIsStaff *bool      `json:"ft_is_staff" example:"true"`
 	PhotoURL  *string    `json:"photo_url" example:"https://intra.42.fr/some-login/some-id"`
+	Email     *string    `json:"email" example:"heinz@student.42nice.fr"`
 	LastSeen  *time.Time `json:"last_update" example:"2025-02-18T15:00:00Z"`
 }
 
@@ -50,10 +52,10 @@ func GetUser(identifier string) (*User, error) {
 func GetUserByID(id string) (*User, error) {
 	var user User
 	err := mainDB.QueryRow(`
-		SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen
+		SELECT id, ft_login, ft_id, ft_is_staff, photo_url, COALESCE(email, ''), last_seen
 		FROM users
 		WHERE id = $1
-	`, id).Scan(&user.ID, &user.FtLogin, &user.FtID, &user.FtIsStaff, &user.PhotoURL, &user.LastSeen)
+	`, id).Scan(&user.ID, &user.FtLogin, &user.FtID, &user.FtIsStaff, &user.PhotoURL, &user.Email, &user.LastSeen)
 
 	if err != nil {
 		return nil, err
@@ -64,10 +66,10 @@ func GetUserByID(id string) (*User, error) {
 func GetUserByLogin(login string) (*User, error) {
 	var user User
 	err := mainDB.QueryRow(`
-		SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen
+		SELECT id, ft_login, ft_id, ft_is_staff, photo_url, COALESCE(email, ''), last_seen
 		FROM users
 		WHERE ft_login = $1
-	`, login).Scan(&user.ID, &user.FtLogin, &user.FtID, &user.FtIsStaff, &user.PhotoURL, &user.LastSeen)
+	`, login).Scan(&user.ID, &user.FtLogin, &user.FtID, &user.FtIsStaff, &user.PhotoURL, &user.Email, &user.LastSeen)
 
 	if err != nil {
 		return nil, err
@@ -169,7 +171,7 @@ func GetAllUsers(
 	// 4) Assemble SQL
 	var sb strings.Builder
 	sb.WriteString(
-		`SELECT id, ft_login, ft_id, ft_is_staff, photo_url, last_seen
+		`SELECT id, ft_login, ft_id, ft_is_staff, photo_url, COALESCE(email, ''), last_seen
 FROM users`,
 	)
 	if len(whereConds) > 0 {
@@ -201,6 +203,7 @@ FROM users`,
 			&u.FtID,
 			&u.FtIsStaff,
 			&u.PhotoURL,
+			&u.Email,
 			&u.LastSeen,
 		); err != nil {
 			return nil, err
@@ -221,9 +224,30 @@ func AddUser(user *User) error {
 		return fmt.Errorf("you must provide ftlogin and ftid")
 	}
 	_, err := mainDB.Exec(`
-		INSERT INTO users (id, ft_login, ft_id, ft_is_staff, photo_url, last_seen)
-		VALUES ($1, $2, $3, $4, $5, $6)
-	`, user.ID, user.FtLogin, user.FtID, user.FtIsStaff, user.PhotoURL, user.LastSeen)
+		INSERT INTO users (id, ft_login, ft_id, ft_is_staff, photo_url, email, last_seen)
+		VALUES ($1, $2, $3, $4, $5, NULLIF($6, ''), $7)
+	`, user.ID, user.FtLogin, user.FtID, user.FtIsStaff, user.PhotoURL, user.Email, user.LastSeen)
+	return err
+}
+
+func GetUserByEmail(email string) (*User, error) {
+	var user User
+	err := mainDB.QueryRow(`
+		SELECT id, ft_login, ft_id, ft_is_staff, photo_url, COALESCE(email, ''), last_seen
+		FROM users
+		WHERE LOWER(email) = LOWER($1)
+	`, email).Scan(&user.ID, &user.FtLogin, &user.FtID, &user.FtIsStaff, &user.PhotoURL, &user.Email, &user.LastSeen)
+
+	if err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+func UpdateUserEmail(identifier string, email string) error {
+	_, err := mainDB.Exec(`
+        UPDATE users SET email = NULLIF($1, '') WHERE ft_login = $2 OR id = $2
+    `, email, identifier)
 	return err
 }
 
@@ -289,6 +313,11 @@ func PatchUser(patch UserPatch) error {
 	if patch.PhotoURL != nil {
 		sets = append(sets, fmt.Sprintf("photo_url = $%d", argPos))
 		args = append(args, *patch.PhotoURL)
+		argPos++
+	}
+	if patch.Email != nil {
+		sets = append(sets, fmt.Sprintf("email = NULLIF($%d, '')", argPos))
+		args = append(args, *patch.Email)
 		argPos++
 	}
 	if patch.LastSeen != nil {

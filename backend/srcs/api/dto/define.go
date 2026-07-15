@@ -47,6 +47,9 @@ type User struct {
 	// PhotoURL is the URL to the user’s 42-intranet profile picture
 	PhotoURL string `json:"ft_photo" example:"https://intra.42.fr/some-login/some-id"`
 
+	// Email is the email address returned by the 42 API for this user
+	Email string `json:"email,omitempty" example:"heinz@student.42nice.fr"`
+
 	// LastSeen is the UTC timestamp of the user’s last activity
 	LastSeen time.Time `json:"last_seen" example:"2025-02-18T15:00:00Z"`
 
@@ -134,8 +137,21 @@ type ModulePage struct {
 	ModuleID        string  `json:"module_id"`
 	IconURL         string  `json:"icon_url,omitempty"`
 	NetworkName     string  `json:"network_name,omitempty"`
+	// MaxUploadBodySize is the nginx-style max request body size accepted by this
+	// page's gateway (e.g. "1m", "50m"). Defaults to "1m".
+	MaxUploadBodySize string `json:"max_upload_body_size"`
+	// ProxyTimeoutSeconds is the read/send timeout applied by this page's gateway.
+	ProxyTimeoutSeconds int `json:"proxy_timeout_seconds"`
+	// RateLimitRPS is the max requests/second allowed per client IP by this page's
+	// gateway. 0 disables rate limiting.
+	RateLimitRPS int `json:"rate_limit_rps"`
+	// RateLimitBurst is the burst allowance on top of RateLimitRPS.
+	RateLimitBurst int `json:"rate_limit_burst"`
+	// DisableRequestBuffering streams uploads directly to the module instead of
+	// buffering the full request body first (useful for large uploads).
+	DisableRequestBuffering bool `json:"disable_request_buffering"`
 	// Roles lists the roles that can access this page.
-	Roles           []Role  `json:"roles,omitempty"`
+	Roles []Role `json:"roles,omitempty"`
 }
 
 // Session represents a user session (device) in the system

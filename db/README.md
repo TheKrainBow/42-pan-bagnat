@@ -22,7 +22,7 @@ Baseline schema is defined in `db/migrations/01_baseline.up.sql`, then evolved b
 
 Main tables
 - `users` — 42 users known to the system
-  - Columns: `id`, `ft_login`, `ft_id`, `ft_is_staff`, `photo_url`, `last_seen`
+  - Columns: `id`, `ft_login`, `ft_id`, `ft_is_staff`, `photo_url`, `email`, `last_seen`
 - `roles` — access control roles
   - Columns: `id`, `name`, `color`, `is_default`, plus `rules_json`, `rules_updated_at` (02), `is_protected` (03)
 - `modules` — deployable feature modules
@@ -35,6 +35,8 @@ Main tables
 - `sessions` — user sessions (cookie `session_id`)
   - Baseline: `session_id`, `ft_login`, `created_at`, `expires_at`
   - (04) Adds per‑device metadata: `user_agent`, `ip`, `device_label`, `last_seen` + helpful indexes
+- `magic_link_tokens` — one-use email sign-in tokens
+  - Columns: `token_hash`, `token_value`, `user_id`, `next_url`, `created_at`, `expires_at`, `last_sent_at`, `consumed_at`
 
 Join tables
 - `user_roles` — many‑to‑many users ↔ roles (`PRIMARY KEY (user_id, role_id)`)
@@ -82,6 +84,7 @@ Guidelines for editing schema
 - Keep `up` idempotent where possible (e.g., `IF NOT EXISTS` for indexes) and ensure `down` is a safe inverse.
 - When changing core tables (users, roles, modules), update the Go scan structs under `backend/srcs/database` if columns are added/removed.
 - Test locally using `make migrate-up` and run backend tests (`make test-backend`).
+- For user email backfills, run `make migrate-up` before the backfill command. The shortcut `make backfill-user-emails` applies pending migrations first, then fetches missing emails from 42.
 
 ## Test data and local tips
 

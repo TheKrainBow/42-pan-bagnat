@@ -25,6 +25,7 @@ Environment variables (local dev):
   - `POSTGRES_URL` (full DSN for DB access)
   - `HOST_NAME` (used for Swagger host)
   - `FT_CLIENT_ID`, `FT_CLIENT_SECRET`, `FT_CALLBACK_URL` (42 OAuth)
+  - `SMTP_HOST`, `SMTP_PORT`, `SMTP_TLS_MODE`, `SMTP_HELO_HOST`, `SMTP_USERNAME`, `SMTP_PASSWORD`, `SMTP_FROM`, `MAGIC_LINK_BASE_URL` (magic-link email sign-in)
   - `REPO_BASE_PATH` (where module Git repos are cloned; default `../../repos` in dev)
 
 ## Development flow (Clean Architecture)
@@ -70,6 +71,7 @@ Helpful Make targets:
 - `make test-backend` — run Go tests (see “Testing”)
 - `make swagger` — regenerate Swagger specs with updated host
 - `make migrate-up` / `migrate-down1` — apply/rollback DB migrations
+- `make backfill-user-emails` — run `make migrate-up`, then fetch missing user emails from 42
 
 ## Testing
 
@@ -83,6 +85,9 @@ Helpful Make targets:
 
 AuthN
 - 42 OAuth login flow: `/auth/42/login` → `/auth/42/callback` exchanges code for token, then issues a `session_id` cookie.
+- Email magic-link login flow: `POST /auth/magic-link` accepts an email and sends a one-use link only when that email is linked to an existing user. `GET /auth/magic/callback?token=...` consumes the token and issues a `session_id` cookie.
+- Magic-link requests are rate-limited per user to one sent email every two minutes. If an unconsumed link is already active, later allowed sends reuse that same token until it is consumed or expires.
+- Before backfilling existing users, apply the new schema with `make migrate-up` or run `make backfill-user-emails` to do both steps in order.
 - Session storage in Postgres (`sessions`), with expiry and per‑device handling.
 - `SESSION_COOKIE_DOMAIN` defaults to `.HOST_NAME` so the SPA and every `*.modules.<domain>` host reuse the same session cookie. Override it only if you need a different wildcard. Cookies always use `SameSite=None` to support module iframes.
 

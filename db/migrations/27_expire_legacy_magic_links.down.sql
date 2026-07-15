@@ -1,0 +1,1 @@
+-- Irreversible: legacy magic links without token_value cannot be safely restored.

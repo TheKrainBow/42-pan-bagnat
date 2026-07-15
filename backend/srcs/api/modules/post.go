@@ -392,7 +392,24 @@ func PostModulePage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	modulePage, err := core.ImportModulePage(moduleID, input.Name, slug, targetContainer, targetPort, input.IframeOnly, input.PageOnly, input.NeedAuth, input.IsVisible, network)
+	var advanced core.GatewayAdvancedSettings
+	if input.MaxUploadBodySize != nil {
+		advanced.MaxUploadBodySize = *input.MaxUploadBodySize
+	}
+	if input.ProxyTimeoutSeconds != nil {
+		advanced.ProxyTimeoutSeconds = *input.ProxyTimeoutSeconds
+	}
+	if input.RateLimitRPS != nil {
+		advanced.RateLimitRPS = *input.RateLimitRPS
+	}
+	if input.RateLimitBurst != nil {
+		advanced.RateLimitBurst = *input.RateLimitBurst
+	}
+	if input.DisableRequestBuffering != nil {
+		advanced.DisableRequestBuffering = *input.DisableRequestBuffering
+	}
+
+	modulePage, err := core.ImportModulePage(moduleID, input.Name, slug, targetContainer, targetPort, input.IframeOnly, input.PageOnly, input.NeedAuth, input.IsVisible, network, advanced)
 	if err != nil {
 		core.LogModule(moduleID, "ERROR", "Couldn't add a module Page", nil, err)
 		http.Error(w, err.Error(), http.StatusBadRequest)

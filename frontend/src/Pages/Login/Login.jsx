@@ -767,19 +767,17 @@ export default function LoginPage() {
   };
 
   const handleMagicLink = async (email) => {
-    try {
-      const res = await fetch("/api/v1/auth/magic-link", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (res.ok) {
-        alert("Magic link sent to " + email);
-      } else {
-        throw new Error("Failed to send");
-      }
-    } catch (err) {
-      alert("Error sending magic link: " + err.message);
+    const res = await fetch("/auth/magic-link", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        email,
+        next: nextParam && isSafeRedirectTarget(nextParam) ? nextParam : "/me",
+      }),
+    });
+    if (!res.ok) {
+      throw new Error("Unable to send sign-in link");
     }
   };
 
@@ -789,7 +787,7 @@ export default function LoginPage() {
       <div className="login-layout">
         <div className="logo-stack">
         </div>
-        <LoginCard onLogin={handleLogin} />
+        <LoginCard onLogin={handleLogin} onMagicLink={handleMagicLink} />
       </div>
     </div>
   );

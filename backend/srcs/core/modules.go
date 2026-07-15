@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -116,19 +117,24 @@ type ModuleLogsPagination struct {
 }
 
 type ModulePage struct {
-	ID              string  `json:"id"`
-	Name            string  `json:"name"`
-	Slug            string  `json:"slug"`
-	TargetContainer *string `json:"target_container,omitempty"`
-	TargetPort      *int    `json:"target_port,omitempty"`
-	IframeOnly      bool    `json:"iframe_only"`
-	PageOnly        bool    `json:"page_only"`
-	NeedAuth        bool    `json:"need_auth"`
-	IsVisible       bool    `json:"is_visible"`
-	ModuleID        string  `json:"module_id"`
-	IconURL         string  `json:"icon_url"`
-	NetworkName     string  `json:"network_name,omitempty"`
-	Roles           []Role  `json:"roles,omitempty"`
+	ID                      string  `json:"id"`
+	Name                    string  `json:"name"`
+	Slug                    string  `json:"slug"`
+	TargetContainer         *string `json:"target_container,omitempty"`
+	TargetPort              *int    `json:"target_port,omitempty"`
+	IframeOnly              bool    `json:"iframe_only"`
+	PageOnly                bool    `json:"page_only"`
+	NeedAuth                bool    `json:"need_auth"`
+	IsVisible               bool    `json:"is_visible"`
+	ModuleID                string  `json:"module_id"`
+	IconURL                 string  `json:"icon_url"`
+	NetworkName             string  `json:"network_name,omitempty"`
+	MaxUploadBodySize       string  `json:"max_upload_body_size"`
+	ProxyTimeoutSeconds     int     `json:"proxy_timeout_seconds"`
+	RateLimitRPS            int     `json:"rate_limit_rps"`
+	RateLimitBurst          int     `json:"rate_limit_burst"`
+	DisableRequestBuffering bool    `json:"disable_request_buffering"`
+	Roles                   []Role  `json:"roles,omitempty"`
 }
 
 type ModulePagesPagination struct {
@@ -807,13 +813,28 @@ func GetModulePages(pagination ModulePagesPagination) ([]ModulePage, string, err
 	return dest, token, nil
 }
 
-func ImportModulePage(moduleID, name string, slug *string, targetContainer *string, targetPort *int, iframeOnly, pageOnly, needAuth, isVisible bool, network string) (ModulePage, error) {
+func ImportModulePage(moduleID, name string, slug *string, targetContainer *string, targetPort *int, iframeOnly, pageOnly, needAuth, isVisible bool, network string, advanced GatewayAdvancedSettings) (ModulePage, error) {
 	pageID, err := GenerateULID(PageKind)
 	if err != nil {
 		return ModulePage{}, fmt.Errorf("failed to generate page ID: %w", err)
 	}
 
 	if err := validatePageMode(iframeOnly, pageOnly); err != nil {
+		return ModulePage{}, err
+	}
+
+	sanitizedMaxUploadBodySize, err := sanitizeMaxUploadBodySize(advanced.MaxUploadBodySize)
+	if err != nil {
+		return ModulePage{}, err
+	}
+
+	sanitizedProxyTimeout, err := sanitizeProxyTimeoutSeconds(advanced.ProxyTimeoutSeconds)
+	if err != nil {
+		return ModulePage{}, err
+	}
+
+	sanitizedRateLimitRPS, sanitizedRateLimitBurst, err := sanitizeRateLimit(advanced.RateLimitRPS, advanced.RateLimitBurst)
+	if err != nil {
 		return ModulePage{}, err
 	}
 
@@ -850,32 +871,42 @@ func ImportModulePage(moduleID, name string, slug *string, targetContainer *stri
 
 	// Prepare module struct
 	dest := ModulePage{
-		ID:              pageID,
-		ModuleID:        moduleID,
-		Name:            name,
-		Slug:            pageSlug,
-		TargetContainer: sanitizedTarget,
-		TargetPort:      sanitizedPort,
-		IframeOnly:      iframeOnly,
-		PageOnly:        pageOnly,
-		NeedAuth:        needAuth,
-		IsVisible:       isVisible,
-		NetworkName:     strings.TrimSpace(network),
+		ID:                      pageID,
+		ModuleID:                moduleID,
+		Name:                    name,
+		Slug:                    pageSlug,
+		TargetContainer:         sanitizedTarget,
+		TargetPort:              sanitizedPort,
+		IframeOnly:              iframeOnly,
+		PageOnly:                pageOnly,
+		NeedAuth:                needAuth,
+		IsVisible:               isVisible,
+		NetworkName:             strings.TrimSpace(network),
+		MaxUploadBodySize:       sanitizedMaxUploadBodySize,
+		ProxyTimeoutSeconds:     sanitizedProxyTimeout,
+		RateLimitRPS:            sanitizedRateLimitRPS,
+		RateLimitBurst:          sanitizedRateLimitBurst,
+		DisableRequestBuffering: advanced.DisableRequestBuffering,
 	}
 
 	// Insert into DB
 	if err := database.InsertModulePage(database.ModulePage{
-		ID:              dest.ID,
-		ModuleID:        dest.ModuleID,
-		Name:            dest.Name,
-		Slug:            dest.Slug,
-		TargetContainer: toNullString(dest.TargetContainer),
-		TargetPort:      toNullInt(dest.TargetPort),
-		IframeOnly:      dest.IframeOnly,
-		PageOnly:        dest.PageOnly,
-		NeedAuth:        dest.NeedAuth,
-		IsVisible:       dest.IsVisible,
-		NetworkName:     dest.NetworkName,
+		ID:                      dest.ID,
+		ModuleID:                dest.ModuleID,
+		Name:                    dest.Name,
+		Slug:                    dest.Slug,
+		TargetContainer:         toNullString(dest.TargetContainer),
+		TargetPort:              toNullInt(dest.TargetPort),
+		IframeOnly:              dest.IframeOnly,
+		PageOnly:                dest.PageOnly,
+		NeedAuth:                dest.NeedAuth,
+		IsVisible:               dest.IsVisible,
+		NetworkName:             dest.NetworkName,
+		MaxUploadBodySize:       dest.MaxUploadBodySize,
+		ProxyTimeoutSeconds:     dest.ProxyTimeoutSeconds,
+		RateLimitRPS:            dest.RateLimitRPS,
+		RateLimitBurst:          dest.RateLimitBurst,
+		DisableRequestBuffering: dest.DisableRequestBuffering,
 	}); err != nil {
 		return ModulePage{}, fmt.Errorf("failed to insert module in DB: %w", err)
 	}
@@ -933,6 +964,7 @@ func UpdateModulePage(pageID string, name *string,
 	needAuth *bool,
 	isVisible *bool,
 	network *string, networkSet bool,
+	advanced GatewayAdvancedPatch,
 ) (ModulePage, error) {
 	var sanitizedContainer *string
 	if targetContainerSet {
@@ -997,20 +1029,62 @@ func UpdateModulePage(pageID string, name *string,
 		iframeOnly = &off
 	}
 
+	var sanitizedMaxUploadBodySize *string
+	if advanced.MaxUploadBodySizeSet {
+		value, err := sanitizeMaxUploadBodySize(ptrValue(advanced.MaxUploadBodySize))
+		if err != nil {
+			return ModulePage{}, err
+		}
+		sanitizedMaxUploadBodySize = &value
+	}
+
+	var sanitizedProxyTimeout *int
+	if advanced.ProxyTimeoutSeconds != nil {
+		value, err := sanitizeProxyTimeoutSeconds(*advanced.ProxyTimeoutSeconds)
+		if err != nil {
+			return ModulePage{}, err
+		}
+		sanitizedProxyTimeout = &value
+	}
+
+	var sanitizedRateLimitRPS, sanitizedRateLimitBurst *int
+	if advanced.RateLimitRPS != nil || advanced.RateLimitBurst != nil {
+		rps := 0
+		if advanced.RateLimitRPS != nil {
+			rps = *advanced.RateLimitRPS
+		}
+		burst := 0
+		if advanced.RateLimitBurst != nil {
+			burst = *advanced.RateLimitBurst
+		}
+		sanitizedRPS, sanitizedBurst, err := sanitizeRateLimit(rps, burst)
+		if err != nil {
+			return ModulePage{}, err
+		}
+		sanitizedRateLimitRPS = &sanitizedRPS
+		sanitizedRateLimitBurst = &sanitizedBurst
+	}
+
 	patch := database.ModulePagePatch{
-		ID:                 pageID,
-		Name:               name,
-		Slug:               slug,
-		TargetContainer:    sanitizedContainer,
-		TargetContainerSet: targetContainerSet,
-		TargetPort:         sanitizedPort,
-		TargetPortSet:      targetPortSet,
-		IframeOnly:         iframeOnly,
-		PageOnly:           pageOnly,
-		NeedAuth:           needAuth,
-		IsVisible:          isVisible,
-		Network:            sanitizedNetwork,
-		NetworkSet:         networkSet,
+		ID:                      pageID,
+		Name:                    name,
+		Slug:                    slug,
+		TargetContainer:         sanitizedContainer,
+		TargetContainerSet:      targetContainerSet,
+		TargetPort:              sanitizedPort,
+		TargetPortSet:           targetPortSet,
+		IframeOnly:              iframeOnly,
+		PageOnly:                pageOnly,
+		NeedAuth:                needAuth,
+		IsVisible:               isVisible,
+		Network:                 sanitizedNetwork,
+		NetworkSet:              networkSet,
+		MaxUploadBodySize:       sanitizedMaxUploadBodySize,
+		MaxUploadBodySizeSet:    advanced.MaxUploadBodySizeSet,
+		ProxyTimeoutSeconds:     sanitizedProxyTimeout,
+		RateLimitRPS:            sanitizedRateLimitRPS,
+		RateLimitBurst:          sanitizedRateLimitBurst,
+		DisableRequestBuffering: advanced.DisableRequestBuffering,
 	}
 
 	dbPage, err := database.PatchModulePage(patch)
@@ -1034,6 +1108,125 @@ func validatePageMode(iframeOnly, pageOnly bool) error {
 		return fmt.Errorf("iframe_only and page_only cannot both be true")
 	}
 	return nil
+}
+
+const defaultMaxUploadBodySize = "1m"
+
+// nginx client_max_body_size accepts a plain byte count or a number
+// suffixed with k/m/g (case-insensitive). "0" disables the limit, which
+// we intentionally reject here since this setting exists to bound upload
+// size and prevent modules from being used as a DoS vector.
+var maxUploadBodySizeRe = regexp.MustCompile(`(?i)^[1-9][0-9]*[kmg]?$`)
+
+// sanitizeMaxUploadBodySize validates and normalizes a page's configured
+// max upload body size. An empty value falls back to the safe 1m default.
+// maxUploadBodySizeCapBytes is the hard ceiling any page's gateway can be
+// configured to accept. The edge gateway (nginx/snippets/modules-proxy.conf)
+// is deliberately unlimited and delegates all enforcement to the per-page
+// gateway, so this cap is the actual, single source of truth for "how big
+// can an upload to a module ever be".
+const maxUploadBodySizeCapBytes int64 = 2 * 1024 * 1024 * 1024 // 2 GiB
+
+// maxUploadBodySizeToBytes converts an already-validated nginx-style size
+// (e.g. "512m") to bytes, using nginx's own base-1024 units.
+func maxUploadBodySizeToBytes(value string) int64 {
+	unit := value[len(value)-1]
+	multiplier := int64(1)
+	numPart := value
+	switch unit {
+	case 'k', 'm', 'g':
+		numPart = value[:len(value)-1]
+		switch unit {
+		case 'k':
+			multiplier = 1024
+		case 'm':
+			multiplier = 1024 * 1024
+		case 'g':
+			multiplier = 1024 * 1024 * 1024
+		}
+	}
+	n, err := strconv.ParseInt(numPart, 10, 64)
+	if err != nil {
+		return 0
+	}
+	return n * multiplier
+}
+
+func sanitizeMaxUploadBodySize(raw string) (string, error) {
+	trimmed := strings.ToLower(strings.TrimSpace(raw))
+	if trimmed == "" {
+		return defaultMaxUploadBodySize, nil
+	}
+	if !maxUploadBodySizeRe.MatchString(trimmed) {
+		return "", fmt.Errorf("max_upload_body_size must be a positive number optionally suffixed with k, m or g (e.g. \"10m\")")
+	}
+	if maxUploadBodySizeToBytes(trimmed) > maxUploadBodySizeCapBytes {
+		return "", fmt.Errorf("max_upload_body_size must not exceed 2g")
+	}
+	return trimmed, nil
+}
+
+const (
+	defaultProxyTimeoutSeconds = 60
+	minProxyTimeoutSeconds     = 1
+	maxProxyTimeoutSeconds     = 600
+	maxRateLimitRPS            = 1000
+	maxRateLimitBurst          = 10000
+)
+
+// GatewayAdvancedSettings groups the tunable nginx gateway settings for a
+// module page. It is used when creating a page, where every field always
+// has a concrete (possibly default) value.
+type GatewayAdvancedSettings struct {
+	MaxUploadBodySize       string
+	ProxyTimeoutSeconds     int
+	RateLimitRPS            int
+	RateLimitBurst          int
+	DisableRequestBuffering bool
+}
+
+// GatewayAdvancedPatch mirrors GatewayAdvancedSettings for partial updates:
+// a nil field means "leave unchanged".
+type GatewayAdvancedPatch struct {
+	MaxUploadBodySize       *string
+	MaxUploadBodySizeSet    bool
+	ProxyTimeoutSeconds     *int
+	RateLimitRPS            *int
+	RateLimitBurst          *int
+	DisableRequestBuffering *bool
+}
+
+// sanitizeProxyTimeoutSeconds validates the read/send timeout applied by a
+// page's gateway. A value <= 0 falls back to the nginx-like 60s default.
+func sanitizeProxyTimeoutSeconds(raw int) (int, error) {
+	if raw <= 0 {
+		return defaultProxyTimeoutSeconds, nil
+	}
+	if raw < minProxyTimeoutSeconds || raw > maxProxyTimeoutSeconds {
+		return 0, fmt.Errorf("proxy_timeout_seconds must be between %d and %d", minProxyTimeoutSeconds, maxProxyTimeoutSeconds)
+	}
+	return raw, nil
+}
+
+// sanitizeRateLimit validates the per-client request rate limit for a page's
+// gateway. rps <= 0 disables rate limiting entirely (burst is then forced to 0).
+func sanitizeRateLimit(rps, burst int) (int, int, error) {
+	if rps < 0 {
+		return 0, 0, fmt.Errorf("rate_limit_rps must be zero or a positive number")
+	}
+	if burst < 0 {
+		return 0, 0, fmt.Errorf("rate_limit_burst must be zero or a positive number")
+	}
+	if rps > maxRateLimitRPS {
+		return 0, 0, fmt.Errorf("rate_limit_rps must not exceed %d", maxRateLimitRPS)
+	}
+	if burst > maxRateLimitBurst {
+		return 0, 0, fmt.Errorf("rate_limit_burst must not exceed %d", maxRateLimitBurst)
+	}
+	if rps == 0 {
+		return 0, 0, nil
+	}
+	return rps, burst, nil
 }
 
 func toNullString(value *string) sql.NullString {
