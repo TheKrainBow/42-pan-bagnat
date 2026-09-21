@@ -156,6 +156,9 @@ type ModulePage struct {
 	DisableRequestBuffering bool `json:"disable_request_buffering"`
 	// Roles lists the roles that can access this page.
 	Roles []Role `json:"roles,omitempty"`
+	// ForbiddenRoles lists the roles that are denied access to this page,
+	// regardless of the allowed roles.
+	ForbiddenRoles []Role `json:"forbidden_roles,omitempty"`
 }
 
 // Session represents a user session (device) in the system

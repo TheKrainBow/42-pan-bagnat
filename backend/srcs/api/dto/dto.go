@@ -123,6 +123,7 @@ func ModulePageToAPIModulePage(modulePage core.ModulePage) ModulePage {
 		RateLimitBurst:          modulePage.RateLimitBurst,
 		DisableRequestBuffering: modulePage.DisableRequestBuffering,
 		Roles:                   RolesToAPIRoles(modulePage.Roles),
+		ForbiddenRoles:          RolesToAPIRoles(modulePage.ForbiddenRoles),
 	}
 }
 

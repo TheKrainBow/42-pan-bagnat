@@ -23,6 +23,7 @@ export default function UserBadge({ user, onClick, onDelete, href }) {
         <button
           className="user-badge-delete"
           onClick={e => {
+            e.preventDefault();
             e.stopPropagation();
             onDelete();
           }}

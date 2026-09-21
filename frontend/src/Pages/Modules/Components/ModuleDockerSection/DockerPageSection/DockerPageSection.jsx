@@ -86,6 +86,7 @@ export default function ModulePageSection({ moduleId }) {
         rateLimitBurst: typeof p.rate_limit_burst === 'number' ? p.rate_limit_burst : 0,
         disableRequestBuffering: !!p.disable_request_buffering,
         roles: Array.isArray(p.roles) ? p.roles : [],
+        forbiddenRoles: Array.isArray(p.forbidden_roles) ? p.forbidden_roles : [],
         isNew: false,
         slugAuto: false,
       }));
@@ -128,6 +129,7 @@ export default function ModulePageSection({ moduleId }) {
       rateLimitBurst: 0,
       disableRequestBuffering: false,
       roles: [],
+      forbiddenRoles: [],
       isNew: true,
       slugAuto: true,
     };

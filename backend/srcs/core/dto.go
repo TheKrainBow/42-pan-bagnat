@@ -151,6 +151,7 @@ func DatabaseModulePageToModulePage(dbPage database.ModulePage) ModulePage {
 		RateLimitBurst:          dbPage.RateLimitBurst,
 		DisableRequestBuffering: dbPage.DisableRequestBuffering,
 		Roles:                   []Role{},
+		ForbiddenRoles:          []Role{},
 	}
 }
 

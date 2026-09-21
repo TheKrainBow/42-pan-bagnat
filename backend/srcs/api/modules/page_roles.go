@@ -84,3 +84,79 @@ func DeleteModulePageRole(w http.ResponseWriter, r *http.Request) {
 	core.LogModule(moduleID, "INFO", fmt.Sprintf("Removed role '%s' from page '%s'", roleID, pageID), nil, nil)
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// @Security     SessionAuth
+// @Summary      Add forbidden role to module page
+// @Description  Assigns the specified role to the specified module page's forbidden list. Users with a forbidden role are denied access regardless of the allowed roles.
+// @Tags         Modules,Pages,Roles
+// @Accept       json
+// @Produce      json
+// @Param        moduleID  path      string  true  "Module ID"
+// @Param        pageID    path      string  true  "Page ID"
+// @Param        roleID    path      string  true  "Role ID"
+// @Success      201       {string}  string  "Role successfully added to page's forbidden list"
+// @Failure      400       {string}  string  "Bad request"
+// @Failure      404       {string}  string  "Page not found"
+// @Failure      500       {string}  string  "Internal server error"
+// @Router       /admin/modules/{moduleID}/pages/{pageID}/forbidden-roles/{roleID} [post]
+func PostModulePageForbiddenRole(w http.ResponseWriter, r *http.Request) {
+	pageID := chi.URLParam(r, "pageID")
+	roleID := chi.URLParam(r, "roleID")
+	moduleID := chi.URLParam(r, "moduleID")
+
+	page, err := database.GetPageByID(pageID)
+	if err != nil {
+		http.Error(w, "Page not found", http.StatusNotFound)
+		return
+	}
+	if page.ModuleID != moduleID {
+		http.Error(w, "Page not found", http.StatusNotFound)
+		return
+	}
+
+	if err := database.AssignForbiddenRoleToPage(roleID, pageID); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to assign forbidden role: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	core.LogModule(moduleID, "INFO", fmt.Sprintf("Assigned forbidden role '%s' to page '%s'", roleID, pageID), nil, nil)
+	w.WriteHeader(http.StatusCreated)
+}
+
+// @Security     SessionAuth
+// @Summary      Remove forbidden role from module page
+// @Description  Removes the specified role from the specified module page's forbidden list.
+// @Tags         Modules,Pages,Roles
+// @Accept       json
+// @Produce      json
+// @Param        moduleID  path      string  true  "Module ID"
+// @Param        pageID    path      string  true  "Page ID"
+// @Param        roleID    path      string  true  "Role ID"
+// @Success      204       {string}  string  "Role successfully removed from page's forbidden list"
+// @Failure      400       {string}  string  "Bad request"
+// @Failure      404       {string}  string  "Page not found"
+// @Failure      500       {string}  string  "Internal server error"
+// @Router       /admin/modules/{moduleID}/pages/{pageID}/forbidden-roles/{roleID} [delete]
+func DeleteModulePageForbiddenRole(w http.ResponseWriter, r *http.Request) {
+	pageID := chi.URLParam(r, "pageID")
+	roleID := chi.URLParam(r, "roleID")
+	moduleID := chi.URLParam(r, "moduleID")
+
+	page, err := database.GetPageByID(pageID)
+	if err != nil {
+		http.Error(w, "Page not found", http.StatusNotFound)
+		return
+	}
+	if page.ModuleID != moduleID {
+		http.Error(w, "Page not found", http.StatusNotFound)
+		return
+	}
+
+	if err := database.RemoveForbiddenRoleFromPage(roleID, pageID); err != nil {
+		http.Error(w, fmt.Sprintf("Failed to delete forbidden role: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	core.LogModule(moduleID, "INFO", fmt.Sprintf("Removed forbidden role '%s' from page '%s'", roleID, pageID), nil, nil)
+	w.WriteHeader(http.StatusNoContent)
+}
