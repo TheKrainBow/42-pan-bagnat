@@ -17,6 +17,7 @@ import (
 	"backend/api/ping"
 	"backend/api/roles"
 	"backend/api/sshkeys"
+	"backend/api/stats"
 	"backend/api/users"
 	"backend/core"
 	"backend/database"
@@ -234,6 +235,7 @@ func main() {
 				oidc.RegisterAdminRoutes(r)
 			})
 			r.Route("/ssh-keys", sshkeys.RegisterRoutes)
+			r.Route("/stats", stats.RegisterRoutes)
 			r.Get("/docker/ls", modules.GetAllContainers)
 			r.Delete("/docker/{containerName}/delete", modules.DeleteContainerGlobal)
 			r.Route("/users", users.RegisterRoutes)

@@ -196,6 +196,8 @@ type proxyService struct {
 	sessionSecret    []byte
 	sessionCookieTTL time.Duration
 	loginURL         string
+	activityMu       sync.Mutex
+	activityLastLog  map[string]time.Time
 }
 
 func newProxyService(db *sqlx.DB, connInfo, channel string, suffixes []string, iframeHosts []string, netClient *netControllerClient, gatewayPort int, sessionSecret []byte, cookieTTL time.Duration, loginURL string) *proxyService {
@@ -219,6 +221,7 @@ func newProxyService(db *sqlx.DB, connInfo, channel string, suffixes []string, i
 		sessionSecret:    sessionSecret,
 		sessionCookieTTL: cookieTTL,
 		loginURL:         strings.TrimSpace(loginURL),
+		activityLastLog:  make(map[string]time.Time),
 	}
 }
 
@@ -379,9 +382,13 @@ func (p *proxyService) handleGatewayRequest(w http.ResponseWriter, r *http.Reque
 		p.handleSessionBootstrap(w, r, slug)
 		return
 	}
-	if _, allowed, reason := p.authorizePageRequest(w, r, page); !allowed {
+	user, allowed, reason := p.authorizePageRequest(w, r, page)
+	if !allowed {
 		log.Printf("[proxy-service] denied slug=%q host=%q referer=%q reason=%s", slug, r.Host, r.Referer(), reason)
 		return
+	}
+	if user != nil {
+		p.recordActivity(r.Context(), page.ModuleID, user.ID)
 	}
 
 	target := &url.URL{
@@ -469,6 +476,32 @@ func dnsSafeSlug(slug string) string {
 		return "page"
 	}
 	return cleaned
+}
+
+// recordActivity logs a usage ping for a module/user pair, throttled to at
+// most one row per minute per (module, user) so chatty modules don't flood
+// the activity table. The 60-minute inactivity gap used to sessionize these
+// pings into "activity sessions" is computed at query time by the stats API.
+func (p *proxyService) recordActivity(ctx context.Context, moduleID, userID string) {
+	if moduleID == "" || userID == "" {
+		return
+	}
+	key := moduleID + "|" + userID
+	now := time.Now()
+
+	p.activityMu.Lock()
+	last, seen := p.activityLastLog[key]
+	if seen && now.Sub(last) < time.Minute {
+		p.activityMu.Unlock()
+		return
+	}
+	p.activityLastLog[key] = now
+	p.activityMu.Unlock()
+
+	const query = `INSERT INTO module_activity (module_id, user_id, created_at) VALUES ($1, $2, $3)`
+	if _, err := p.db.ExecContext(ctx, query, moduleID, userID, now); err != nil {
+		log.Printf("[proxy-service] failed to record activity module=%s user=%s: %v", moduleID, userID, err)
+	}
 }
 
 func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Request, page cachedPage) (*sessionUser, bool, string) {
@@ -628,16 +661,20 @@ func (p *proxyService) isRefererFromParent(raw string) bool {
 
 func (p *proxyService) isIframeRefererAllowed(r *http.Request, raw string, moduleHost string) bool {
 	// Sec-Fetch-Dest is set by the browser itself (page script cannot forge
-	// it) and reflects the actual destination of THIS request: "iframe" for
-	// any navigation that loads into a nested browsing context (including
-	// same-frame link clicks inside it), "document" for a real top-level
-	// navigation. A top-level visit can still carry a Referer that matches
-	// Pan Bagnat's own host (e.g. the user opened the sidebar link in a new
-	// tab, or pasted it), so whenever this header is present it must take
-	// priority over any Referer-based check below.
+	// it). Only "document" unambiguously means a real top-level navigation —
+	// that's the one case we must reject, since a top-level visit can still
+	// carry a Referer that matches Pan Bagnat's own host (e.g. the user
+	// opened the sidebar link in a new tab, or pasted it). Every other
+	// value — "iframe"/"frame" (a genuine embed), and non-navigation
+	// subresource fetches ("empty" for XHR/fetch, "script", "style",
+	// "image", ...) — must be let through: those can only originate from a
+	// document that already loaded successfully, which means it already
+	// passed this very check at its own navigation time. Rejecting "empty"
+	// here would break every same-origin API call a legitimately embedded
+	// module makes to its own backend.
 	dest := strings.TrimSpace(strings.ToLower(r.Header.Get("Sec-Fetch-Dest")))
 	if dest != "" {
-		return dest == "iframe" || dest == "frame"
+		return dest != "document"
 	}
 
 	// No Sec-Fetch-Dest (older browsers): fall back to best-effort Referer
