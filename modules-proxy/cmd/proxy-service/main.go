@@ -1006,9 +1006,15 @@ func main() {
 		Addr:              cfg.ListenAddr,
 		Handler:           router,
 		ReadHeaderTimeout: 5 * time.Second,
-		ReadTimeout:       30 * time.Second,
-		WriteTimeout:      30 * time.Second,
-		IdleTimeout:       60 * time.Second,
+		// ReadTimeout/WriteTimeout are intentionally unset: Go sets these as a
+		// one-shot deadline on the raw connection when a request starts and
+		// never renews them. httputil.ReverseProxy hijacks that same
+		// connection for WebSocket upgrades without clearing the deadline, so
+		// any nonzero value here force-closes every proxied WebSocket at that
+		// fixed age regardless of activity. ReadHeaderTimeout already guards
+		// against slow-header attacks; per-request body/response timeouts are
+		// enforced downstream by the module gateway's proxy_read_timeout.
+		IdleTimeout: 60 * time.Second,
 	}
 
 	go func() {

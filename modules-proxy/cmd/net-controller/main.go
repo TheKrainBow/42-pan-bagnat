@@ -587,7 +587,12 @@ func (c *controller) gatewayCommand(target string, spec gatewaySpec) string {
 	buf.WriteString("    }\n")
 	rps, burst := sanitizeRateLimit(spec.RateLimitRPS, spec.RateLimitBurst)
 	if rps > 0 {
-		fmt.Fprintf(&buf, "    limit_req_zone $binary_remote_addr zone=gw_limit:10m rate=%dr/s;\n", rps)
+		// Keyed on the upstream-set X-Real-IP, not $binary_remote_addr: this
+		// gateway is only ever reached through proxy-service (isolated on
+		// pan-bagnat-proxy-net), so $remote_addr here is always that single
+		// container's address for every visitor. Keying on it would rate-limit
+		// all players combined as one client instead of per-player.
+		fmt.Fprintf(&buf, "    limit_req_zone $http_x_real_ip zone=gw_limit:10m rate=%dr/s;\n", rps)
 	}
 	fmt.Fprintf(&buf, "    server {\n        listen %d;\n", c.gatewayPort)
 	buf.WriteString("        location / {\n")
@@ -610,7 +615,12 @@ func (c *controller) gatewayCommand(target string, spec gatewaySpec) string {
 	buf.WriteString("            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n")
 	buf.WriteString("            proxy_set_header Upgrade $http_upgrade;\n")
 	buf.WriteString("            proxy_set_header Connection $connection_upgrade;\n")
-	buf.WriteString("            proxy_set_header X-Real-IP $remote_addr;\n")
+	// Preserve the client IP the edge nginx already put in X-Real-IP, instead
+	// of resetting it to $remote_addr: this gateway is only ever reached
+	// through proxy-service, so $remote_addr here is always that one
+	// container's address, not the actual visitor's. Trusting the inbound
+	// header is safe because nothing but proxy-service can reach this gateway.
+	buf.WriteString("            proxy_set_header X-Real-IP $http_x_real_ip;\n")
 	buf.WriteString("            proxy_buffering off;\n")
 	buf.WriteString("        }\n")
 	buf.WriteString("    }\n")

@@ -7,8 +7,11 @@ ENV VITE_MODULES_PROTOCOL=${VITE_MODULES_PROTOCOL}
 
 WORKDIR /app
 
-# Install PNPM globally
-RUN npm install -g pnpm
+# Install PNPM globally, pinned to match package.json's "packageManager" field.
+# Installing a different version makes pnpm try to auto-switch to the pinned
+# one via @pnpm/exe's prebuilt binary, which ships no musl/Alpine build and
+# fails with ERR_PNPM_PNPM_ENGINE_NO_NATIVE_BINARY.
+RUN npm install -g pnpm@10.12.1
 
 # Copy package metadata first for better cache usage
 COPY package.json pnpm-lock.yaml ./
