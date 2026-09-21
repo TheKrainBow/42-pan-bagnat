@@ -262,11 +262,6 @@ func GitFetchModule(module Module) error {
 func GitStatusModule(module Module) (GitStatus, error) {
 	repoDir := repoDirFor(module)
 	_ = ensureSafeDirectory(module, repoDir)
-	// Prepare temp SSH for any network fetch during status computation
-	sshCommand, cleanup, _ := tempSSHForModule(module)
-	if cleanup != nil {
-		defer cleanup()
-	}
 	st := GitStatus{}
 	// Prefer DB values when available; compute and store if missing
 	if module.GitBranch != "" {
@@ -348,11 +343,6 @@ func GitStatusModule(module Module) (GitStatus, error) {
 		up = "origin/" + module.GitBranch
 	}
 	if up != "" {
-		cmdFetch := exec.Command("git", "-C", repoDir, "fetch", "--all", "--prune")
-		if sshCommand != "" {
-			cmdFetch.Env = append(os.Environ(), "GIT_SSH_COMMAND="+sshCommand)
-		}
-		_ = cmdFetch.Run()
 		latestLine, _ := exec.Command("git", "-C", repoDir, "log", "-1", up, "--pretty=%H%x1f%s").CombinedOutput()
 		s := string(bytesTrimSpace(latestLine))
 		if s != "" {
@@ -475,16 +465,11 @@ func GitListCommits(module Module, limit int) ([]GitCommit, error) {
 }
 
 // GitListCommitsRef returns commits for a specific ref, preferably a remote branch.
-// If ref is empty, it attempts to use the upstream (e.g. origin/main). It fetches
-// the ref before listing to ensure online view.
+// If ref is empty, it attempts to use the upstream (e.g. origin/main). It reads
+// from the local repository only; use Fetch/Pull to refresh remote-tracking refs.
 func GitListCommitsRef(module Module, ref string, limit int) ([]GitCommit, error) {
 	repoDir := repoDirFor(module)
 	_ = ensureSafeDirectory(module, repoDir)
-	// Temp SSH for any fetches here
-	sshCommand, cleanup, _ := tempSSHForModule(module)
-	if cleanup != nil {
-		defer cleanup()
-	}
 
 	// Determine remote ref
 	remoteRef := ref
@@ -506,31 +491,6 @@ func GitListCommitsRef(module Module, ref string, limit int) ([]GitCommit, error
 	// Normalize to origin/<branch> if local name provided
 	if remoteRef != "" && !strings.HasPrefix(remoteRef, "origin/") && !strings.Contains(remoteRef, "/") {
 		remoteRef = "origin/" + remoteRef
-	}
-
-	// Fetch the specific ref if possible
-	if remoteRef != "" {
-		// Split remote/name
-		parts := strings.SplitN(remoteRef, "/", 2)
-		if len(parts) == 2 {
-			c := exec.Command("git", "-C", repoDir, "fetch", parts[0], parts[1])
-			if sshCommand != "" {
-				c.Env = append(os.Environ(), "GIT_SSH_COMMAND="+sshCommand)
-			}
-			_ = runAndLog(module.ID, c)
-		} else {
-			c := exec.Command("git", "-C", repoDir, "fetch", "--all", "--prune")
-			if sshCommand != "" {
-				c.Env = append(os.Environ(), "GIT_SSH_COMMAND="+sshCommand)
-			}
-			_ = runAndLog(module.ID, c)
-		}
-	} else {
-		c := exec.Command("git", "-C", repoDir, "fetch", "--all", "--prune")
-		if sshCommand != "" {
-			c.Env = append(os.Environ(), "GIT_SSH_COMMAND="+sshCommand)
-		}
-		_ = runAndLog(module.ID, c)
 	}
 
 	// Build pretty format
@@ -566,13 +526,12 @@ func GitListCommitsRef(module Module, ref string, limit int) ([]GitCommit, error
 	return commits, nil
 }
 
+// GitListBranches lists remote branches known locally (refs/remotes/origin/*),
+// as last synced by an explicit Fetch/Pull/Checkout. It performs no network I/O,
+// so listing branches never blocks on the remote.
 func GitListBranches(module Module) ([]GitBranch, error) {
 	repoDir := repoDirFor(module)
 	_ = ensureSafeDirectory(module, repoDir)
-	sshCommand, cleanup, _ := tempSSHForModule(module)
-	if cleanup != nil {
-		defer cleanup()
-	}
 	// Determine current upstream (e.g. origin/main); if detached, fallback to DB git_branch
 	curUpstream := ""
 	if out, err := exec.Command("git", "-C", repoDir, "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}").CombinedOutput(); err == nil {
@@ -581,35 +540,25 @@ func GitListBranches(module Module) ([]GitBranch, error) {
 	if curUpstream == "" && module.GitBranch != "" {
 		curUpstream = "origin/" + module.GitBranch
 	}
-	// Query remote branches from origin
-	cmd := exec.Command("git", "-C", repoDir, "ls-remote", "--heads", "origin")
-	if sshCommand != "" {
-		cmd.Env = append(os.Environ(), "GIT_SSH_COMMAND="+sshCommand)
-	}
+	// Query locally known remote-tracking branches (refs/remotes/origin/*)
+	cmd := exec.Command("git", "-C", repoDir, "for-each-ref", "--format=%(refname:short)", "refs/remotes/origin")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		LogModule(module.ID, "ERROR", "git ls-remote failed", map[string]any{"stderr": string(out)}, err)
-		return nil, fmt.Errorf("git ls-remote error: %w", err)
+		LogModule(module.ID, "ERROR", "git for-each-ref failed", map[string]any{"stderr": string(out)}, err)
+		return nil, fmt.Errorf("git for-each-ref error: %w", err)
 	}
 	lines := splitLines(string(out))
 	list := make([]GitBranch, 0, len(lines))
 	for _, l := range lines {
-		l = strings.TrimSpace(l)
-		if l == "" {
+		upstream := strings.TrimSpace(l)
+		if upstream == "" {
 			continue
 		}
-		// <hash>\trefs/heads/<branch>
-		parts := strings.Split(l, "\t")
-		if len(parts) < 2 {
+		const pfx = "origin/"
+		if !strings.HasPrefix(upstream, pfx) || upstream == "origin/HEAD" {
 			continue
 		}
-		ref := parts[1]
-		const pfx = "refs/heads/"
-		if !strings.HasPrefix(ref, pfx) {
-			continue
-		}
-		name := strings.TrimPrefix(ref, pfx)
-		upstream := "origin/" + name
+		name := strings.TrimPrefix(upstream, pfx)
 		list = append(list, GitBranch{Name: name, Current: curUpstream == upstream, Upstream: upstream})
 	}
 	return list, nil
@@ -942,8 +891,15 @@ func GitDeleteBranch(module Module, name string) error {
 	return nil
 }
 
-// broadcastGitStatus computes the current git status and sends it over WS
+// broadcastGitStatus computes the current git status and sends it over WS.
+// It re-fetches the module from DB first: callers often hold a pre-operation
+// copy (e.g. captured before a pull/checkout), and GitStatusModule trusts
+// module.CurrentCommitHash as-is instead of re-reading it from git, so a
+// stale in-memory struct here would broadcast the old HEAD.
 func broadcastGitStatus(module Module) {
+	if fresh, err := GetModule(module.ID); err == nil {
+		module = fresh
+	}
 	st, err := GitStatusModule(module)
 	if err != nil {
 		return
