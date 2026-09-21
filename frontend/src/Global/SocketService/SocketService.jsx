@@ -7,6 +7,14 @@ export const setModuleStatusUpdater = (fn) => {
   moduleStatusUpdater = fn;
 };
 
+// Module status toasts ("Module X is enabling/disabling…") are admin-facing
+// noise for regular users, who can't act on them and don't need to know.
+let isAdminUser = false;
+
+export const setCurrentUserIsAdmin = (value) => {
+  isAdminUser = !!value;
+};
+
 class SocketService {
   constructor() {
     this.listeners = new Set();
@@ -48,9 +56,17 @@ class SocketService {
             message = `Module ${module_name} is now enabled`;
             type = 'success';
             break;
+          case 'enabling':
+            message = `Module ${module_name} is enabling…`;
+            type = 'info';
+            break;
           case 'disabled':
             message = `Module ${module_name} is now disabled`;
             type = 'error';
+            break;
+          case 'disabling':
+            message = `Module ${module_name} is disabling…`;
+            type = 'info';
             break;
           case 'downloading':
             message = `⬇Module ${module_name} is downloading`;
@@ -66,11 +82,13 @@ class SocketService {
             type = 'info';
         }
 
-        toast(message, {
-          type,
-          onClick: () => window.location.href = url,
-          className: 'toast-simple',
-        });
+        if (isAdminUser) {
+          toast(message, {
+            type,
+            onClick: () => window.location.href = url,
+            className: 'toast-simple',
+          });
+        }
         if (moduleStatusUpdater) {
           moduleStatusUpdater(module_id, new_status);
         } else {

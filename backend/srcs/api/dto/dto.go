@@ -114,6 +114,7 @@ func ModulePageToAPIModulePage(modulePage core.ModulePage) ModulePage {
 		PageOnly:                modulePage.PageOnly,
 		NeedAuth:                modulePage.NeedAuth,
 		IsVisible:               modulePage.IsVisible,
+		ModuleDisabled:          modulePage.ModuleStatus != "" && modulePage.ModuleStatus != string(core.Enabled),
 		IconURL:                 modulePage.IconURL,
 		NetworkName:             modulePage.NetworkName,
 		MaxUploadBodySize:       modulePage.MaxUploadBodySize,

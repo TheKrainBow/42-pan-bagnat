@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -60,9 +61,10 @@ type cachedPage struct {
 	Slug            string
 	ModuleID        string
 	ModuleSlug      string
+	ModuleStatus    string
 	IframeOnly      bool
 	NeedAuth        bool
-	HasModuleRoles  bool
+	HasPageRoles    bool
 	Network         string
 	TargetContainer string
 	TargetPort      int
@@ -240,10 +242,11 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 		       mp.need_auth,
 		       EXISTS (
 		           SELECT 1
-		             FROM module_roles mr
-		            WHERE mr.module_id = mp.module_id
-		       ) AS has_module_roles,
+		             FROM module_page_roles pr
+		            WHERE pr.page_id = mp.id
+		       ) AS has_page_roles,
 		       m.slug AS module_slug,
+		       m.status AS module_status,
 		       COALESCE(mp.network_name, '') AS network_name
 		FROM module_page mp
 		JOIN modules m ON m.id = mp.module_id
@@ -257,8 +260,9 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 		ModuleID        string `db:"module_id"`
 		IframeOnly      bool   `db:"iframe_only"`
 		NeedAuth        bool   `db:"need_auth"`
-		HasModuleRoles  bool   `db:"has_module_roles"`
+		HasPageRoles    bool   `db:"has_page_roles"`
 		ModuleSlug      string `db:"module_slug"`
+		ModuleStatus    string `db:"module_status"`
 		NetworkName     string `db:"network_name"`
 	}
 	var rows []row
@@ -275,9 +279,10 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 			Slug:            slug,
 			ModuleID:        r.ModuleID,
 			ModuleSlug:      r.ModuleSlug,
+			ModuleStatus:    r.ModuleStatus,
 			IframeOnly:      r.IframeOnly,
 			NeedAuth:        r.NeedAuth,
-			HasModuleRoles:  r.HasModuleRoles,
+			HasPageRoles:    r.HasPageRoles,
 			Network:         strings.TrimSpace(r.NetworkName),
 			TargetContainer: strings.TrimSpace(r.TargetContainer),
 			TargetPort:      r.TargetPort,
@@ -363,6 +368,11 @@ func (p *proxyService) handleGatewayRequest(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		log.Printf("[proxy-service] slug=%q not found for host=%q", slug, r.Host)
 		http.NotFound(w, r)
+		return
+	}
+	if page.ModuleStatus != "" && page.ModuleStatus != "enabled" {
+		log.Printf("[proxy-service] slug=%q module_status=%q: serving maintenance page", slug, page.ModuleStatus)
+		writeModuleDisabledResponse(w, r)
 		return
 	}
 	if r.URL.Path == moduleSessionPath {
@@ -484,7 +494,11 @@ func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Reque
 			log.Printf("[proxy-service][auth-debug] authenticateRequest -> session expired")
 		}
 		clearSessionCookie(w, isHTTPS(r))
-		writeJSONError(w, http.StatusUnauthorized, "unauthorized", "Session expired. Please sign in again.")
+		writeErrorResponse(w, r, http.StatusUnauthorized, "unauthorized", accentRed, iconSVGLock,
+			"Session expired",
+			"Your session has expired.",
+			"Please sign in again to continue.",
+			"")
 		return nil, false, "session expired"
 	case err != nil:
 		log.Printf("[proxy-service] auth failure: %v", err)
@@ -502,28 +516,40 @@ func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Reque
 		if blacklisted {
 			_ = p.deleteUserSessions(ctx, user.ID)
 			clearSessionCookie(w, isHTTPS(r))
-			writeJSONError(w, http.StatusForbidden, "blacklisted", "Your account is currently blacklisted. Contact your bocal.")
+			writeErrorResponse(w, r, http.StatusForbidden, "blacklisted", accentRed, iconSVGLock,
+				"Account blacklisted",
+				"Your account is currently blacklisted.",
+				"Contact your bocal for more information.",
+				"")
 			return nil, false, "user is blacklisted"
 		}
 	}
 
 	moduleHost := hostWithoutPort(r.Host)
 	if page.IframeOnly && !p.isIframeRefererAllowed(r, r.Header.Get("Referer"), moduleHost) {
-		writeJSONError(w, http.StatusForbidden, "iframe_required", "This page must be loaded from Pan Bagnat.")
+		writeErrorResponse(w, r, http.StatusForbidden, "iframe_required", accentBlue, iconSVGFrame,
+			"Embedded access only",
+			"This page must be loaded from Pan Bagnat.",
+			"Open it from your Pan Bagnat sidebar instead of visiting this link directly.",
+			actionButtonHTML("Go back to Pan Bagnat", p.panBagnatModuleURL(page.Slug)))
 		return nil, false, "missing iframe referer"
 	}
 	requiresLogin := page.NeedAuth
 	if requiresLogin && user == nil {
 		if authDebugEnabled {
-			log.Printf("[proxy-service][auth-debug] user nil but referer=%q need_auth=%v has_module_roles=%v", r.Header.Get("Referer"), page.NeedAuth, page.HasModuleRoles)
+			log.Printf("[proxy-service][auth-debug] user nil but referer=%q need_auth=%v has_page_roles=%v", r.Header.Get("Referer"), page.NeedAuth, page.HasPageRoles)
 		}
 		if p.redirectToLoginIfPossible(w, r, r.Header.Get("Referer")) {
 			return nil, false, "redirect_login"
 		}
-		writeJSONError(w, http.StatusUnauthorized, "unauthorized", "Please sign in.")
+		writeErrorResponse(w, r, http.StatusUnauthorized, "unauthorized", accentRed, iconSVGLock,
+			"Sign-in required",
+			"Please sign in to continue.",
+			"You need to be authenticated to view this page.",
+			"")
 		return nil, false, "not authenticated"
 	}
-	if user != nil && page.NeedAuth && page.HasModuleRoles {
+	if user != nil && page.NeedAuth && page.HasPageRoles {
 		allowed, err := p.userCanAccessPage(ctx, user.ID, page.Slug)
 		if err != nil {
 			log.Printf("[proxy-service] access check failed for user %s on %s: %v", user.ID, page.Slug, err)
@@ -531,7 +557,11 @@ func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Reque
 			return nil, false, "access lookup failed"
 		}
 		if !allowed {
-			writeJSONError(w, http.StatusForbidden, "forbidden", "You are not allowed to access this module page.")
+			writeErrorResponse(w, r, http.StatusForbidden, "forbidden", accentRed, iconSVGLock,
+				"Access restricted",
+				"You don't have access to this page.",
+				"You may not have the required role for this module.",
+				"")
 			return nil, false, "forbidden"
 		}
 	}
@@ -561,8 +591,8 @@ func (p *proxyService) userCanAccessPage(ctx context.Context, userID, slug strin
 			        OR EXISTS (
 			            SELECT 1
 			              FROM user_roles ur
-			              JOIN module_roles mr ON ur.role_id = mr.role_id
-			              JOIN module_page mp ON mp.module_id = mr.module_id
+			              JOIN module_page_roles pr ON pr.role_id = ur.role_id
+			              JOIN module_page mp ON mp.id = pr.page_id
 			             WHERE ur.user_id = u.id
 			               AND mp.slug = $2
 			        )
@@ -597,14 +627,26 @@ func (p *proxyService) isRefererFromParent(raw string) bool {
 }
 
 func (p *proxyService) isIframeRefererAllowed(r *http.Request, raw string, moduleHost string) bool {
+	// Sec-Fetch-Dest is set by the browser itself (page script cannot forge
+	// it) and reflects the actual destination of THIS request: "iframe" for
+	// any navigation that loads into a nested browsing context (including
+	// same-frame link clicks inside it), "document" for a real top-level
+	// navigation. A top-level visit can still carry a Referer that matches
+	// Pan Bagnat's own host (e.g. the user opened the sidebar link in a new
+	// tab, or pasted it), so whenever this header is present it must take
+	// priority over any Referer-based check below.
+	dest := strings.TrimSpace(strings.ToLower(r.Header.Get("Sec-Fetch-Dest")))
+	if dest != "" {
+		return dest == "iframe" || dest == "frame"
+	}
+
+	// No Sec-Fetch-Dest (older browsers): fall back to best-effort Referer
+	// matching.
 	if p.isRefererFromParent(raw) {
 		return true
 	}
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		if p.frameAncestors != "" && isIframeFetch(r) {
-			return true
-		}
 		return false
 	}
 	u, err := url.Parse(raw)
@@ -646,6 +688,183 @@ func (p *proxyService) redirectToLoginIfPossible(w http.ResponseWriter, r *http.
 	loginURL.RawQuery = values.Encode()
 	http.Redirect(w, r, loginURL.String(), http.StatusFound)
 	return true
+}
+
+// statusPageTemplate renders a dark, dotted-grid backdrop with a centered
+// card (icon tile, status pill, heading, description) — the same visual
+// language used by the frontend's ModuleStatusCard component, for the
+// server-rendered pages this proxy has to serve on its own (e.g. before any
+// React app has loaded, or for direct browser navigation to a module host).
+const statusPageTemplate = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>%s</title>
+<style>
+  html, body { height: 100%%; margin: 0; }
+  body {
+    display: flex; align-items: center; justify-content: center;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: #141414;
+    background-image:
+      linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+    background-size: 36px 36px;
+    color: #e6e6e6;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+  .card {
+    width: 100%%;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 40px 32px;
+    border-radius: 16px;
+    background-color: #252525;
+    border: 1px solid #333;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+  }
+  .icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    background: rgba(%s, 0.14);
+    color: rgb(%s);
+  }
+  .icon svg { width: 26px; height: 26px; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    margin-bottom: 20px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgb(%s);
+  }
+  .dot { width: 6px; height: 6px; border-radius: 50%%; background: currentColor; }
+  h1 { font-size: 22px; font-weight: 700; line-height: 1.3; margin: 0 0 12px; color: #fff; }
+  p { font-size: 14px; line-height: 1.6; color: #9aa0a6; margin: 0; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 22px;
+    padding: 10px 20px;
+    border-radius: 10px;
+    background: #3b82f6;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .btn:hover { background: #2563eb; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">%s</svg>
+    </div>
+    <div class="badge"><span class="dot"></span>%s</div>
+    <h1>%s</h1>
+    <p>%s</p>
+    %s
+  </div>
+</body>
+</html>`
+
+// SVG path data (Feather-style icons) shared with the frontend's ModuleStatusCard.
+const (
+	iconSVGWrench = `<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.1 2.1a2 2 0 0 1-2.8-2.8l2.1-2.1Z" />`
+	iconSVGLock   = `<rect x="3" y="11" width="18" height="10" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" />`
+	iconSVGFrame  = `<rect x="3" y="4" width="18" height="16" rx="2" /><path d="M3 9h18" />`
+)
+
+// statusAccent bundles the RGB triplets used for an accent color's icon/badge tint.
+type statusAccent struct {
+	rgb string // e.g. "59, 130, 246"
+}
+
+var (
+	accentBlue = statusAccent{rgb: "59, 130, 246"}
+	accentRed  = statusAccent{rgb: "239, 68, 68"}
+)
+
+// actionButtonHTML renders an optional call-to-action button for the status
+// page, or an empty string when no href is available.
+func actionButtonHTML(label, href string) string {
+	if strings.TrimSpace(href) == "" {
+		return ""
+	}
+	return fmt.Sprintf(`<a class="btn" href="%s">%s</a>`, html.EscapeString(href), html.EscapeString(label))
+}
+
+// renderStatusPage fills the shared dark-card template.
+func renderStatusPage(title string, accent statusAccent, iconSVG, badge, heading, description, actionHTML string) string {
+	return fmt.Sprintf(statusPageTemplate,
+		html.EscapeString(title),
+		accent.rgb, accent.rgb, accent.rgb,
+		iconSVG,
+		html.EscapeString(badge),
+		html.EscapeString(heading),
+		html.EscapeString(description),
+		actionHTML,
+	)
+}
+
+// writeStatusPage writes the rendered card as the full HTML response.
+func writeStatusPage(w http.ResponseWriter, status int, accent statusAccent, iconSVG, badge, heading, description, actionHTML string) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	_, _ = w.Write([]byte(renderStatusPage(heading, accent, iconSVG, badge, heading, description, actionHTML)))
+}
+
+// writeErrorResponse renders the styled status-card page for browser
+// navigations, or falls back to a plain JSON error for API/fetch clients.
+func writeErrorResponse(w http.ResponseWriter, r *http.Request, status int, code string, accent statusAccent, iconSVG, badge, heading, description, actionHTML string) {
+	if !acceptsHTML(r) {
+		writeJSONError(w, status, code, description)
+		return
+	}
+	writeStatusPage(w, status, accent, iconSVG, badge, heading, description, actionHTML)
+}
+
+// panBagnatModuleURL builds a link back to the module's page inside the main
+// Pan Bagnat app (https://{host}/modules/{slug}), derived from the same host
+// used to build the login URL. Returns "" when that host isn't configured.
+func (p *proxyService) panBagnatModuleURL(slug string) string {
+	base, err := url.Parse(p.loginURL)
+	if err != nil || base.Scheme == "" || base.Host == "" {
+		return ""
+	}
+	base.Path = "/modules/" + url.PathEscape(slug)
+	base.RawQuery = ""
+	base.Fragment = ""
+	return base.String()
+}
+
+// writeModuleDisabledResponse renders a maintenance page (or JSON error for
+// non-browser clients) instead of proxying to a disabled module's container.
+func writeModuleDisabledResponse(w http.ResponseWriter, r *http.Request) {
+	writeErrorResponse(w, r, http.StatusServiceUnavailable, "module_disabled", accentBlue, iconSVGWrench,
+		"Module status: disabled",
+		"This module is currently disabled by an administrator.",
+		"If you were expecting to use it, let them know and they may turn it back on.",
+		"")
 }
 
 func acceptsHTML(r *http.Request) bool {

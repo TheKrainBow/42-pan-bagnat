@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import './ModulePage.css';
 import Button from 'Global/Button/Button';
+import ModuleStatusCard, { WrenchIcon, LockIcon, ExternalLinkIcon, LoadingIcon } from 'Pages/Modules/Components/ModuleStatusCard/ModuleStatusCard';
 import { getModulesDomain, getModulesProtocol } from '../../../utils/modules';
 import { exchangeModuleSession } from '../../../utils/moduleSession';
 import { loadSidebarPrefs, getVisibleSidebarPages } from '../../../utils/sidebarPrefs';
@@ -54,12 +55,12 @@ export default function ModulePage({ pages, user }) {
   }, [slug]);
 
   useEffect(() => {
-    if (!page || pageMode === 'page_only') return;
+    if (!page || pageMode === 'page_only' || page.module_disabled) return;
     setStatus('loading');
   }, [page, pageMode, retryKey]);
 
   useEffect(() => {
-    if (!page || pageMode === 'page_only') {
+    if (!page || pageMode === 'page_only' || page.module_disabled) {
       setAuthReady(false);
       return;
     }
@@ -107,7 +108,7 @@ export default function ModulePage({ pages, user }) {
   }, [page, pageMode, moduleOrigin, retryKey]);
 
   useEffect(() => {
-    if (!page || pageMode === 'page_only' || !authReady) return;
+    if (!page || pageMode === 'page_only' || page.module_disabled || !authReady) return;
     const iframe = document.getElementById('moduleIframe');
     if (!iframe) return;
 
@@ -131,21 +132,50 @@ export default function ModulePage({ pages, user }) {
   }
 
   if (!page) {
-    return <div className="module-page-placeholder">Module not found or access denied.</div>;
+    return (
+      <div className="module-page-container">
+        <ModuleStatusCard
+          accent="red"
+          icon={<LockIcon />}
+          badge="Access restricted"
+          title="Module not found or access denied."
+          description="You may not have the required role for this page, or it no longer exists."
+        />
+      </div>
+    );
+  }
+
+  if (page.module_disabled) {
+    return (
+      <div className="module-page-container">
+        <ModuleStatusCard
+          accent="blue"
+          icon={<WrenchIcon />}
+          badge="Module status: disabled"
+          title="This module is currently disabled by an administrator."
+          description="If you were expecting to use it, let them know and they may turn it back on."
+        />
+      </div>
+    );
   }
 
   if (pageMode === 'page_only') {
     return (
       <div className="module-page-container">
-        <div className="module-page-status module-page-status-page-only">
-          <p>Ce module n&apos;est pas disponible en iframe.</p>
-          <Button
-            label="Acceder au site"
-            color="blue"
-            href={externalUrl}
-            onClick={() => window.location.assign(externalUrl)}
-          />
-        </div>
+        <ModuleStatusCard
+          accent="blue"
+          icon={<ExternalLinkIcon />}
+          badge="Opens in a new tab"
+          title="Ce module n'est pas disponible en iframe."
+          action={
+            <Button
+              label="Acceder au site"
+              color="blue"
+              href={externalUrl}
+              onClick={() => window.location.assign(externalUrl)}
+            />
+          }
+        />
       </div>
     );
   }
@@ -153,9 +183,13 @@ export default function ModulePage({ pages, user }) {
   return (
     <div className="module-page-container">
       {status === 'loading' && (
-        <div className="module-page-status">
-          <p>🔄 Loading module...</p>
-        </div>
+        <ModuleStatusCard
+          accent="blue"
+          icon={<LoadingIcon />}
+          badge="Module status: loading"
+          title="This module is currently loading."
+          description="Hang tight while we connect to it — this should only take a moment."
+        />
       )}
       {status === 'error' && (
         <div className="module-page-status error">

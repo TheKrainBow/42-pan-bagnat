@@ -149,6 +149,7 @@ type ModulePage struct {
 	NeedAuth                bool           `json:"need_auth" db:"need_auth"`
 	IsVisible               bool           `json:"is_visible" db:"is_visible"`
 	ModuleID                string         `json:"module_id" db:"module_id"`
+	ModuleStatus            string         `json:"module_status" db:"module_status"`
 	IconURL                 string         `json:"icon_url" db:"icon_url"`
 	NetworkName             string         `json:"network_name" db:"network_name"`
 	TargetContainer         sql.NullString `json:"target_container" db:"target_container"`
@@ -1201,6 +1202,7 @@ func GetUserPages(identifier string) ([]ModulePage, error) {
                         mp.need_auth,
                         mp.is_visible,
                         mp.module_id,
+                        m.status AS module_status,
                         COALESCE(mp.icon_url, m.icon_url, '') AS icon_url,
                         COALESCE(mp.network_name, '') AS network_name
         FROM users u
@@ -1244,6 +1246,7 @@ func GetUserPages(identifier string) ([]ModulePage, error) {
 			&page.NeedAuth,
 			&page.IsVisible,
 			&page.ModuleID,
+			&page.ModuleStatus,
 			&page.IconURL,
 			&page.NetworkName,
 		); err != nil {

@@ -44,6 +44,10 @@ func PatchModule(w http.ResponseWriter, r *http.Request) {
 	}
 	if input.Name != nil {
 		*input.Name = strings.TrimSpace(*input.Name)
+		if *input.Name == "" {
+			http.Error(w, "name cannot be empty", http.StatusBadRequest)
+			return
+		}
 	}
 	if input.GitURL != nil {
 		*input.GitURL = strings.TrimSpace(*input.GitURL)

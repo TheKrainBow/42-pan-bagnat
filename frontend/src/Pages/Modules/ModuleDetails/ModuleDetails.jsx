@@ -25,6 +25,10 @@ const ModuleDetails = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [showConfirmUninstall, setShowConfirmUninstall] = useState(false);
   const [showIconModal, setShowIconModal] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState('');
+  const [savingName, setSavingName] = useState(false);
+  const nameInputRef = useRef(null);
 
   const tab = searchParams.get('tab') || 'logs';
   const [activeTab, setActiveTab] = useState(tab);
@@ -91,10 +95,13 @@ const ModuleDetails = () => {
 
   const toggleModuleStatus = async () => {
     if (!module) return;
+    if (module.status === 'enabling' || module.status === 'disabling') return;
     setStatusUpdating(true);
     try {
-      const newStatus = module.status === 'enabled' ? 'disabled' : 'enabled';
-      setModule({ ...module, status: newStatus });
+      const action = module.status === 'enabled' ? 'disable' : 'enable';
+      const optimisticStatus = action === 'enable' ? 'enabling' : 'disabling';
+      setModule({ ...module, status: optimisticStatus });
+      await fetchWithAuth(`/api/v1/admin/modules/${module.id}/${action}`, { method: 'POST' });
     } catch (err) {
       console.error(err);
     } finally {
@@ -109,6 +116,43 @@ const ModuleDetails = () => {
     }
   }, [module]);
 
+  useEffect(() => {
+    if (editingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [editingName]);
+
+  const startEditingName = () => {
+    setNameDraft(module.name);
+    setEditingName(true);
+  };
+
+  const saveModuleName = async () => {
+    const trimmed = nameDraft.trim();
+    if (!trimmed || trimmed === module.name) {
+      setEditingName(false);
+      return;
+    }
+    setSavingName(true);
+    try {
+      const res = await fetchWithAuth(`/api/v1/admin/modules/${module.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setModule(data);
+      }
+    } catch (err) {
+      console.error('Failed to rename module:', err);
+    } finally {
+      setSavingName(false);
+      setEditingName(false);
+    }
+  };
+
   // useEffect(() => {
   //   if (!module) {
   //     useNavigate('/admin/modules');
@@ -120,7 +164,7 @@ const ModuleDetails = () => {
 
   return (
       <div className="module-detail-container">
-        <Link to="/admin/modules" className="custom-btn link">
+        <Link to="/admin/modules" className="custom-btn link back-to-modules-link">
           <img src="/icons/arrow.png" alt="Back" style={{ width: "16px", marginRight: "8px", marginLeft: "-5px", verticalAlign: "middle" }} />
           Back to Modules
         </Link>
@@ -129,7 +173,28 @@ const ModuleDetails = () => {
           <div onClick={()=> setShowIconModal(true)} style={{ cursor:'pointer' }} title="Change icon">
             <AppIcon app={{ icon_url: module.icon_url, name: module.name }} fallback="/icons/modules.png" />
           </div>
-          <h2>{module.name}</h2>
+          {editingName ? (
+            <input
+              ref={nameInputRef}
+              className="module-name-input"
+              value={nameDraft}
+              disabled={savingName}
+              onChange={(e) => setNameDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') saveModuleName();
+                if (e.key === 'Escape') setEditingName(false);
+              }}
+              onBlur={saveModuleName}
+            />
+          ) : (
+            <h2 className="module-name" onClick={startEditingName} title="Click to rename">
+              {module.name}
+              <svg className="module-name-edit-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+            </h2>
+          )}
           <ModuleStatusBadge status={module.status} />
         </div>
 

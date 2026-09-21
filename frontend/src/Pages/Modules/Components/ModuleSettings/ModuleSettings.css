@@ -99,3 +99,19 @@ input:checked + .slider:before {
   font-style: italic;
   text-align: center;
 }
+
+@media (max-width: 640px) {
+  .module-settings-container {
+    padding: 10px;
+    gap: 16px;
+  }
+  .module-settings-icon {
+    flex-wrap: wrap;
+  }
+  .msi-row {
+    flex-wrap: wrap;
+  }
+  .switch-label {
+    margin-left: 0;
+  }
+}

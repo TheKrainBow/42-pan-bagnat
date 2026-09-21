@@ -46,6 +46,11 @@
   border-left: 4px solid var(--status-waiting);
 }
 
+.module-card.enabling,
+.module-card.disabling {
+  border-left: 4px solid var(--status-waiting);
+}
+
 .module-icon {
   display: flex;
   align-items: center;
@@ -97,4 +102,97 @@
 .module-waiting {
   font-style: italic;
   color: var(--status-waiting); /* Or a lighter amber/yellow suitable for dark theme */
+}
+
+.module-disabled-overlay {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .modules-container {
+    padding: 12px;
+  }
+
+  /* Phone home-screen style: icon grid with the name underneath, no card
+     chrome, no secondary metadata. */
+  .modules-grid {
+    grid-template-columns: repeat(auto-fill, minmax(76px, 1fr));
+    gap: 18px 8px;
+  }
+
+  .module-card {
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    background: transparent;
+    border-left: none !important;
+    opacity: 1 !important;
+    padding: 0;
+    gap: 6px;
+    min-width: 0;
+    max-width: none;
+    white-space: normal;
+  }
+
+  .module-card:hover {
+    transform: none;
+  }
+
+  .module-icon {
+    position: relative;
+  }
+
+  .module-icon img {
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+  }
+
+  .module-content {
+    flex: 0 1 auto;
+    width: 100%;
+    align-items: center;
+  }
+
+  .module-title-row {
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .module-title-row strong {
+    font-size: 12px;
+    font-weight: 500;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.2;
+  }
+
+  /* The status pill duplicates the disabled-overlay info and doesn't fit
+     the icon-grid look — drop it here, keep the overlay instead. */
+  .module-title-row .status-badge {
+    display: none;
+  }
+
+  .module-description,
+  .module-updated {
+    display: none;
+  }
+
+  .module-disabled-overlay {
+    display: flex;
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.6);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-radius: 14px;
+    text-align: center;
+    padding: 2px;
+  }
 }

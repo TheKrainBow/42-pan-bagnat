@@ -606,3 +606,49 @@ func ComposeDown(w http.ResponseWriter, r *http.Request) {
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
+
+// EnableModule ups the module's containers (without rebuilding) and marks it enabled.
+// @Security     SessionAuth
+// @Summary      Enable Module
+// @Tags         Modules
+// @Param        moduleID   path      string  true  "Module ID"
+// @Success      202        "Enable started"
+// @Failure      409        "Module is already enabling/disabling"
+// @Router       /admin/modules/{moduleID}/enable [post]
+func EnableModule(w http.ResponseWriter, r *http.Request) {
+	moduleID := chi.URLParam(r, "moduleID")
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		http.Error(w, "module not found", http.StatusNotFound)
+		return
+	}
+	if module.Status == core.Enabling || module.Status == core.Disabling {
+		http.Error(w, fmt.Sprintf("module is currently %s", module.Status), http.StatusConflict)
+		return
+	}
+	go core.EnableModule(module)
+	w.WriteHeader(http.StatusAccepted)
+}
+
+// DisableModule downs the module's containers (keeping volumes and images) and marks it disabled.
+// @Security     SessionAuth
+// @Summary      Disable Module
+// @Tags         Modules
+// @Param        moduleID   path      string  true  "Module ID"
+// @Success      202        "Disable started"
+// @Failure      409        "Module is already enabling/disabling"
+// @Router       /admin/modules/{moduleID}/disable [post]
+func DisableModule(w http.ResponseWriter, r *http.Request) {
+	moduleID := chi.URLParam(r, "moduleID")
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		http.Error(w, "module not found", http.StatusNotFound)
+		return
+	}
+	if module.Status == core.Enabling || module.Status == core.Disabling {
+		http.Error(w, fmt.Sprintf("module is currently %s", module.Status), http.StatusConflict)
+		return
+	}
+	go core.DisableModule(module)
+	w.WriteHeader(http.StatusAccepted)
+}
