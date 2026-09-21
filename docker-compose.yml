@@ -1,3 +1,5 @@
+name: pan-bagnat
+
 services:
   frontend:
     container_name: pan-bagnat-frontend
