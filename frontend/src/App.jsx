@@ -30,6 +30,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import "./Notifications.css";
 import { initTheme } from 'Global/Theme/theme';
 import SSHKeys from './Pages/SSHKeys/SSHKeys';
+import Stats from './Pages/Stats/Stats';
+import ModuleStats from './Pages/Stats/ModuleStats';
+import TermsOfUse from './Pages/Legal/TermsOfUse';
+import PrivacyPolicy from './Pages/Legal/PrivacyPolicy';
 
 function Main() {
   const location = useLocation();
@@ -121,6 +125,8 @@ function Main() {
           <Route path="/modules" element={<ModulePage pages={pages} user={user} />} />
           <Route path="/modules/:slug" element={<ModulePage pages={pages} user={user} />} />
           <Route path="/settings" element={<UserSettingsPage pages={pages} user={user} />} />
+          <Route path="/legal/terms" element={<TermsOfUse />} />
+          <Route path="/legal/privacy" element={<PrivacyPolicy />} />
           <Route path="/admin/modules" element={<Modules onSort="name" />} />
           <Route path="/admin/modules/:moduleId" element={<ModuleDetails />} />
           <Route path="/admin/roles" element={<Roles onSort="name" />} />
@@ -129,6 +135,8 @@ function Main() {
           <Route path="/admin/users" element={<Users onSort="-last_seen" />} />
           <Route path="/admin/users/:identifier" element={<UserDetail />} />
           <Route path="/admin/ssh-keys" element={<SSHKeys />} />
+          <Route path="/admin/stats" element={<Stats />} />
+          <Route path="/admin/stats/:moduleId" element={<ModuleStats />} />
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="*"

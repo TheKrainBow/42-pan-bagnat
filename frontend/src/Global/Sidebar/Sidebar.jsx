@@ -194,6 +194,10 @@ export default function Sidebar({ currentPage, user, pages }) {
               <span className="sidebar-icon" role="img" aria-label="SSH Keys">🔑</span>
               <span className="sidebar-label">SSH Keys</span>
             </li>
+            <li className={`sidebar-item ${isActive('/admin/stats')}`} onClick={() => navigate('/admin/stats')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/admin/stats')} title={collapsed ? 'Stats' : undefined}>
+              <span className="sidebar-icon" role="img" aria-label="Stats">📊</span>
+              <span className="sidebar-label">Stats</span>
+            </li>
           </ul>
           <div className="sidebar-footer">
             <div className="sidebar-sep" />

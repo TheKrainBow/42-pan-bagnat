@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './UserSettingsPage.css';
 import { getStoredTheme, setTheme, toggleTheme } from 'Global/Theme/theme';
 import { fetchWithAuth } from 'Global/utils/Auth';
@@ -13,6 +14,7 @@ function savePrefs(login, prefs) {
 }
 
 export default function UserSettingsPage({ pages: initialPages, user: initialUser }) {
+  const navigate = useNavigate();
   const [user, setUser] = useState(initialUser || null);
   const [pages, setPages] = useState(initialPages || []);
   const [prefs, setPrefs] = useState(() => loadSidebarPrefs(initialUser?.ft_login));
@@ -290,6 +292,15 @@ export default function UserSettingsPage({ pages: initialPages, user: initialUse
             </div>
           </div>
         )}
+      </section>
+
+      <section className="usp-card">
+        <div className="usp-card-title">Legal</div>
+        <div className="usp-card-sub">How Pan Bagnat handles your account and module usage data.</div>
+        <div className="usp-actions">
+          <button className="btn-secondary" onClick={() => navigate('/legal/terms')}>Terms of Use</button>
+          <button className="btn-secondary" onClick={() => navigate('/legal/privacy')}>Privacy Policy</button>
+        </div>
       </section>
     </div>
   );
