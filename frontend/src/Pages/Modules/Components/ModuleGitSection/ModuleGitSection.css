@@ -4,9 +4,9 @@
 .git-badge { font-size:12px; color:#ff9aa2; background:#4b1f22; border:1px solid #6b2a2f; padding:2px 8px; border-radius:12px; }
 .flex-spacer { flex:1 1 auto; }
 .git-columns { display:flex; gap:12px; }
-.git-section { flex:1 1 0; border:1px solid var(--border); border-radius:8px; overflow:hidden; }
-.git-section-title { padding:8px 12px; background: var(--light-background); border-bottom:1px solid var(--border); font-weight:600; color: var(--text-muted); }
-.git-list { list-style:none; margin:0; padding:0; }
+.git-section { flex:1 1 0; border:1px solid var(--border); border-radius:8px; overflow:hidden; display:flex; flex-direction:column; max-height:420px; }
+.git-section-title { padding:8px 12px; background: var(--light-background); border-bottom:1px solid var(--border); font-weight:600; color: var(--text-muted); flex:0 0 auto; }
+.git-list { list-style:none; margin:0; padding:0; overflow-y:auto; }
 .git-row { display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 12px; border-bottom:1px solid var(--border); }
 .git-row.current { outline: 2px solid #2dcc70; outline-offset: -2px; border-radius: 6px; }
 .git-row.current-commit { outline: 2px solid #2dcc70; outline-offset: -2px; border-radius: 6px; }
