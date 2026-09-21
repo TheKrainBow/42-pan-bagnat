@@ -138,6 +138,7 @@ type ModulePage struct {
 	RateLimitBurst          int     `json:"rate_limit_burst"`
 	DisableRequestBuffering bool    `json:"disable_request_buffering"`
 	Roles                   []Role  `json:"roles,omitempty"`
+	ForbiddenRoles          []Role  `json:"forbidden_roles,omitempty"`
 }
 
 type ModulePagesPagination struct {
@@ -455,6 +456,12 @@ func GetUserPages(userIdentifier string) ([]ModulePage, error) {
 			return nil, fmt.Errorf("couldn't get page roles in db: %w", err)
 		}
 		dest[i].Roles = DatabaseRolesToRoles(roles)
+
+		forbiddenRoles, err := database.GetPageForbiddenRoles(dest[i].ID)
+		if err != nil {
+			return nil, fmt.Errorf("couldn't get page forbidden roles in db: %w", err)
+		}
+		dest[i].ForbiddenRoles = DatabaseRolesToRoles(forbiddenRoles)
 	}
 	return dest, nil
 }
@@ -482,6 +489,12 @@ func GetPage(pageName string) (ModulePage, error) {
 		return dest, fmt.Errorf("couldn't get page roles in db: %w", err)
 	}
 	dest.Roles = DatabaseRolesToRoles(roles)
+
+	forbiddenRoles, err := database.GetPageForbiddenRoles(dest.ID)
+	if err != nil {
+		return dest, fmt.Errorf("couldn't get page forbidden roles in db: %w", err)
+	}
+	dest.ForbiddenRoles = DatabaseRolesToRoles(forbiddenRoles)
 	return dest, nil
 }
 
@@ -802,6 +815,12 @@ func GetModulePages(pagination ModulePagesPagination) ([]ModulePage, string, err
 			return nil, "", fmt.Errorf("couldn't get page roles in db: %w", err)
 		}
 		dest[i].Roles = DatabaseRolesToRoles(roles)
+
+		forbiddenRoles, err := database.GetPageForbiddenRoles(dest[i].ID)
+		if err != nil {
+			return nil, "", fmt.Errorf("couldn't get page forbidden roles in db: %w", err)
+		}
+		dest[i].ForbiddenRoles = DatabaseRolesToRoles(forbiddenRoles)
 	}
 
 	if !hasMore {
@@ -916,6 +935,10 @@ func ImportModulePage(moduleID, name string, slug *string, targetContainer *stri
 
 	if err := database.AssignRoleToPage(RoleIDAdmin, dest.ID); err != nil {
 		return ModulePage{}, fmt.Errorf("failed to assign default role to page: %w", err)
+	}
+
+	if err := database.AssignForbiddenRoleToPage(RoleIDBlacklist, dest.ID); err != nil {
+		return ModulePage{}, fmt.Errorf("failed to assign default forbidden role to page: %w", err)
 	}
 
 	return dest, nil

@@ -543,6 +543,47 @@ func RemoveRoleFromPage(roleID, pageID string) error {
 	return err
 }
 
+func GetPageForbiddenRoles(pageID string) ([]Role, error) {
+	rows, err := mainDB.Query(`
+		SELECT r.id, r.name, r.color
+		FROM roles r
+		JOIN module_page_forbidden_roles pr ON pr.role_id = r.id
+		WHERE pr.page_id = $1
+		ORDER BY r.name ASC
+	`, pageID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var roles []Role
+	for rows.Next() {
+		var role Role
+		if err := rows.Scan(&role.ID, &role.Name, &role.Color); err != nil {
+			return nil, err
+		}
+		roles = append(roles, role)
+	}
+	return roles, nil
+}
+
+func AssignForbiddenRoleToPage(roleID, pageID string) error {
+	_, err := mainDB.Exec(`
+		INSERT INTO module_page_forbidden_roles (page_id, role_id)
+		VALUES ($1, $2)
+		ON CONFLICT DO NOTHING
+	`, pageID, roleID)
+	return err
+}
+
+func RemoveForbiddenRoleFromPage(roleID, pageID string) error {
+	_, err := mainDB.Exec(`
+		DELETE FROM module_page_forbidden_roles
+		WHERE page_id = $1 AND role_id = $2
+	`, pageID, roleID)
+	return err
+}
+
 func GetAllModules(
 	orderBy *[]ModuleOrder,
 	filter string,

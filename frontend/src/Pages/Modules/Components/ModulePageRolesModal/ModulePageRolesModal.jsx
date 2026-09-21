@@ -7,12 +7,16 @@ import './ModulePageRolesModal.css';
 export default function ModulePageRolesModal({ open, moduleId, page, onClose, onUpdated }) {
   const [availableRoles, setAvailableRoles] = useState([]);
   const [pageRoles, setPageRoles] = useState(page?.roles || []);
+  const [forbiddenRoles, setForbiddenRoles] = useState(page?.forbiddenRoles || []);
   const [search, setSearch] = useState('');
+  const [forbiddenSearch, setForbiddenSearch] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     setPageRoles(page?.roles || []);
+    setForbiddenRoles(page?.forbiddenRoles || []);
     setSearch('');
+    setForbiddenSearch('');
   }, [page]);
 
   useEffect(() => {
@@ -34,6 +38,15 @@ export default function ModulePageRolesModal({ open, moduleId, page, onClose, on
       return role.name.toLowerCase().includes(term);
     });
   }, [availableRoles, pageRoles, search]);
+
+  const filteredForbiddenRoles = useMemo(() => {
+    const term = forbiddenSearch.trim().toLowerCase();
+    return availableRoles.filter((role) => {
+      if (forbiddenRoles.some((assigned) => assigned.id === role.id)) return false;
+      if (!term) return true;
+      return role.name.toLowerCase().includes(term);
+    });
+  }, [availableRoles, forbiddenRoles, forbiddenSearch]);
 
   if (!open || !page) return null;
 
@@ -59,8 +72,32 @@ export default function ModulePageRolesModal({ open, moduleId, page, onClose, on
     }
   };
 
+  const mutateForbiddenRole = async (role, method) => {
+    setLoading(true);
+    try {
+      const res = await fetchWithAuth(
+        `/api/v1/admin/modules/${moduleId}/pages/${page.id}/forbidden-roles/${role.id}`,
+        { method }
+      );
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+      setForbiddenRoles((prev) => {
+        if (method === 'POST') return [...prev, role];
+        return prev.filter((item) => item.id !== role.id);
+      });
+      onUpdated?.();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const removeRole = (role) => mutateRole(role, 'DELETE');
   const addRole = (role) => mutateRole(role, 'POST');
+  const removeForbiddenRole = (role) => mutateForbiddenRole(role, 'DELETE');
+  const addForbiddenRole = (role) => mutateForbiddenRole(role, 'POST');
 
   return (
     <div className="page-roles-backdrop" onClick={(e) => e.target === e.currentTarget && onClose()}>
@@ -73,45 +110,92 @@ export default function ModulePageRolesModal({ open, moduleId, page, onClose, on
           <Button label="Close" color="gray" onClick={onClose} />
         </div>
 
-        <div className="page-roles-section">
-          <label>Allowed roles</label>
-          <div className="page-roles-assigned">
-            {pageRoles.length === 0 ? (
-              <i>No roles assigned</i>
-            ) : (
-              pageRoles.map((role) => (
-                <RoleBadge key={role.id} role={role} onDelete={() => removeRole(role)}>
-                  {role.name}
-                </RoleBadge>
-              ))
-            )}
+        <div className="page-roles-group">
+          <div className="page-roles-section">
+            <label>Allowed roles</label>
+            <div className="page-roles-assigned">
+              {pageRoles.length === 0 ? (
+                <i>No roles assigned</i>
+              ) : (
+                pageRoles.map((role) => (
+                  <RoleBadge key={role.id} role={role} onDelete={() => removeRole(role)}>
+                    {role.name}
+                  </RoleBadge>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="page-roles-section">
+            <label>Add role</label>
+            <input
+              className="page-roles-search"
+              type="text"
+              placeholder="Search roles..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+            <div className="page-roles-list">
+              {filteredRoles.length === 0 ? (
+                <div className="page-roles-empty">No more roles available</div>
+              ) : (
+                filteredRoles.map((role) => (
+                  <button
+                    key={role.id}
+                    className="page-roles-item"
+                    onClick={() => addRole(role)}
+                    disabled={loading}
+                  >
+                    <RoleBadge role={role}>{role.name}</RoleBadge>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         </div>
 
-        <div className="page-roles-section">
-          <label>Add role</label>
-          <input
-            className="page-roles-search"
-            type="text"
-            placeholder="Search roles..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-          <div className="page-roles-list">
-            {filteredRoles.length === 0 ? (
-              <div className="page-roles-empty">No more roles available</div>
-            ) : (
-              filteredRoles.map((role) => (
-                <button
-                  key={role.id}
-                  className="page-roles-item"
-                  onClick={() => addRole(role)}
-                  disabled={loading}
-                >
-                  <RoleBadge role={role}>{role.name}</RoleBadge>
-                </button>
-              ))
-            )}
+        <div className="page-roles-group page-roles-group-forbidden">
+          <div className="page-roles-section">
+            <label>Forbidden roles</label>
+            <p className="page-roles-hint">Users with any of these roles are denied access, even if they also have an allowed role.</p>
+            <div className="page-roles-assigned">
+              {forbiddenRoles.length === 0 ? (
+                <i>No roles forbidden</i>
+              ) : (
+                forbiddenRoles.map((role) => (
+                  <RoleBadge key={role.id} role={role} onDelete={() => removeForbiddenRole(role)}>
+                    {role.name}
+                  </RoleBadge>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="page-roles-section">
+            <label>Add forbidden role</label>
+            <input
+              className="page-roles-search"
+              type="text"
+              placeholder="Search roles..."
+              value={forbiddenSearch}
+              onChange={(e) => setForbiddenSearch(e.target.value)}
+            />
+            <div className="page-roles-list">
+              {filteredForbiddenRoles.length === 0 ? (
+                <div className="page-roles-empty">No more roles available</div>
+              ) : (
+                filteredForbiddenRoles.map((role) => (
+                  <button
+                    key={role.id}
+                    className="page-roles-item"
+                    onClick={() => addForbiddenRole(role)}
+                    disabled={loading}
+                  >
+                    <RoleBadge role={role}>{role.name}</RoleBadge>
+                  </button>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </div>

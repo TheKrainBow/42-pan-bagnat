@@ -58,16 +58,17 @@ type config struct {
 }
 
 type cachedPage struct {
-	Slug            string
-	ModuleID        string
-	ModuleSlug      string
-	ModuleStatus    string
-	IframeOnly      bool
-	NeedAuth        bool
-	HasPageRoles    bool
-	Network         string
-	TargetContainer string
-	TargetPort      int
+	Slug              string
+	ModuleID          string
+	ModuleSlug        string
+	ModuleStatus      string
+	IframeOnly        bool
+	NeedAuth          bool
+	HasPageRoles      bool
+	HasForbiddenRoles bool
+	Network           string
+	TargetContainer   string
+	TargetPort        int
 }
 
 type sessionUser struct {
@@ -248,6 +249,11 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 		             FROM module_page_roles pr
 		            WHERE pr.page_id = mp.id
 		       ) AS has_page_roles,
+		       EXISTS (
+		           SELECT 1
+		             FROM module_page_forbidden_roles pfr
+		            WHERE pfr.page_id = mp.id
+		       ) AS has_forbidden_roles,
 		       m.slug AS module_slug,
 		       m.status AS module_status,
 		       COALESCE(mp.network_name, '') AS network_name
@@ -257,16 +263,17 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
           AND mp.target_port IS NOT NULL
 	`
 	type row struct {
-		Slug            string `db:"slug"`
-		TargetContainer string `db:"target_container"`
-		TargetPort      int    `db:"target_port"`
-		ModuleID        string `db:"module_id"`
-		IframeOnly      bool   `db:"iframe_only"`
-		NeedAuth        bool   `db:"need_auth"`
-		HasPageRoles    bool   `db:"has_page_roles"`
-		ModuleSlug      string `db:"module_slug"`
-		ModuleStatus    string `db:"module_status"`
-		NetworkName     string `db:"network_name"`
+		Slug              string `db:"slug"`
+		TargetContainer   string `db:"target_container"`
+		TargetPort        int    `db:"target_port"`
+		ModuleID          string `db:"module_id"`
+		IframeOnly        bool   `db:"iframe_only"`
+		NeedAuth          bool   `db:"need_auth"`
+		HasPageRoles      bool   `db:"has_page_roles"`
+		HasForbiddenRoles bool   `db:"has_forbidden_roles"`
+		ModuleSlug        string `db:"module_slug"`
+		ModuleStatus      string `db:"module_status"`
+		NetworkName       string `db:"network_name"`
 	}
 	var rows []row
 	if err := p.db.SelectContext(ctx, &rows, query); err != nil {
@@ -279,16 +286,17 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 			continue
 		}
 		cached = append(cached, cachedPage{
-			Slug:            slug,
-			ModuleID:        r.ModuleID,
-			ModuleSlug:      r.ModuleSlug,
-			ModuleStatus:    r.ModuleStatus,
-			IframeOnly:      r.IframeOnly,
-			NeedAuth:        r.NeedAuth,
-			HasPageRoles:    r.HasPageRoles,
-			Network:         strings.TrimSpace(r.NetworkName),
-			TargetContainer: strings.TrimSpace(r.TargetContainer),
-			TargetPort:      r.TargetPort,
+			Slug:              slug,
+			ModuleID:          r.ModuleID,
+			ModuleSlug:        r.ModuleSlug,
+			ModuleStatus:      r.ModuleStatus,
+			IframeOnly:        r.IframeOnly,
+			NeedAuth:          r.NeedAuth,
+			HasPageRoles:      r.HasPageRoles,
+			HasForbiddenRoles: r.HasForbiddenRoles,
+			Network:           strings.TrimSpace(r.NetworkName),
+			TargetContainer:   strings.TrimSpace(r.TargetContainer),
+			TargetPort:        r.TargetPort,
 		})
 	}
 	return cached, nil
@@ -582,6 +590,22 @@ func (p *proxyService) authorizePageRequest(w http.ResponseWriter, r *http.Reque
 			"")
 		return nil, false, "not authenticated"
 	}
+	if user != nil && page.NeedAuth && page.HasForbiddenRoles {
+		forbidden, err := p.userHasForbiddenRole(ctx, user.ID, page.Slug)
+		if err != nil {
+			log.Printf("[proxy-service] forbidden-role check failed for user %s on %s: %v", user.ID, page.Slug, err)
+			http.Error(w, "internal server error", http.StatusInternalServerError)
+			return nil, false, "forbidden role lookup failed"
+		}
+		if forbidden {
+			writeErrorResponse(w, r, http.StatusForbidden, "forbidden", accentRed, iconSVGLock,
+				"Access restricted",
+				"You don't have access to this page.",
+				"You may not have the required role for this module.",
+				"")
+			return nil, false, "forbidden"
+		}
+	}
 	if user != nil && page.NeedAuth && page.HasPageRoles {
 		allowed, err := p.userCanAccessPage(ctx, user.ID, page.Slug)
 		if err != nil {
@@ -630,6 +654,24 @@ func (p *proxyService) userCanAccessPage(ctx context.Context, userID, slug strin
 			               AND mp.slug = $2
 			        )
 			   )
+		)
+	`
+	var exists bool
+	if err := p.db.QueryRowContext(ctx, query, userID, slug).Scan(&exists); err != nil {
+		return false, err
+	}
+	return exists, nil
+}
+
+func (p *proxyService) userHasForbiddenRole(ctx context.Context, userID, slug string) (bool, error) {
+	const query = `
+		SELECT EXISTS (
+			SELECT 1
+			  FROM user_roles ur
+			  JOIN module_page_forbidden_roles pfr ON pfr.role_id = ur.role_id
+			  JOIN module_page mp ON mp.id = pfr.page_id
+			 WHERE ur.user_id = $1
+			   AND mp.slug = $2
 		)
 	`
 	var exists bool

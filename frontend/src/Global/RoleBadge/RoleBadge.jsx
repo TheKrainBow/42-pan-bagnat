@@ -8,6 +8,7 @@ const RoleBadge = ({ role, children, onClick, onDelete, href }) => {
   const withHover = onClick != null;
 
   const handleDeleteClick = e => {
+    e.preventDefault();
     e.stopPropagation();
     onDelete?.();
   };

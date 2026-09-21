@@ -59,9 +59,6 @@ export default function RoleDetail() {
   );
   const isProtectedRole = role ? PROTECTED_ROLE_IDS.has(role.id) : false;
 
-  // Only allow editing name/color/advanced rules when NOT assigned by default
-  const canEditBasics = !isDefault; // false when the checkbox is ticked
-
   // load users on mount
   useEffect(() => {
     fetchWithAuth('/api/v1/admin/users?limit=1000')
@@ -190,8 +187,8 @@ export default function RoleDetail() {
               label={'🔧 Advanced rules'}
               color="gray"
               href={`/admin/roles/${roleId}/rule-builder`}
-              disabled={!canEditBasics || loading}
-              disabledMessage={"Disable 'Assign this role to new users' to edit rules"}
+              disabled={isProtectedRole || loading}
+              disabledMessage={"This system role's rules cannot be edited"}
               onClick={() => navigate(`/admin/roles/${roleId}/rule-builder`)}
             />
             <Button
@@ -215,9 +212,8 @@ export default function RoleDetail() {
             ref={nameRef}
             label="Name"
             value={name}
-            onChange={e => canEditBasics && setName(e.target.value)}
+            onChange={e => setName(e.target.value)}
             required
-            disabled={!canEditBasics}
           />
 
           <Field
@@ -225,16 +221,12 @@ export default function RoleDetail() {
             label="Color"
             value={color}
             backgroundColor={color}
-            onChange={e => canEditBasics && setColor(e.target.value)}
+            onChange={e => setColor(e.target.value)}
             required
-            disabled={!canEditBasics}
             validator={val => /^#[0-9A-Fa-f]{6}$/.test(val) ? null : 'Invalid hex'}
           />
 
-          <div
-            className="color-wheel"
-            style={{ opacity: canEditBasics ? 1 : 0.5, pointerEvents: canEditBasics ? 'auto' : 'none' }}
-          >
+          <div className="color-wheel">
             <Wheel
               color={color}
               onChange={c => setColor(c.hex?.toLowerCase())}

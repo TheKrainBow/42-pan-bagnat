@@ -45,6 +45,8 @@ func RegisterRoutes(r chi.Router) {
 	r.Delete("/{moduleID}/pages/{pageID}", DeleteModulePage)
 	r.Post("/{moduleID}/pages/{pageID}/roles/{roleID}", PostModulePageRole)
 	r.Delete("/{moduleID}/pages/{pageID}/roles/{roleID}", DeleteModulePageRole)
+	r.Post("/{moduleID}/pages/{pageID}/forbidden-roles/{roleID}", PostModulePageForbiddenRole)
+	r.Delete("/{moduleID}/pages/{pageID}/forbidden-roles/{roleID}", DeleteModulePageForbiddenRole)
 
 	r.Get("/{moduleID}/docker/config", GetModuleConfig)
 	r.Post("/{moduleID}/docker/deploy", DeployConfig)

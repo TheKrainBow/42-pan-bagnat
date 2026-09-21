@@ -23,6 +23,7 @@ export default function ModuleSimpleBadge({ module, onClick, onDelete, href }) {
         <button
           className="module-simple-badge-delete"
           onClick={e => {
+            e.preventDefault();
             e.stopPropagation();
             onDelete();
           }}
