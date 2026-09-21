@@ -160,6 +160,61 @@ func ComposeDown(module Module) error {
 	return nil
 }
 
+// EnableModule brings the module's containers up (without rebuilding) and marks it enabled.
+// While the module is transitioning (Enabling/Disabling) a new enable/disable is rejected.
+func EnableModule(module Module) error {
+	if module.Status == Enabling || module.Status == Disabling {
+		return fmt.Errorf("module %s is currently %s", module.ID, module.Status)
+	}
+	dir, err := ModuleRepoPath(module)
+	if err != nil {
+		return LogModule(module.ID, "ERROR", "invalid module slug", nil, err)
+	}
+	file := "docker-compose.yml"
+
+	SetModuleStatus(module.ID, Enabling, true)
+
+	LogModule(module.ID, "INFO", "docker compose up -d", nil, nil)
+	cmd := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "up", "-d")
+	cmd.Dir = dir
+	if err := runAndLog(module.ID, cmd); err != nil {
+		SetModuleStatus(module.ID, Disabled, true)
+		return LogModule(module.ID, "ERROR", "Failed to enable module (docker compose up)", nil, err)
+	}
+
+	SetModuleStatus(module.ID, Enabled, true)
+	notifyContainersChanged(module)
+	return nil
+}
+
+// DisableModule stops the module's containers without removing them (keeping volumes, images,
+// and the containers themselves so their status/logs remain visible) and marks it disabled.
+// While the module is transitioning (Enabling/Disabling) a new enable/disable is rejected.
+func DisableModule(module Module) error {
+	if module.Status == Enabling || module.Status == Disabling {
+		return fmt.Errorf("module %s is currently %s", module.ID, module.Status)
+	}
+	dir, err := ModuleRepoPath(module)
+	if err != nil {
+		return LogModule(module.ID, "ERROR", "invalid module slug", nil, err)
+	}
+	file := "docker-compose.yml"
+
+	SetModuleStatus(module.ID, Disabling, true)
+
+	LogModule(module.ID, "INFO", "docker compose stop", nil, nil)
+	cmd := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "stop")
+	cmd.Dir = dir
+	if err := runAndLog(module.ID, cmd); err != nil {
+		SetModuleStatus(module.ID, Enabled, true)
+		return LogModule(module.ID, "ERROR", "Failed to disable module (docker compose stop)", nil, err)
+	}
+
+	SetModuleStatus(module.ID, Disabled, true)
+	notifyContainersChanged(module)
+	return nil
+}
+
 // RemoveContainer force-removes a container by name.
 func RemoveContainer(name string) error {
 	name = strings.TrimSpace(name)

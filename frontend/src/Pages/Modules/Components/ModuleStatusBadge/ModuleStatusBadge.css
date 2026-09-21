@@ -25,3 +25,9 @@
   background-color: var(--status-waiting);
   color: white;
 }
+
+.status-badge.enabling,
+.status-badge.disabling {
+  background-color: var(--status-waiting);
+  color: white;
+}

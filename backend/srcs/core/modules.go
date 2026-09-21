@@ -19,7 +19,9 @@ type ModuleStatus string
 
 const (
 	Enabled          ModuleStatus = "enabled"
+	Enabling         ModuleStatus = "enabling"
 	Disabled         ModuleStatus = "disabled"
+	Disabling        ModuleStatus = "disabling"
 	Downloading      ModuleStatus = "downloading"
 	WaitingForAction ModuleStatus = "waiting_for_action"
 )
@@ -127,6 +129,7 @@ type ModulePage struct {
 	NeedAuth                bool    `json:"need_auth"`
 	IsVisible               bool    `json:"is_visible"`
 	ModuleID                string  `json:"module_id"`
+	ModuleStatus            string  `json:"module_status,omitempty"`
 	IconURL                 string  `json:"icon_url"`
 	NetworkName             string  `json:"network_name,omitempty"`
 	MaxUploadBodySize       string  `json:"max_upload_body_size"`

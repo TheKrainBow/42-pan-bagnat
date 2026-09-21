@@ -126,6 +126,15 @@
   transition: transform 0.3s ease;
 }
 
+.sidebar-item.module-disabled .sidebar-label {
+  font-style: italic;
+  color: var(--muted-text, #8a8f98);
+}
+
+.sidebar-item.module-disabled img {
+  opacity: 0.5;
+}
+
 .sidebar-icon {
   width: 20px;
   height: 20px;
@@ -204,4 +213,29 @@
 
 .sidebar-item.last {
   align-items: center;
+}
+
+/* Phone viewports: always collapse to an icon rail, regardless of the
+   user's expand/collapse preference, so admin pages have room to breathe. */
+@media (max-width: 640px) {
+  .sidebar {
+    width: 56px;
+  }
+  .sidebar-label,
+  .sidebar-title,
+  .sidebar-brand-title,
+  .sidebar-brand-icon,
+  .sidebar-userlogin {
+    display: none;
+  }
+  .sidebar-item,
+  .sidebar-header,
+  .sidebar-topbar {
+    justify-content: center;
+  }
+  .sidebar-section-title {
+    display: block;
+    text-align: center;
+    padding: 6px 0;
+  }
 }

@@ -79,9 +79,14 @@ export default function ModuleSettings({
           <label className={`switch ${module.status === 'waiting_for_action' ? 'waiting' : ''}`}>
             <input
               type="checkbox"
-              checked={module.status === 'enabled'}
+              checked={module.status === 'enabled' || module.status === 'enabling'}
               onChange={onToggleStatus}
-              disabled={statusUpdating || module.status === 'waiting_for_action'}
+              disabled={
+                statusUpdating ||
+                module.status === 'waiting_for_action' ||
+                module.status === 'enabling' ||
+                module.status === 'disabling'
+              }
             />
             <span className="slider round"></span>
           </label>

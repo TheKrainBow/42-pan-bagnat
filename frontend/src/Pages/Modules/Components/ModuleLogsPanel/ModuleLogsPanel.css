@@ -5,6 +5,38 @@
   height: 100%;
   min-height: 0;
 }
+
+@media (max-width: 640px) {
+  /* Flex (not grid) so the selector sizes strictly to its content instead
+     of reserving a fixed share of the height, leaving the log view the
+     rest of the space. */
+  .module-logs-layout {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    gap: 8px;
+  }
+  .log-selector {
+    flex: 0 0 auto;
+    max-height: 30vh;
+  }
+  .log-panel {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+  }
+  /* Collapse the selector to just the checkboxes — the section labels
+     take up room without adding much value on a small screen. */
+  .selector-title,
+  .selector-subtitle {
+    display: none;
+  }
+  .selector-item {
+    padding: 5px 0;
+  }
+}
 .log-selector { border: 1px solid #2b2f3a; border-radius: 10px; padding: 12px; background: #151820; overflow: auto; min-height: 0; box-shadow: 0 1px 0 rgba(255,255,255,0.03) inset; }
 .selector-title { font-weight: 600; margin-bottom: 8px; color: #e8eaed; letter-spacing: 0.2px; }
 .selector-subtitle { margin-top: 12px; margin-bottom: 4px; font-size: 1em; font-weight: 600; color: #c7cbd1; }

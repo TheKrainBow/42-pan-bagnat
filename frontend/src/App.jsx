@@ -24,7 +24,7 @@ import LoginPage from "./Pages/Login/Login";
 import Sidebar from 'Global/Sidebar/Sidebar';
 import UserSettingsPage from 'Pages/UserSettings/UserSettingsPage';
 import { TourProvider } from 'Global/Tour/TourProvider';
-import { socketService } from 'Global/SocketService/SocketService';
+import { socketService, setCurrentUserIsAdmin } from 'Global/SocketService/SocketService';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import "./Notifications.css";
@@ -70,8 +70,8 @@ function Main() {
         if (!res || !res.ok) throw new Error(res ? res.statusText : "no response");
         return res.json();
       })
-      .then((u) => { if (!cancelled) setUser(u); })
-      .catch(() => { if (!cancelled) setUser(null); })
+      .then((u) => { if (!cancelled) { setUser(u); setCurrentUserIsAdmin(u?.is_staff); } })
+      .catch(() => { if (!cancelled) { setUser(null); setCurrentUserIsAdmin(false); } })
       .finally(() => { if (!cancelled) setUserLoaded(true); });
 
     return () => { cancelled = true; };

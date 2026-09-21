@@ -135,8 +135,12 @@ type ModulePage struct {
 	NeedAuth        bool    `json:"need_auth"`
 	IsVisible       bool    `json:"is_visible"`
 	ModuleID        string  `json:"module_id"`
-	IconURL         string  `json:"icon_url,omitempty"`
-	NetworkName     string  `json:"network_name,omitempty"`
+	// ModuleDisabled is true when the owning module is not currently enabled
+	// (disabled, or transitioning between enabled/disabled). The page is still
+	// listed, but should be shown as unavailable and not opened.
+	ModuleDisabled bool   `json:"module_disabled"`
+	IconURL        string `json:"icon_url,omitempty"`
+	NetworkName    string `json:"network_name,omitempty"`
 	// MaxUploadBodySize is the nginx-style max request body size accepted by this
 	// page's gateway (e.g. "1m", "50m"). Defaults to "1m".
 	MaxUploadBodySize string `json:"max_upload_body_size"`

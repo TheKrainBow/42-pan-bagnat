@@ -9,6 +9,9 @@ export default function ModuleBadge({ mod }) {
     <Link to={`/admin/modules/${mod.id}?tab=settings`} className={`module-card ${mod.status}`}>
       <div className="module-icon">
         <AppIcon app={{ icon_url: mod.icon_url, name: mod.name }} fallback="/icons/modules.png" />
+        {mod.status === 'disabled' && (
+          <span className="module-disabled-overlay">Disabled</span>
+        )}
       </div>
       <div className="module-content">
         <div className="module-title-row">

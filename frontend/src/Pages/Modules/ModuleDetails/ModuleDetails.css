@@ -27,6 +27,44 @@
   pointer-events: auto;
 }
 
+.module-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 2px 6px;
+  margin: -2px -6px;
+}
+
+.module-name:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+.module-name-edit-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--gray-light, #9aa0a6);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.module-name:hover .module-name-edit-icon {
+  opacity: 1;
+}
+
+.module-name-input {
+  font-size: inherit;
+  font-weight: bold;
+  font-family: inherit;
+  color: var(--text-primary, #fff);
+  background-color: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 2px 8px;
+  min-width: 200px;
+}
+
 .module-running-section {
   background-color: var(--light-background);
   border: 1px solid var(--border);
@@ -69,4 +107,51 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .module-detail-container {
+    padding: 12px;
+  }
+
+  .module-header {
+    padding: 10px 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .module-header h2,
+  .module-name,
+  .module-name-input {
+    font-size: 18px;
+  }
+
+  .tabs,
+  .module-running-section .tabs {
+    padding-left: 6px;
+    padding-top: 6px;
+    gap: 6px;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+  }
+
+  .tabs .custom-btn,
+  .tabs button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  .tab-content,
+  .module-running-section .tab-content {
+    padding: 8px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .back-to-modules-link {
+    display: none;
+  }
 }

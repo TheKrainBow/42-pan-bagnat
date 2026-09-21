@@ -110,9 +110,19 @@ export default function Sidebar({ currentPage, user, pages }) {
 
   // On click
   const handleSelect = (page, event) => {
+    const internalUrl = `/modules/${page.slug}`;
+    if (page.module_disabled) {
+      // Disabled modules always open the in-app maintenance view, never the
+      // (stopped) module itself.
+      if (isMiddleClick(event) || event?.metaKey || event?.ctrlKey) {
+        openInNewTab(internalUrl);
+        return;
+      }
+      navigate(internalUrl);
+      return;
+    }
     const pageMode = getModulePageMode(page);
     const externalUrl = `${modulesProtocol}://${page.slug}.${modulesDomain}`;
-    const internalUrl = `/modules/${page.slug}`;
     if (isMiddleClick(event) || event?.metaKey || event?.ctrlKey) {
       openInNewTab(pageMode === 'page_only' ? externalUrl : internalUrl);
       return;
@@ -210,9 +220,9 @@ export default function Sidebar({ currentPage, user, pages }) {
             {displayPages.map((page) => (
               <li
                 key={page.slug}
-                className={`sidebar-item ${currentSlug === page.slug ? 'active' : 'inactive'}`}
+                className={`sidebar-item ${currentSlug === page.slug ? 'active' : 'inactive'} ${page.module_disabled ? 'module-disabled' : ''}`}
                 onClick={(event) => handleSelect(page, event)}
-                title={collapsed ? page.name : undefined}
+                title={collapsed ? (page.module_disabled ? `${page.name} (disabled)` : page.name) : undefined}
               >
                 <img className="sidebar-icon" src={page.icon_url || '/icons/modules.png'} alt="" />
                 <span className="sidebar-label">{page.name}</span>

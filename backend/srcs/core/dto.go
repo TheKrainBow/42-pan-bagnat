@@ -142,6 +142,7 @@ func DatabaseModulePageToModulePage(dbPage database.ModulePage) ModulePage {
 		PageOnly:                dbPage.PageOnly,
 		NeedAuth:                dbPage.NeedAuth,
 		IsVisible:               dbPage.IsVisible,
+		ModuleStatus:            dbPage.ModuleStatus,
 		IconURL:                 dbPage.IconURL,
 		NetworkName:             dbPage.NetworkName,
 		MaxUploadBodySize:       dbPage.MaxUploadBodySize,

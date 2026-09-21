@@ -28,6 +28,7 @@
 
 .page-table-wrap {
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .page-table {
@@ -296,4 +297,53 @@
   color: #a5a5a5;
   font-style: italic;
   font-size: 0.88rem;
+}
+
+@media (max-width: 640px) {
+  .front-pages-panel {
+    padding: 0.75rem;
+  }
+  .front-pages-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .page-table {
+    min-width: 1000px;
+  }
+  /* Nom and Slug have no dedicated column class — target them by position
+     (1: icon, 2: nom, 3: slug, 4: container, 5: visibility, 6: roles,
+     7: actions) so they get real width instead of being squeezed to
+     near-nothing by the other columns' fixed widths. */
+  .page-table th:nth-child(2),
+  .page-table td:nth-child(2) {
+    width: 150px;
+    min-width: 150px;
+  }
+  .page-table th:nth-child(3),
+  .page-table td:nth-child(3) {
+    width: 200px;
+    min-width: 200px;
+  }
+  .page-table .container-col,
+  .page-table .visibility-col {
+    width: 170px;
+  }
+  .page-table .roles-col {
+    width: 140px;
+  }
+  .page-table .actions-col {
+    width: 110px;
+  }
+  /* The slug input was shrinking to near-0 while its ".modules.host"
+     suffix kept full width, because .page-text-input sets min-width:0
+     (removing the input's natural shrink floor) and the suffix's nowrap
+     text can't shrink at all — so all the flex-shrink pressure landed on
+     the input alone. Give it a real floor back. */
+  .slug-input-field {
+    min-width: 70px;
+  }
+  .slug-suffix {
+    flex-shrink: 0;
+  }
 }
