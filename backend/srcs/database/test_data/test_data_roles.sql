@@ -1,16 +1,18 @@
-INSERT INTO users (id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff)
+INSERT INTO users (id, ft_login, ft_id, ft_is_staff, photo_url, last_seen)
 VALUES
-  ('user_01HZXYZDE0420', 'heinz',    '220393', true,  'https://intra.42.fr/heinz/220393',    '2001-04-16 12:00:00', true),
-  ('user_01HZXYZDE0430', 'ltcherep', '194037', false, 'https://intra.42.fr/ltcherep/194037', '2000-04-16 12:00:00', false),
-  ('user_01HZXYZDE0440', 'tac',      '79125',  true,  'https://intra.42.fr/tac/79125',      '2003-04-16 12:00:00', true),
-  ('user_01HZXYZDE0450', 'yoshi',    '78574',  true,  'https://intra.42.fr/yoshi/78574',    '2002-04-16 12:00:00', true);
+  ('user_01HZXYZDE0420', 'heinz',    '220393', true,  'https://intra.42.fr/heinz/220393',    '2001-04-16 12:00:00'),
+  ('user_01HZXYZDE0430', 'ltcherep', '194037', false, 'https://intra.42.fr/ltcherep/194037', '2000-04-16 12:00:00'),
+  ('user_01HZXYZDE0440', 'tac',      '79125',  true,  'https://intra.42.fr/tac/79125',      '2003-04-16 12:00:00'),
+  ('user_01HZXYZDE0450', 'yoshi',    '78574',  true,  'https://intra.42.fr/yoshi/78574',    '2002-04-16 12:00:00');
 
-INSERT INTO modules (id, name, slug, version, status, git_url, latest_version, late_commits, last_update)
+INSERT INTO ssh_keys (id, name) VALUES ('ssh_key_01HZXYZDEFIXTURE', 'fixture-key') ON CONFLICT DO NOTHING;
+
+INSERT INTO modules (id, name, slug, version, status, git_url, latest_version, late_commits, last_update, ssh_key_id)
 VALUES
-  ('module_01HZXYZDE0420', 'captain-hook', 'captain-hook', '1.2', 'enabled', 'https://github.com/42nice/captain-hook', '1.7', 5, '2025-04-16 12:00:00'),
-  ('module_01HZXYZDE0430', 'adm-stud', 'adm-stud', '1.5', 'enabled', 'https://github.com/42nice/adm-stud', '1.5', 0, '2025-04-16 12:00:00'),
-  ('module_01HZXYZDE0440', 'adm-manager', 'adm-manager', '1.0', 'enabled', 'https://github.com/42nice/adm-manager', '1.0', 0, '2025-04-16 12:00:00'),
-  ('module_01HZXYZDE0450', 'student-info', 'student-info', '1.8', 'enabled', 'https://github.com/42nice/student-info', '1.9', 1, '2025-04-16 12:00:00');
+  ('module_01HZXYZDE0420', 'captain-hook', 'captain-hook', '1.2', 'enabled', 'https://github.com/42nice/captain-hook', '1.7', 5, '2025-04-16 12:00:00', 'ssh_key_01HZXYZDEFIXTURE'),
+  ('module_01HZXYZDE0430', 'adm-stud', 'adm-stud', '1.5', 'enabled', 'https://github.com/42nice/adm-stud', '1.5', 0, '2025-04-16 12:00:00', 'ssh_key_01HZXYZDEFIXTURE'),
+  ('module_01HZXYZDE0440', 'adm-manager', 'adm-manager', '1.0', 'enabled', 'https://github.com/42nice/adm-manager', '1.0', 0, '2025-04-16 12:00:00', 'ssh_key_01HZXYZDEFIXTURE'),
+  ('module_01HZXYZDE0450', 'student-info', 'student-info', '1.8', 'enabled', 'https://github.com/42nice/student-info', '1.9', 1, '2025-04-16 12:00:00', 'ssh_key_01HZXYZDEFIXTURE');
 
 
 INSERT INTO roles (id, name, color)
@@ -43,13 +45,13 @@ VALUES
   ('module_01HZXYZDE0450', 'role_01HZXYZDE0440'); -- student-info Pedago
 
 -- 1) Add some new users to test member counts
-INSERT INTO users (id, ft_login, ft_id, ft_is_staff, photo_url, last_seen, is_staff) VALUES
-  ('user_01HZXYZDE0460', 'alice',  '300001', false, 'https://intra.42.fr/alice/300001',  '2025-01-10 09:00:00+00', false),
-  ('user_01HZXYZDE0461', 'bob',    '300002', false, 'https://intra.42.fr/bob/300002',    '2025-01-11 10:30:00+00', false),
-  ('user_01HZXYZDE0462', 'carol',  '300003', false, 'https://intra.42.fr/carol/300003',  '2025-01-12 11:45:00+00', false),
-  ('user_01HZXYZDE0463', 'dave',   '300004', false, 'https://intra.42.fr/dave/300004',   '2025-01-13 14:20:00+00', false),
-  ('user_01HZXYZDE0464', 'eve',    '300005', true,  'https://intra.42.fr/eve/300005',    '2025-01-14 15:00:00+00', true),
-  ('user_01HZXYZDE0465', 'frank',  '300006', false, 'https://intra.42.fr/frank/300006',  '2025-01-15 16:30:00+00', false);
+INSERT INTO users (id, ft_login, ft_id, ft_is_staff, photo_url, last_seen) VALUES
+  ('user_01HZXYZDE0460', 'alice',  '300001', false, 'https://intra.42.fr/alice/300001',  '2025-01-10 09:00:00+00'),
+  ('user_01HZXYZDE0461', 'bob',    '300002', false, 'https://intra.42.fr/bob/300002',    '2025-01-11 10:30:00+00'),
+  ('user_01HZXYZDE0462', 'carol',  '300003', false, 'https://intra.42.fr/carol/300003',  '2025-01-12 11:45:00+00'),
+  ('user_01HZXYZDE0463', 'dave',   '300004', false, 'https://intra.42.fr/dave/300004',   '2025-01-13 14:20:00+00'),
+  ('user_01HZXYZDE0464', 'eve',    '300005', true,  'https://intra.42.fr/eve/300005',    '2025-01-14 15:00:00+00'),
+  ('user_01HZXYZDE0465', 'frank',  '300006', false, 'https://intra.42.fr/frank/300006',  '2025-01-15 16:30:00+00');
 
 -- 2) Add a bunch of roles (we now have 24 total, enough to test pagination)
 INSERT INTO roles (id, name, color) VALUES
@@ -75,15 +77,15 @@ INSERT INTO roles (id, name, color) VALUES
   ('role_01HZXYZDE0479', 'Strategist',  '#F0F0F0');
 
 -- 3) Add some new modules (applications) for testing
-INSERT INTO modules (id, name, slug, version, status, git_url, latest_version, late_commits, last_update) VALUES
-  ('module_01HZXYZDE0460', 'role-manager',     'role-manager',    '1.0', 'enabled', 'https://github.com/42nice/role-manager',    '1.0', 0, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0461', 'role-editor',      'role-editor',     '1.1', 'enabled', 'https://github.com/42nice/role-editor',     '1.1', 2, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0462', 'support-tool',     'support-tool',    '2.0', 'enabled', 'https://github.com/42nice/support-tool',    '2.0', 1, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0463', 'analytics',        'analytics',       '3.2', 'enabled', 'https://github.com/42nice/analytics',       '3.2', 4, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0464', 'design-proto',     'design-proto',    '0.9', 'enabled', 'https://github.com/42nice/design-proto',    '0.9', 0, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0465', 'test-suite',       'test-suite',      '5.4', 'enabled', 'https://github.com/42nice/test-suite',      '5.4', 3, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0466', 'deploy-automate',  'deploy-automate', '1.5', 'enabled', 'https://github.com/42nice/deploy-automate', '1.5', 0, '2025-04-20 12:00:00+00'),
-  ('module_01HZXYZDE0467', 'strategy-dash',    'strategy-dash',   '4.0', 'enabled', 'https://github.com/42nice/strategy-dash',   '4.0', 2, '2025-04-20 12:00:00+00');
+INSERT INTO modules (id, name, slug, version, status, git_url, latest_version, late_commits, last_update, ssh_key_id) VALUES
+  ('module_01HZXYZDE0460', 'role-manager',     'role-manager',    '1.0', 'enabled', 'https://github.com/42nice/role-manager',    '1.0', 0, '2025-04-20 12:00:00+00', 'ssh_key_01HZXYZDEFIXTURE'),
+  ('module_01HZXYZDE0461', 'role-editor',      'role-editor',     '1.1', 'enabled', 'https://github.com/42nice/role-editor',     '1.1', 2, '2025-04-20 12:00:00+00', 'ssh_key_01HZXYZDEFIXTURE'),
+  ('module_01HZXYZDE0462', 'support-tool',     'support-tool',    '2.0', 'enabled', 'https://github.com/42nice/support-tool',    '2.0', 1, '2025-04-20 12:00:00+00', 'ssh_key_01HZXYZDEFIXTURE'),
+  ('module_01HZXYZDE0463', 'analytics',        'analytics',       '3.2', 'enabled', 'https://github.com/42nice/analytics',       '3.2', 4, '2025-04-20 12:00:00+00', 'ssh_key_01HZXYZDEFIXTURE'),
+  ('module_01HZXYZDE0464', 'design-proto',     'design-proto',    '0.9', 'enabled', 'https://github.com/42nice/design-proto',    '0.9', 0, '2025-04-20 12:00:00+00', 'ssh_key_01HZXYZDEFIXTURE'),
+  ('module_01HZXYZDE0465', 'test-suite',       'test-suite',      '5.4', 'enabled', 'https://github.com/42nice/test-suite',      '5.4', 3, '2025-04-20 12:00:00+00', 'ssh_key_01HZXYZDEFIXTURE'),
+  ('module_01HZXYZDE0466', 'deploy-automate',  'deploy-automate', '1.5', 'enabled', 'https://github.com/42nice/deploy-automate', '1.5', 0, '2025-04-20 12:00:00+00', 'ssh_key_01HZXYZDEFIXTURE'),
+  ('module_01HZXYZDE0467', 'strategy-dash',    'strategy-dash',   '4.0', 'enabled', 'https://github.com/42nice/strategy-dash',   '4.0', 2, '2025-04-20 12:00:00+00', 'ssh_key_01HZXYZDEFIXTURE');
 
 -- 4) Assign users to roles (varied member counts)
 INSERT INTO user_roles (user_id, role_id) VALUES
