@@ -124,6 +124,7 @@ func ModulePageToAPIModulePage(modulePage core.ModulePage) ModulePage {
 		DisableRequestBuffering: modulePage.DisableRequestBuffering,
 		Roles:                   RolesToAPIRoles(modulePage.Roles),
 		ForbiddenRoles:          RolesToAPIRoles(modulePage.ForbiddenRoles),
+		Kind:                    "module",
 	}
 }
 
@@ -133,6 +134,32 @@ func ModulePagesToAPIModulePages(pages []core.ModulePage) (dest []ModulePage) {
 	}
 	if len(dest) == 0 {
 		return (make([]ModulePage, 0))
+	}
+	return dest
+}
+
+// RedirectionToAPIModulePage maps a Redirection onto the same ModulePage shape used
+// by the sidebar, so redirections can be merged into the same list as module pages.
+// TargetURL is the external URL the frontend navigates the browser to directly —
+// redirections are never iframed or proxied through Pan Bagnat.
+func RedirectionToAPIModulePage(redirection core.Redirection) ModulePage {
+	return ModulePage{
+		ID:             redirection.ID,
+		Name:           redirection.Name,
+		Slug:           redirection.Slug,
+		NeedAuth:       redirection.NeedAuth,
+		IsVisible:      redirection.IsVisible,
+		IconURL:        redirection.IconURL,
+		Roles:          RolesToAPIRoles(redirection.Roles),
+		ForbiddenRoles: RolesToAPIRoles(redirection.ForbiddenRoles),
+		Kind:           "redirection",
+		TargetURL:      redirection.TargetURL,
+	}
+}
+
+func RedirectionsToAPIModulePages(redirections []core.Redirection) (dest []ModulePage) {
+	for _, redirection := range redirections {
+		dest = append(dest, RedirectionToAPIModulePage(redirection))
 	}
 	return dest
 }

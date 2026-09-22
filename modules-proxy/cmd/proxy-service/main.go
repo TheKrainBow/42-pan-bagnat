@@ -69,6 +69,13 @@ type cachedPage struct {
 	Network           string
 	TargetContainer   string
 	TargetPort        int
+	// IsRedirection marks a page backed by an external URL (from the
+	// redirections table) rather than a module's docker container: routing
+	// proxies straight to TargetURL instead of the module's gateway container,
+	// and role checks join redirection_roles/redirection_forbidden_roles
+	// instead of module_page_roles/module_page_forbidden_roles.
+	IsRedirection bool
+	TargetURL     string
 }
 
 type sessionUser struct {
@@ -241,6 +248,8 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 		SELECT mp.slug,
 		       mp.target_container,
 		       mp.target_port,
+		       '' AS target_url,
+		       FALSE AS is_redirection,
 		       mp.module_id,
 		       mp.iframe_only,
 		       mp.need_auth,
@@ -261,19 +270,40 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 		JOIN modules m ON m.id = mp.module_id
         WHERE mp.target_container IS NOT NULL
           AND mp.target_port IS NOT NULL
+
+        UNION ALL
+
+        SELECT re.slug,
+               NULL AS target_container,
+               NULL AS target_port,
+               re.target_url,
+               TRUE AS is_redirection,
+               '' AS module_id,
+               FALSE AS iframe_only,
+               FALSE AS need_auth,
+               FALSE AS has_page_roles,
+               FALSE AS has_forbidden_roles,
+               '' AS module_slug,
+               'enabled' AS module_status,
+               '' AS network_name
+        FROM redirections re
+        WHERE re.target_url IS NOT NULL
+          AND re.target_url <> ''
 	`
 	type row struct {
-		Slug              string `db:"slug"`
-		TargetContainer   string `db:"target_container"`
-		TargetPort        int    `db:"target_port"`
-		ModuleID          string `db:"module_id"`
-		IframeOnly        bool   `db:"iframe_only"`
-		NeedAuth          bool   `db:"need_auth"`
-		HasPageRoles      bool   `db:"has_page_roles"`
-		HasForbiddenRoles bool   `db:"has_forbidden_roles"`
-		ModuleSlug        string `db:"module_slug"`
-		ModuleStatus      string `db:"module_status"`
-		NetworkName       string `db:"network_name"`
+		Slug              string         `db:"slug"`
+		TargetContainer   sql.NullString `db:"target_container"`
+		TargetPort        sql.NullInt64  `db:"target_port"`
+		TargetURL         string         `db:"target_url"`
+		IsRedirection     bool           `db:"is_redirection"`
+		ModuleID          string         `db:"module_id"`
+		IframeOnly        bool           `db:"iframe_only"`
+		NeedAuth          bool           `db:"need_auth"`
+		HasPageRoles      bool           `db:"has_page_roles"`
+		HasForbiddenRoles bool           `db:"has_forbidden_roles"`
+		ModuleSlug        string         `db:"module_slug"`
+		ModuleStatus      string         `db:"module_status"`
+		NetworkName       string         `db:"network_name"`
 	}
 	var rows []row
 	if err := p.db.SelectContext(ctx, &rows, query); err != nil {
@@ -295,8 +325,10 @@ func (p *proxyService) fetchPages(ctx context.Context) ([]cachedPage, error) {
 			HasPageRoles:      r.HasPageRoles,
 			HasForbiddenRoles: r.HasForbiddenRoles,
 			Network:           strings.TrimSpace(r.NetworkName),
-			TargetContainer:   strings.TrimSpace(r.TargetContainer),
-			TargetPort:        r.TargetPort,
+			TargetContainer:   strings.TrimSpace(r.TargetContainer.String),
+			TargetPort:        int(r.TargetPort.Int64),
+			IsRedirection:     r.IsRedirection,
+			TargetURL:         strings.TrimSpace(r.TargetURL),
 		})
 	}
 	return cached, nil
@@ -379,6 +411,14 @@ func (p *proxyService) handleGatewayRequest(w http.ResponseWriter, r *http.Reque
 	if !ok {
 		log.Printf("[proxy-service] slug=%q not found for host=%q", slug, r.Host)
 		http.NotFound(w, r)
+		return
+	}
+	if page.IsRedirection {
+		// Redirections just bounce the browser to an external URL: no iframe,
+		// no gateway proxying, no session/role check here — visibility is
+		// already gated at the sidebar/page-list layer.
+		log.Printf("[proxy-service] slug=%q redirecting host=%q to %s", slug, r.Host, page.TargetURL)
+		http.Redirect(w, r, page.TargetURL, http.StatusFound)
 		return
 	}
 	if page.ModuleStatus != "" && page.ModuleStatus != "enabled" {
@@ -1120,7 +1160,11 @@ func newReverseProxy(target *url.URL, frameAncestors string) *httputil.ReversePr
 	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, r *http.Request, err error) {
 		log.Printf("[proxy-service] proxy error for %s: %v", target.Host, err)
-		http.Error(w, "module upstream error", http.StatusBadGateway)
+		writeErrorResponse(w, r, http.StatusBadGateway, "upstream_error", accentRed, iconSVGWrench,
+			"Upstream unavailable",
+			"This page's upstream service is not responding.",
+			"It may be temporarily down or misconfigured. Try refreshing in a moment.",
+			"")
 	}
 	return proxy
 }

@@ -178,7 +178,14 @@ func GetUserPages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dest := api.ModulePagesToAPIModulePages(pages)
+	redirections, err := core.GetUserRedirections(userID)
+	if err != nil {
+		log.Printf("error while getting user redirections: %s\n", err.Error())
+		http.Error(w, "Failed in core.GetUserRedirections()", http.StatusInternalServerError)
+		return
+	}
+
+	dest := append(api.ModulePagesToAPIModulePages(pages), api.RedirectionsToAPIModulePages(redirections)...)
 
 	// Marshal the dest struct into JSON
 	destJSON, err := json.Marshal(dest)
@@ -220,7 +227,14 @@ func GetContextUserPages(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dest := api.ModulePagesToAPIModulePages(pages)
+	redirections, err := core.GetUserRedirections(u.ID)
+	if err != nil {
+		log.Printf("error while getting user redirections: %s\n", err.Error())
+		http.Error(w, "Failed in core.GetUserRedirections()", http.StatusInternalServerError)
+		return
+	}
+
+	dest := append(api.ModulePagesToAPIModulePages(pages), api.RedirectionsToAPIModulePages(redirections)...)
 
 	// Marshal the dest struct into JSON
 	destJSON, err := json.Marshal(dest)
