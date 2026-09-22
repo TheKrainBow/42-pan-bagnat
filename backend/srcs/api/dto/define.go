@@ -159,6 +159,12 @@ type ModulePage struct {
 	// ForbiddenRoles lists the roles that are denied access to this page,
 	// regardless of the allowed roles.
 	ForbiddenRoles []Role `json:"forbidden_roles,omitempty"`
+	// Kind distinguishes a module page ("module") from a redirection ("redirection").
+	// Defaults to "module" when omitted, for backward compatibility.
+	Kind string `json:"kind,omitempty"`
+	// TargetURL is set only for redirections: the external URL to iframe directly,
+	// bypassing the module subdomain/gateway proxy.
+	TargetURL string `json:"target_url,omitempty"`
 }
 
 // Session represents a user session (device) in the system

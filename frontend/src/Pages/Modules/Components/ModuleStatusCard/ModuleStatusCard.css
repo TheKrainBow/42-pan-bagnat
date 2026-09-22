@@ -96,6 +96,18 @@
   color: var(--gray-light, #9aa0a6);
 }
 
+.status-card-url {
+  display: block;
+  max-width: 100%;
+  margin: 0 0 8px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 14px;
+  color: var(--blue-light, #3b82f6);
+}
+
 .status-card-action {
   margin-top: 22px;
 }

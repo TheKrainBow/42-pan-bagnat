@@ -15,6 +15,7 @@ import (
 	"backend/api/modules"
 	"backend/api/oidc"
 	"backend/api/ping"
+	"backend/api/redirections"
 	"backend/api/roles"
 	"backend/api/sshkeys"
 	"backend/api/stats"
@@ -234,6 +235,7 @@ func main() {
 				modules.RegisterRoutes(r)
 				oidc.RegisterAdminRoutes(r)
 			})
+			r.Route("/redirections", redirections.RegisterRoutes)
 			r.Route("/ssh-keys", sshkeys.RegisterRoutes)
 			r.Route("/stats", stats.RegisterRoutes)
 			r.Get("/docker/ls", modules.GetAllContainers)

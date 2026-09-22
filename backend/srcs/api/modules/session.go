@@ -3,6 +3,7 @@ package modules
 import (
 	"backend/api/auth"
 	"backend/core"
+	"database/sql"
 	"encoding/json"
 	"errors"
 	"log"
@@ -43,11 +44,24 @@ func IssueModulePageSession(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// A slug may belong to either a module page or a redirection; try both
+	// before giving up, mirroring how the gateway/proxy layer resolves them.
 	_, err := core.GetPage(slug)
 	if err != nil {
-		log.Printf("module session: failed to load page %s: %v", slug, err)
-		auth.WriteJSONError(w, http.StatusInternalServerError, "access_check_failed", "Unable to verify if you can access this module page.")
-		return
+		if !errors.Is(err, sql.ErrNoRows) {
+			log.Printf("module session: failed to load page %s: %v", slug, err)
+			auth.WriteJSONError(w, http.StatusInternalServerError, "access_check_failed", "Unable to verify if you can access this page.")
+			return
+		}
+		if _, rerr := core.GetRedirectionBySlug(slug); rerr != nil {
+			if !errors.Is(rerr, sql.ErrNoRows) {
+				log.Printf("module session: failed to load redirection %s: %v", slug, rerr)
+				auth.WriteJSONError(w, http.StatusInternalServerError, "access_check_failed", "Unable to verify if you can access this page.")
+				return
+			}
+			auth.WriteJSONError(w, http.StatusNotFound, "not_found", "Page not found.")
+			return
+		}
 	}
 
 	// need_auth only controls whether the module proxy requires an authenticated

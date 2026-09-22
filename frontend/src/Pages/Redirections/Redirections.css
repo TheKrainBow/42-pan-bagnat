@@ -1,0 +1,266 @@
+.front-pages-panel {
+  padding: 1rem;
+  background: #1e1e1e;
+  color: #f0f0f0;
+  border-radius: 8px;
+  font-family: sans-serif;
+}
+
+.front-pages-header {
+  border-bottom: 1px solid #444;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  min-height: 2.5rem;
+}
+
+.front-pages-header h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.page-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.page-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 0.5rem;
+  min-width: 980px;
+}
+
+.page-table th {
+  padding: 0 0.75rem 0.35rem;
+  text-align: left;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #bcbcbc;
+}
+
+.page-table .icon-col {
+  width: 56px;
+}
+
+.page-table .actions-col {
+  width: 160px;
+}
+
+.page-table .url-col {
+  width: 280px;
+}
+
+.page-table .visibility-col {
+  width: 220px;
+}
+
+.page-table .roles-col {
+  width: 220px;
+}
+
+.page-item td {
+  background: #2a2a2a;
+  padding: 0.65rem 0.75rem;
+  vertical-align: middle;
+}
+
+.page-item td:first-child {
+  border-radius: 8px 0 0 8px;
+}
+
+.page-item td:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.page-item.dirty td {
+  background: rgba(255, 235, 59, 0.08);
+  border-top: 1px solid rgba(255, 235, 59, 0.22);
+  border-bottom: 1px solid rgba(255, 235, 59, 0.22);
+}
+
+.page-item.dirty td:first-child {
+  border-left: 4px solid #ffeb3b;
+}
+
+.page-cell {
+  min-width: 0;
+}
+
+.page-icon-cell {
+  text-align: center;
+}
+
+.page-icon-preview {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.page-text-input {
+  width: 100%;
+  min-width: 0;
+  background: #111;
+  color: #f0f0f0;
+  border: 1px solid #555;
+  border-radius: 4px;
+  padding: 0.55rem 0.65rem;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.missing-field {
+  border-color: #ffa726;
+}
+
+.slug-input {
+  display: flex;
+  align-items: center;
+  background: #111;
+  border: 1px solid #555;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.slug-input-field {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.slug-input-field:focus {
+  outline: none;
+}
+
+.slug-suffix {
+  padding: 0 0.65rem;
+  color: #9f9f9f;
+  white-space: nowrap;
+  border-left: 1px solid #333;
+  font-size: 0.85rem;
+}
+
+.page-visibility-button {
+  width: 100%;
+  min-height: 3.15rem;
+  padding: 0.72rem 0.8rem;
+  border: 1px solid #555;
+  border-radius: 10px;
+  background: #111;
+  color: #f0f0f0;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.15rem;
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.page-visibility-button:hover {
+  border-color: #6f7a8a;
+  background: #151515;
+}
+
+.page-visibility-summary {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.88rem;
+  line-height: 1.2;
+}
+
+.page-role-cell {
+  width: 100%;
+  min-height: 3.15rem;
+  padding: 0.72rem 0.8rem;
+  border: 1px solid #555;
+  border-radius: 10px;
+  background: #111;
+  color: #f0f0f0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.page-role-cell:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.page-role-cell:hover:not(:disabled) {
+  border-color: #6f7a8a;
+  background: #151515;
+}
+
+.page-role-empty {
+  color: #a5a5a5;
+  font-style: italic;
+  font-size: 0.88rem;
+}
+
+.page-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.no-pages {
+  padding: 1rem;
+  text-align: center;
+  color: #aaa;
+  font-style: italic;
+}
+
+@media (max-width: 640px) {
+  .front-pages-panel {
+    padding: 0.75rem;
+  }
+  .front-pages-header {
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .page-table {
+    min-width: 1000px;
+  }
+  .page-table th:nth-child(2),
+  .page-table td:nth-child(2) {
+    width: 150px;
+    min-width: 150px;
+  }
+  .page-table th:nth-child(3),
+  .page-table td:nth-child(3) {
+    width: 200px;
+    min-width: 200px;
+  }
+  .page-table .url-col,
+  .page-table .visibility-col {
+    width: 170px;
+  }
+  .page-table .roles-col {
+    width: 140px;
+  }
+  .page-table .actions-col {
+    width: 110px;
+  }
+  .slug-input-field {
+    min-width: 70px;
+  }
+  .slug-suffix {
+    flex-shrink: 0;
+  }
+}

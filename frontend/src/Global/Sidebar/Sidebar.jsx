@@ -111,6 +111,17 @@ export default function Sidebar({ currentPage, user, pages }) {
   // On click
   const handleSelect = (page, event) => {
     const internalUrl = `/modules/${page.slug}`;
+    if (page.kind === 'redirection') {
+      // Route internally first so the "Redirecting in 3s" card gets shown
+      // (same status-card pattern as loading/error) instead of leaving
+      // Pan Bagnat instantly.
+      if (isMiddleClick(event) || event?.metaKey || event?.ctrlKey) {
+        openInNewTab(internalUrl);
+        return;
+      }
+      navigate(internalUrl);
+      return;
+    }
     if (page.module_disabled) {
       // Disabled modules always open the in-app maintenance view, never the
       // (stopped) module itself.
@@ -182,6 +193,10 @@ export default function Sidebar({ currentPage, user, pages }) {
               <img src="/icons/modules.png" alt="" className="sidebar-icon" />
               <span className="sidebar-label">Modules</span>
             </li>
+            <li className={`sidebar-item ${isActive('/admin/redirections')}`} onClick={() => navigate('/admin/redirections')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/admin/redirections')} title={collapsed ? 'Redirections' : undefined}>
+              <span className="sidebar-icon" role="img" aria-label="Redirections">🔗</span>
+              <span className="sidebar-label">Redirections</span>
+            </li>
             <li className={`sidebar-item ${isActive('/admin/roles')}`} onClick={() => navigate('/admin/roles')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/admin/roles')} title={collapsed ? 'Roles' : undefined}>
               <img src="/icons/roles.png" alt="" className="sidebar-icon" />
               <span className="sidebar-label">Roles</span>
@@ -230,7 +245,7 @@ export default function Sidebar({ currentPage, user, pages }) {
               >
                 <img className="sidebar-icon" src={page.icon_url || '/icons/modules.png'} alt="" />
                 <span className="sidebar-label">{page.name}</span>
-                {(getModulePageMode(page) === 'page_only' || (getModulePageMode(page) === 'both' && isCtrlPressed)) && (
+                {(page.kind === 'redirection' || getModulePageMode(page) === 'page_only' || (getModulePageMode(page) === 'both' && isCtrlPressed)) && (
                   <img src="/icons/tab.png" alt="" className="sidebar-tab-icon" />
                 )}
               </li>

@@ -16,6 +16,7 @@ import Users from './Pages/Users/Users';
 import Roles from './Pages/Roles/Roles';
 import Modules from './Pages/Modules/Modules';
 import ModuleDetails from './Pages/Modules/ModuleDetails/ModuleDetails';
+import Redirections from './Pages/Redirections/Redirections';
 import RoleDetail from 'Pages/Roles/RoleDetail/RoleDetail';
 import RoleRuleBuilder from 'Pages/Roles/RoleRuleBuilder/RoleRuleBuilder';
 import UserDetail from './Pages/Users/UserDetail';
@@ -129,6 +130,7 @@ function Main() {
           <Route path="/legal/privacy" element={<PrivacyPolicy />} />
           <Route path="/admin/modules" element={<Modules onSort="name" />} />
           <Route path="/admin/modules/:moduleId" element={<ModuleDetails />} />
+          <Route path="/admin/redirections" element={<Redirections />} />
           <Route path="/admin/roles" element={<Roles onSort="name" />} />
           <Route path="/admin/roles/:roleId" element={<RoleDetail />} />
           <Route path="/admin/roles/:roleId/rule-builder" element={<RoleRuleBuilder />} />

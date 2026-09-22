@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, Navigate } from 'react-router-dom';
 import './ModulePage.css';
 import Button from 'Global/Button/Button';
-import ModuleStatusCard, { WrenchIcon, LockIcon, ExternalLinkIcon, LoadingIcon } from 'Pages/Modules/Components/ModuleStatusCard/ModuleStatusCard';
+import ModuleStatusCard, { WrenchIcon, LockIcon, ExternalLinkIcon, LoadingIcon, AlertIcon } from 'Pages/Modules/Components/ModuleStatusCard/ModuleStatusCard';
 import { getModulesDomain, getModulesProtocol } from '../../../utils/modules';
 import { exchangeModuleSession } from '../../../utils/moduleSession';
 import { loadSidebarPrefs, getVisibleSidebarPages } from '../../../utils/sidebarPrefs';
@@ -14,15 +14,35 @@ export default function ModulePage({ pages, user }) {
   const [retryKey, setRetryKey] = useState(0);
   const [authReady, setAuthReady] = useState(false);
   const [prefs, setPrefs] = useState(() => loadSidebarPrefs(user?.ft_login));
+  const [redirectCountdown, setRedirectCountdown] = useState(3);
 
   const visiblePages = useMemo(() => getVisibleSidebarPages(pages, prefs), [pages, prefs]);
   const page = pages.find((p) => p.slug === slug);
+  const isRedirection = page?.kind === 'redirection';
   const pageMode = getModulePageMode(page);
   const modulesDomain = useMemo(() => getModulesDomain(), []);
   const modulesProtocol = useMemo(() => getModulesProtocol(modulesDomain), [modulesDomain]);
-  const moduleOrigin = page && pageMode !== 'page_only' ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
+  const moduleOrigin = page && !isRedirection && pageMode !== 'page_only' ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
   const iframeSrc = moduleOrigin ? `${moduleOrigin}/` : '';
-  const externalUrl = page ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
+  const externalUrl = page && !isRedirection ? `${modulesProtocol}://${page.slug}.${modulesDomain}` : '';
+
+  // Redirections aren't iframed at all: the sidebar normally sends the
+  // browser straight to target_url and never routes here, but a direct visit
+  // to /modules/:slug (bookmark, back button, typed URL) still can — show a
+  // short countdown (with a manual skip) instead of bouncing out silently.
+  useEffect(() => {
+    setRedirectCountdown(3);
+  }, [isRedirection, page?.slug]);
+
+  useEffect(() => {
+    if (!isRedirection || !page?.target_url) return;
+    if (redirectCountdown <= 0) {
+      window.location.replace(page.target_url);
+      return;
+    }
+    const timer = setTimeout(() => setRedirectCountdown((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [isRedirection, page, redirectCountdown]);
 
   useEffect(() => {
     if (user?.ft_login) {
@@ -55,12 +75,12 @@ export default function ModulePage({ pages, user }) {
   }, [slug]);
 
   useEffect(() => {
-    if (!page || pageMode === 'page_only' || page.module_disabled) return;
+    if (!page || isRedirection || pageMode === 'page_only' || page.module_disabled) return;
     setStatus('loading');
-  }, [page, pageMode, retryKey]);
+  }, [page, isRedirection, pageMode, retryKey]);
 
   useEffect(() => {
-    if (!page || pageMode === 'page_only' || page.module_disabled) {
+    if (!page || isRedirection || pageMode === 'page_only' || page.module_disabled) {
       setAuthReady(false);
       return;
     }
@@ -105,10 +125,10 @@ export default function ModulePage({ pages, user }) {
     return () => {
       canceled = true;
     };
-  }, [page, pageMode, moduleOrigin, retryKey]);
+  }, [page, isRedirection, pageMode, moduleOrigin, retryKey]);
 
   useEffect(() => {
-    if (!page || pageMode === 'page_only' || page.module_disabled || !authReady) return;
+    if (!page || isRedirection || pageMode === 'page_only' || page.module_disabled || !authReady) return;
     const iframe = document.getElementById('moduleIframe');
     if (!iframe) return;
 
@@ -122,7 +142,7 @@ export default function ModulePage({ pages, user }) {
       setStatus('error');
     };
     return () => clearTimeout(timeout);
-  }, [page, pageMode, retryKey, authReady]);
+  }, [page, isRedirection, pageMode, retryKey, authReady]);
 
   if (!slug) {
     if (visiblePages.length > 0) {
@@ -140,6 +160,33 @@ export default function ModulePage({ pages, user }) {
           badge="Access restricted"
           title="Module not found or access denied."
           description="You may not have the required role for this page, or it no longer exists."
+        />
+      </div>
+    );
+  }
+
+  if (isRedirection) {
+    return (
+      <div className="module-page-container">
+        <ModuleStatusCard
+          accent="blue"
+          icon={<ExternalLinkIcon />}
+          badge="Redirecting"
+          title={`Redirecting in ${redirectCountdown}s`}
+          description={
+            <>
+              <span className="status-card-url" title={page.target_url}>{page.target_url}</span>
+              This link leaves Pan Bagnat.
+            </>
+          }
+          action={
+            <Button
+              label="Redirect me now"
+              color="blue"
+              href={page.target_url}
+              onClick={() => window.location.assign(page.target_url)}
+            />
+          }
         />
       </div>
     );
@@ -192,10 +239,16 @@ export default function ModulePage({ pages, user }) {
         />
       )}
       {status === 'error' && (
-        <div className="module-page-status error">
-          <p>❌ This module is not accessible right now.</p>
-          <Button label="Retry" onClick={() => setRetryKey((k) => k + 1)}></Button>
-        </div>
+        <ModuleStatusCard
+          accent="red"
+          icon={<AlertIcon />}
+          badge="Module status: error"
+          title="This module is not accessible right now."
+          description="It may be temporarily down, or the connection timed out."
+          action={
+            <Button label="Retry" color="blue" onClick={() => setRetryKey((k) => k + 1)} />
+          }
+        />
       )}
       <iframe
         id="moduleIframe"
