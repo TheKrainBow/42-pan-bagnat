@@ -13,7 +13,7 @@ type Role struct {
 	Name      string          `json:"name" example:"captain-hook" db:"name"`
 	Color     string          `json:"color" example:"#FF00FF" db:"color"`
 	IsDefault bool            `json:"is_default" example:"true" db:"is_default"`
-	Rules     json.RawMessage `json:"rules" example:"{}" db:"rules"`
+	Rules     json.RawMessage `json:"rules,omitempty" example:"{}" db:"rules"`
 }
 
 type RolePatch struct {

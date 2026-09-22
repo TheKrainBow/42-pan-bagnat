@@ -45,31 +45,31 @@ local-back:																				## Local | Stop backend docker container, and run
 #########################################################################################
 .PHONY: db-clear db-test db-clear-data db-init-schema
 
-BE_WAS_RUNNING := $(shell docker inspect -f '{{.State.Running}}' pan-bagnat-backend-1 2>/dev/null)
+BE_WAS_RUNNING := $(shell docker inspect -f '{{.State.Running}}' pan-bagnat-backend 2>/dev/null)
 
 stop-backend-if-needed:
 	@if [ "$(BE_WAS_RUNNING)" = "true" ]; then \
 	  echo "⛔ Stopping backend..."; \
-	  docker stop pan-bagnat-backend-1; \
+	  docker stop pan-bagnat-backend; \
 	fi
 
 restart-backend-if-needed:
 	@if [ "$(BE_WAS_RUNNING)" = "true" ]; then \
 	  echo "▶️  Restarting backend..."; \
-	  docker start pan-bagnat-backend-1; \
+	  docker start pan-bagnat-backend; \
 	fi
 
 db-prune:																				
-	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
-	docker exec pan-bagnat-db-1 bash -lc "dropdb -U admin --if-exists schema_template"
+	docker exec -i pan-bagnat-db psql -U admin -d panbagnat -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+	docker exec pan-bagnat-db bash -lc "dropdb -U admin --if-exists schema_template"
 
 db-init-schema: db-prune
-	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/init/01_init.sql
-	docker exec -i pan-bagnat-db-1 \
+	docker exec -i pan-bagnat-db psql -U admin -d panbagnat < ./db/init/01_init.sql
+	docker exec -i pan-bagnat-db \
 	  bash -lc "/docker-entrypoint-initdb.d/02_make_template.sh"
 
 db-clear-data:
-	docker exec -i pan-bagnat-db-1 \
+	docker exec -i pan-bagnat-db \
 	  psql -U admin -d panbagnat -c "\
 	    TRUNCATE module_roles, user_roles, modules, roles, users RESTART IDENTITY CASCADE;\
 	  "
@@ -79,7 +79,7 @@ db-init-schema-safe: stop-backend-if-needed db-init-schema restart-backend-if-ne
 db-clear-data-safe: stop-backend-if-needed db-clear-data restart-backend-if-needed		## Database | Clear database datas
 
 db-test: db-clear-data																	## Database | Set database datas with test datas
-	docker exec -i pan-bagnat-db-1 psql -U admin -d panbagnat < ./db/test_data.sql
+	docker exec -i pan-bagnat-db psql -U admin -d panbagnat < ./db/test_data.sql
 
 #########################################################################################
 #                                       DOCKER                                          #
