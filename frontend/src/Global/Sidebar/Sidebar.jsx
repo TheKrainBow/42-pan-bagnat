@@ -213,10 +213,18 @@ export default function Sidebar({ currentPage, user, pages }) {
               <span className="sidebar-icon" role="img" aria-label="Stats">📊</span>
               <span className="sidebar-label">Stats</span>
             </li>
+            <li className={`sidebar-item ${isActive('/admin/containers')}`} onClick={() => navigate('/admin/containers')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/admin/containers')} title={collapsed ? 'Containers' : undefined}>
+              <span className="sidebar-icon" role="img" aria-label="Containers">🐳</span>
+              <span className="sidebar-label">Containers</span>
+            </li>
+            <li className={`sidebar-item ${isActive('/admin/dashboard')}`} onClick={() => navigate('/admin/dashboard')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/admin/dashboard')} title={collapsed ? 'Dashboard' : undefined}>
+              <span className="sidebar-icon" role="img" aria-label="Dashboard">🏠</span>
+              <span className="sidebar-label">Dashboard</span>
+            </li>
           </ul>
           <div className="sidebar-footer">
             <div className="sidebar-sep" />
-            <div className="sidebar-item" onClick={() => navigate('/modules')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/modules')} title={collapsed ? 'User Dashboard' : undefined}>
+            <div className="sidebar-item" onClick={() => navigate('/dashboard')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/dashboard')} title={collapsed ? 'User Dashboard' : undefined}>
               <img src="/icons/42.svg" className="sidebar-icon builtin-icon" alt="" />
               <span className="sidebar-label">User Dashboard</span>
             </div>

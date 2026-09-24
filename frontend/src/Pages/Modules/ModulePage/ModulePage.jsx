@@ -5,18 +5,15 @@ import Button from 'Global/Button/Button';
 import ModuleStatusCard, { WrenchIcon, LockIcon, ExternalLinkIcon, LoadingIcon, AlertIcon } from 'Pages/Modules/Components/ModuleStatusCard/ModuleStatusCard';
 import { getModulesDomain, getModulesProtocol } from '../../../utils/modules';
 import { exchangeModuleSession } from '../../../utils/moduleSession';
-import { loadSidebarPrefs, getVisibleSidebarPages } from '../../../utils/sidebarPrefs';
 import { getModulePageMode } from '../../../utils/modulePageMode';
 
-export default function ModulePage({ pages, user }) {
+export default function ModulePage({ pages }) {
   const { slug } = useParams();
   const [status, setStatus] = useState('loading');
   const [retryKey, setRetryKey] = useState(0);
   const [authReady, setAuthReady] = useState(false);
-  const [prefs, setPrefs] = useState(() => loadSidebarPrefs(user?.ft_login));
   const [redirectCountdown, setRedirectCountdown] = useState(3);
 
-  const visiblePages = useMemo(() => getVisibleSidebarPages(pages, prefs), [pages, prefs]);
   const page = pages.find((p) => p.slug === slug);
   const isRedirection = page?.kind === 'redirection';
   const pageMode = getModulePageMode(page);
@@ -43,24 +40,6 @@ export default function ModulePage({ pages, user }) {
     const timer = setTimeout(() => setRedirectCountdown((s) => s - 1), 1000);
     return () => clearTimeout(timer);
   }, [isRedirection, page, redirectCountdown]);
-
-  useEffect(() => {
-    if (user?.ft_login) {
-      setPrefs(loadSidebarPrefs(user.ft_login));
-    }
-  }, [user?.ft_login]);
-
-  useEffect(() => {
-    function onPrefsChanged(e) {
-      if (!user?.ft_login) return;
-      if (!e?.detail?.login || e.detail.login === user.ft_login) {
-        setPrefs(loadSidebarPrefs(user.ft_login));
-      }
-    }
-
-    window.addEventListener('pb:prefs:sidebarChanged', onPrefsChanged);
-    return () => window.removeEventListener('pb:prefs:sidebarChanged', onPrefsChanged);
-  }, [user?.ft_login]);
 
   useEffect(() => {
     if (pages.length === 0) return;
@@ -145,10 +124,10 @@ export default function ModulePage({ pages, user }) {
   }, [page, isRedirection, pageMode, retryKey, authReady]);
 
   if (!slug) {
-    if (visiblePages.length > 0) {
-      return <Navigate to={`/modules/${visiblePages[0].slug}`} replace />;
-    }
-    return <div className="module-page-placeholder">No accessible modules.</div>;
+    // Land on the dashboard instead of silently auto-opening the first
+    // sidebar module: that used to load the module's iframe (and register a
+    // usage activity for it) before the user ever chose to open anything.
+    return <Navigate to="/dashboard" replace />;
   }
 
   if (!page) {

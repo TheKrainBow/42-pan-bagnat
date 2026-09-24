@@ -368,6 +368,15 @@ func DeleteAllRolesForUser(userID string) error {
 	return err
 }
 
+// RemoveAllUsersFromRole unlinks every user currently holding the given role.
+func RemoveAllUsersFromRole(roleID string) error {
+	_, err := mainDB.Exec(`
+        DELETE FROM user_roles
+        WHERE role_id = $1
+    `, roleID)
+	return err
+}
+
 func LinkDefaultRolesToUser(userID string) error {
 	_, err := mainDB.Exec(`
 		INSERT INTO user_roles (user_id, role_id)

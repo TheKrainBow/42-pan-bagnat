@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { fetchWithAuth } from 'Global/utils/Auth';
 import Button from 'Global/Button/Button';
 import { isMiddleClick, openInNewTab } from 'Global/utils/navigation';
@@ -15,6 +15,11 @@ export default function ContainersGraph({ moduleId }) {
   const dragRef = useRef(null);
   const viewportRef = useRef(null);
   const groupRefs = useRef(new Map());
+  // Measured height (px) of each group box, keyed by project. Groups render a
+  // variable number of container cards, so a fixed row height in the grid
+  // layout would let a tall group (many containers) overlap the row below it
+  // — this tracks real rendered heights so row spacing can adapt.
+  const [groupHeights, setGroupHeights] = useState({});
 
   const groups = useMemo(() => {
     // Hide Pan Bagnat infra containers so users don't break the site here
@@ -79,33 +84,81 @@ export default function ContainersGraph({ moduleId }) {
     return colors;
   }, [items]);
 
-  useEffect(() => {
+  // Scoped to just this module's own containers when embedded in a module page
+  // (cheap: single filtered container list + one compose-config call), or the
+  // full cross-module graph when used as the standalone global view.
+  const containersURL = moduleId
+    ? `/api/v1/admin/modules/${moduleId}/docker/graph`
+    : '/api/v1/admin/docker/ls';
+
+  const fetchContainers = () => {
     setLoading(true);
-    fetchWithAuth('/api/v1/admin/docker/ls')
+    return fetchWithAuth(containersURL)
       .then(r => r.json())
       .then(setItems)
       .catch(e => setError(e.message))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchContainers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [moduleId]);
 
-  // layout groups in a grid
+  // layout groups in a grid. Row height adapts to the tallest group actually
+  // measured in that row (groupHeights), instead of a fixed constant, so a
+  // module with many containers doesn't overlap the row below it.
   const layout = useMemo(() => {
     const cols = 3;
-    const gapX = 680, gapY = 420;
+    const gapX = 680;
+    const rowGap = 60;
+    const defaultGroupHeight = 260;
     const positions = new Map();
     const modules = groups.filter(g => g.key !== 'orphans');
+
+    const rows = [];
     modules.forEach((g, idx) => {
       const row = Math.floor(idx / cols);
-      const col = idx % cols;
-      positions.set(g.project, { x: col * gapX, y: row * gapY });
+      if (!rows[row]) rows[row] = [];
+      rows[row].push(g);
     });
-    const rows = Math.ceil(modules.length / cols);
+
+    let y = 0;
+    rows.forEach(rowGroups => {
+      const rowHeight = Math.max(
+        defaultGroupHeight,
+        ...rowGroups.map(g => groupHeights[g.project] || defaultGroupHeight)
+      );
+      rowGroups.forEach((g, col) => {
+        positions.set(g.project, { x: col * gapX, y });
+      });
+      y += rowHeight + rowGap;
+    });
+
     const pb = groups.find(g => g.key === 'orphans');
     if (pb) {
-      positions.set(pb.project, { x: 0, y: rows * gapY + 200 });
+      positions.set(pb.project, { x: 0, y });
     }
-    return { positions, gapX, gapY };
-  }, [groups]);
+    return { positions, gapX, gapY: defaultGroupHeight + rowGap };
+  }, [groups, groupHeights]);
+
+  // Re-measure actual group box heights after each render so the layout above
+  // can correct itself before the next paint (no visible overlap/flicker).
+  useLayoutEffect(() => {
+    const next = {};
+    let changed = false;
+    groups.forEach(g => {
+      const el = groupRefs.current.get(g.project);
+      if (!el) return;
+      next[g.project] = el.offsetHeight;
+      if (groupHeights[g.project] !== el.offsetHeight) changed = true;
+    });
+    if (!changed && Object.keys(next).length !== Object.keys(groupHeights).length) {
+      changed = true;
+    }
+    if (changed) setGroupHeights(next);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups, items]);
 
   // Fit a given group into the viewport with 50px margin
   const fitGroup = (project) => {
@@ -203,12 +256,7 @@ export default function ContainersGraph({ moduleId }) {
       : `/api/v1/admin/modules/${moduleId}/docker/compose/down`;
     await fetchWithAuth(url, { method: 'POST' });
     // Refresh list after action
-    setLoading(true);
-    fetchWithAuth('/api/v1/admin/docker/ls')
-      .then(r => r.json())
-      .then(setItems)
-      .catch(e => setError(e.message))
-      .finally(() => setLoading(false));
+    fetchContainers();
   };
 
   if (loading) return <div>Loading containers…</div>;

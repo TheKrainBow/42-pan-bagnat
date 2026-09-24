@@ -1,0 +1,191 @@
+/* The outer, naturally-sized box: fills whatever space its parent gives it
+   (used to measure available width for the fit-to-width scale) and centers
+   the fixed-size .dashboard-canvas-wrapper frame inside it, both ways. */
+.dashboard-canvas-viewport {
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+  display: flex;
+  justify-content: safe center;
+  align-items: safe center;
+}
+
+/* The frame: sized to the exact visual (scaled) footprint of the canvas, so
+   there's no mismatch between this box (which clips via overflow:hidden)
+   and the scaled content inside it — an earlier version only set `height`
+   here and left `width` to implicit block-stretch behavior, which could
+   disagree with the transform-scaled content and clip real canvas rows. */
+.dashboard-canvas-wrapper {
+  overflow: hidden;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.dashboard-canvas-scaler {
+  position: relative;
+  transform-origin: top left;
+  /* <canvas> is an inline-replaced element, so a plain block wrapper leaves
+     a few px of baseline whitespace below it; that pushed the wrapper's
+     overflow:hidden clip boundary above the canvas's true bottom edge,
+     clipping (and making unclickable) a sliver of real canvas content. */
+  line-height: 0;
+}
+
+.dashboard-gif-overlay {
+  position: absolute;
+  pointer-events: none;
+  transform-origin: center center;
+  object-fit: fill;
+}
+
+/* ---- read-only view ---- */
+
+.dashboard-view-page {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  overflow: auto;
+}
+
+.dashboard-view-empty {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* ---- editor ---- */
+
+.dashboard-editor-page {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+
+.dashboard-editor-title {
+  margin: 0;
+}
+
+.dashboard-editor-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--light-background);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.dashboard-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-right: 10px;
+  border-right: 1px solid var(--border);
+}
+
+.dashboard-toolbar-group:last-child {
+  border-right: none;
+}
+
+.dashboard-toolbar-group label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.dashboard-tool-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--button-gray);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.dashboard-tool-btn:hover {
+  background: var(--button-gray-hover);
+}
+
+.dashboard-tool-btn.active {
+  background: var(--button-green);
+  border-color: var(--button-green);
+  color: #fff;
+}
+
+.dashboard-tool-btn.bold {
+  font-weight: 700;
+}
+
+.dashboard-tool-btn.italic {
+  font-style: italic;
+}
+
+.dashboard-tool-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.dashboard-tool-btn:disabled:hover {
+  background: var(--button-gray);
+}
+
+.dashboard-pen-size {
+  width: 90px;
+}
+
+.dashboard-font-size {
+  width: 72px;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--background);
+  color: var(--text-primary);
+}
+
+.dashboard-color-swatch {
+  position: relative;
+}
+
+.dashboard-color-swatch-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.dashboard-color-popover {
+  position: absolute;
+  top: 34px;
+  left: 0;
+  z-index: 20;
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.dashboard-editor-canvas-area {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  justify-content: safe center;
+  align-items: safe center;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: repeating-conic-gradient(#20222a 0% 25%, #191a1f 0% 50%) 0 0 / 20px 20px;
+}
+
+.dashboard-editor-hint {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}

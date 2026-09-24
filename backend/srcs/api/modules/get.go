@@ -441,6 +441,44 @@ func GetModuleContainers(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// GetModuleContainerGraph returns this module's containers in the same
+// AllContainer shape used by the global graph, scoped to just this module so
+// the per-module "Containers" tab doesn't pay the cost of the global listing.
+// @Summary      Get Module Container Graph
+// @Description  Retrieves this module's containers (project, networks, missing services) for the containers graph view.
+// @Tags         Modules,Docker
+// @Produce      json
+// @Param        moduleID  path      string  true   "Module ID"
+// @Success      200       {array}   core.AllContainer
+// @Failure      400       {string}  string  "ID not found"
+// @Failure      500       {string}  string  "Internal server error"
+// @Router       /admin/modules/{moduleID}/docker/graph [get]
+func GetModuleContainerGraph(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	moduleID := chi.URLParam(r, "moduleID")
+	if moduleID == "" {
+		http.Error(w, "ID not found", http.StatusBadRequest)
+		return
+	}
+
+	module, err := core.GetModule(moduleID)
+	if err != nil {
+		log.Printf("error while getting module %s: %s\n", moduleID, err.Error())
+		http.Error(w, "Error while getting module "+moduleID, http.StatusInternalServerError)
+		return
+	}
+
+	items, err := core.GetModuleContainerGraph(module)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("failed to list containers: %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(w).Encode(items); err != nil {
+		http.Error(w, "failed to encode response", http.StatusInternalServerError)
+	}
+}
+
 // // GetPages returns a paginated list of all module pages.
 // // @Summary      Get Pages
 // // @Description  Retrieves all pages across modules, with optional filtering, sorting, and pagination.

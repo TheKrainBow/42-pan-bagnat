@@ -265,6 +265,23 @@ func DeleteRoleFromUser(roleID, userIdentifier string) error {
 	return database.RemoveRoleFromUser(roleID, userIdentifier)
 }
 
+// RemoveAllUsersFromRole unlinks every user currently holding roleID.
+// Refuses to strip the admin role from everyone, since that would lock
+// every admin out of the admin panel with no way back in.
+func RemoveAllUsersFromRole(roleID string) error {
+	if roleID == RoleIDAdmin {
+		ctx := context.Background()
+		adminCount, err := database.CountActiveUsersWithRole(ctx, RoleIDAdmin, RoleIDBlacklist)
+		if err != nil {
+			return fmt.Errorf("count admins: %w", err)
+		}
+		if adminCount > 0 {
+			return ErrWouldRemoveLastAdmin
+		}
+	}
+	return database.RemoveAllUsersFromRole(roleID)
+}
+
 func DeleteRole(roleID string) error {
 	err := database.DeleteRole(roleID)
 	if err != nil {

@@ -8,6 +8,7 @@ func RegisterRoutes(r chi.Router) {
 	r.Get("/{roleID}", GetRole)
 	r.Patch("/{roleID}", PatchRole)
 	r.Delete("/{roleID}", DeleteRole)
+	r.Delete("/{roleID}/users", DeleteRoleUsers)
 	r.Put("/{roleID}/rules", PutRoleRules)
 	r.Get("/{roleID}/rules", GetRoleRules)
 	r.Post("/{roleID}/rules/validate", ValidateRoleRules)

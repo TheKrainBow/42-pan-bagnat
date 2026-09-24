@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -523,6 +522,76 @@ func CollectModuleNetworkAliases(module Module) (map[string][]string, []string, 
 	return aliases, networks, nil
 }
 
+// composeStaticInfo is the part of a module's compose config that only
+// depends on the docker-compose.yml file itself (services/declared networks),
+// as opposed to which containers currently happen to be running.
+type composeStaticInfo struct {
+	Services []string
+	Networks []string
+}
+
+type composeCacheEntry struct {
+	modTime time.Time
+	info    composeStaticInfo
+}
+
+var (
+	composeConfigCacheMu sync.Mutex
+	composeConfigCache   = make(map[string]composeCacheEntry)
+)
+
+// loadComposeStatic runs `docker compose config` for a module's compose file
+// and parses out its services/networks. This subprocess spawn is by far the
+// most expensive part of listing containers (it dominates when there are many
+// modules), so results are cached per module slug and invalidated only when
+// the compose file's mtime changes — repeat calls for an unchanged file are a
+// plain map read.
+func loadComposeStatic(slug, dir string) (composeStaticInfo, bool) {
+	composePath := filepath.Join(dir, "docker-compose.yml")
+	fi, err := os.Stat(composePath)
+	if err != nil {
+		return composeStaticInfo{}, false
+	}
+
+	composeConfigCacheMu.Lock()
+	if entry, ok := composeConfigCache[slug]; ok && entry.modTime.Equal(fi.ModTime()) {
+		composeConfigCacheMu.Unlock()
+		return entry.info, true
+	}
+	composeConfigCacheMu.Unlock()
+
+	cfgCmd := exec.Command("docker", "compose", "-f", "docker-compose.yml", "--project-name", slug, "config", "--format", "json")
+	cfgCmd.Dir = dir
+	var out bytes.Buffer
+	cfgCmd.Stdout = &out
+	if err := cfgCmd.Run(); err != nil {
+		return composeStaticInfo{}, false
+	}
+	var cfg map[string]any
+	if err := json.Unmarshal(out.Bytes(), &cfg); err != nil {
+		return composeStaticInfo{}, false
+	}
+	services := []string{}
+	if sv, ok := cfg["services"].(map[string]any); ok {
+		for k := range sv {
+			services = append(services, k)
+		}
+	}
+	networks := []string{}
+	if ns, ok := cfg["networks"].(map[string]any); ok {
+		for k := range ns {
+			networks = append(networks, k)
+		}
+	}
+	info := composeStaticInfo{Services: services, Networks: networks}
+
+	composeConfigCacheMu.Lock()
+	composeConfigCache[slug] = composeCacheEntry{modTime: fi.ModTime(), info: info}
+	composeConfigCacheMu.Unlock()
+
+	return info, true
+}
+
 // GetAllContainers lists all containers, grouping info by compose project and networks.
 func GetAllContainers() ([]AllContainer, error) {
 	mods, _, err := GetModules(ModulePagination{Limit: 10000})
@@ -545,59 +614,75 @@ func GetAllContainers() ([]AllContainer, error) {
 	}
 	ctx := context.Background()
 
+	// Fetch the container list once and reuse it below to derive each
+	// project's currently-live networks, instead of the N extra filtered
+	// ContainerList round-trips (one per module) this used to make.
+	all, err := cli.ContainerList(ctx, dockercontainer.ListOptions{All: true})
+	if err != nil {
+		return nil, fmt.Errorf("list containers failed: %w", err)
+	}
+
+	liveNetworksByProject := make(map[string]map[string]bool)
+	for _, item := range all {
+		project := item.Labels["com.docker.compose.project"]
+		if project == "" {
+			continue
+		}
+		set := liveNetworksByProject[project]
+		if set == nil {
+			set = make(map[string]bool)
+			liveNetworksByProject[project] = set
+		}
+		for name := range item.NetworkSettings.Networks {
+			if name != "" {
+				set[name] = true
+			}
+		}
+	}
+
 	type composeInfo struct {
 		Services []string
 		Networks []string
 	}
 	expects := make(map[string]composeInfo)
+	var expectsMu sync.Mutex
 
+	// Compose-config lookups (cache misses) run concurrently across modules
+	// instead of one at a time, so the wall-clock cost is bounded by the
+	// slowest single subprocess rather than their sum.
+	var wg sync.WaitGroup
+	sem := make(chan struct{}, 8)
 	for _, m := range mods {
 		dir := filepath.Join(baseRepoPath, m.Slug)
 		if _, err := os.Stat(filepath.Join(dir, "docker-compose.yml")); err != nil {
-			if !errorsIsNotExist(err) {
-			}
 			continue
 		}
-		cfgCmd := exec.Command("docker", "compose", "-f", "docker-compose.yml", "--project-name", m.Slug, "config", "--format", "json")
-		cfgCmd.Dir = dir
-		var out bytes.Buffer
-		cfgCmd.Stdout = &out
-		if err := cfgCmd.Run(); err != nil {
-			continue
-		}
-		var cfg map[string]any
-		if err := json.Unmarshal(out.Bytes(), &cfg); err != nil {
-			continue
-		}
-		services := []string{}
-		if sv, ok := cfg["services"].(map[string]any); ok {
-			for k := range sv {
-				services = append(services, k)
+		wg.Add(1)
+		sem <- struct{}{}
+		go func(slug, dir string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+			static, ok := loadComposeStatic(slug, dir)
+			if !ok {
+				return
 			}
-		}
-		netsSet := map[string]bool{}
-		if ns, ok := cfg["networks"].(map[string]any); ok {
-			for k := range ns {
-				netsSet[k] = true
+			netsSet := make(map[string]bool, len(static.Networks))
+			for _, n := range static.Networks {
+				netsSet[n] = true
 			}
-		}
-		filter := dockerfilters.NewArgs()
-		filter.Add("label", fmt.Sprintf("com.docker.compose.project=%s", m.Slug))
-		if current, err := cli.ContainerList(ctx, dockercontainer.ListOptions{All: true, Filters: filter}); err == nil {
-			for _, c := range current {
-				for name := range c.NetworkSettings.Networks {
-					if name != "" {
-						netsSet[name] = true
-					}
-				}
+			for n := range liveNetworksByProject[slug] {
+				netsSet[n] = true
 			}
-		}
-		networks := make([]string, 0, len(netsSet))
-		for n := range netsSet {
-			networks = append(networks, n)
-		}
-		expects[m.Slug] = composeInfo{Services: services, Networks: networks}
+			networks := make([]string, 0, len(netsSet))
+			for n := range netsSet {
+				networks = append(networks, n)
+			}
+			expectsMu.Lock()
+			expects[slug] = composeInfo{Services: static.Services, Networks: networks}
+			expectsMu.Unlock()
+		}(m.Slug, dir)
 	}
+	wg.Wait()
 
 	type containerInfo struct {
 		ID       string
@@ -605,11 +690,6 @@ func GetAllContainers() ([]AllContainer, error) {
 		Project  string
 		Networks []string
 		Status   string
-	}
-
-	all, err := cli.ContainerList(ctx, dockercontainer.ListOptions{All: true})
-	if err != nil {
-		return nil, fmt.Errorf("list containers failed: %w", err)
 	}
 
 	containersByNetwork := make(map[string][]*containerInfo)
@@ -741,7 +821,94 @@ func GetAllContainers() ([]AllContainer, error) {
 	return out, nil
 }
 
-func errorsIsNotExist(err error) bool { return errors.Is(err, fs.ErrNotExist) }
+// GetModuleContainerGraph returns AllContainer-shaped items scoped to a single
+// module's own compose project. Unlike GetAllContainers, it does not loop over
+// every module to run `docker compose config` (the main cost of the global
+// listing) nor walk the network graph to pull in other modules' containers —
+// it only inspects this module's containers and its own compose file, so the
+// per-module "Containers" tab stays fast regardless of how many other modules
+// exist.
+func GetModuleContainerGraph(module Module) ([]AllContainer, error) {
+	cli, err := getDockerClient()
+	if err != nil {
+		return nil, err
+	}
+	ctx := context.Background()
+
+	filter := dockerfilters.NewArgs()
+	filter.Add("label", fmt.Sprintf("com.docker.compose.project=%s", module.Slug))
+	containers, err := cli.ContainerList(ctx, dockercontainer.ListOptions{All: true, Filters: filter})
+	if err != nil {
+		return nil, fmt.Errorf("list containers failed: %w", err)
+	}
+
+	results := make(map[string]AllContainer, len(containers))
+	netsSet := make(map[string]bool)
+	for _, item := range containers {
+		fullName := firstDockerName(item.Names)
+		if fullName == "" {
+			fullName = item.ID
+		}
+		networks := networkNamesFromSummary(item.NetworkSettings.Networks)
+		for _, n := range networks {
+			netsSet[n] = true
+		}
+		status, reason, since := parseContainerStatus(item.Status)
+		results[fullName] = AllContainer{
+			Name:       fullName,
+			Status:     status,
+			Reason:     reason,
+			Since:      since,
+			Project:    module.Slug,
+			Networks:   networks,
+			ModuleID:   module.ID,
+			ModuleName: module.Name,
+		}
+	}
+
+	// Discover expected-but-never-built services from the module's own compose
+	// config, same as GetAllContainers, but only ever for this one module.
+	// Shares GetAllContainers' mtime-keyed cache, so this is a plain map read
+	// whenever the global graph was already loaded first.
+	baseRepoPath := os.Getenv("REPO_BASE_PATH")
+	if baseRepoPath == "" {
+		baseRepoPath = "../../repos"
+	}
+	dir := filepath.Join(baseRepoPath, module.Slug)
+	if static, ok := loadComposeStatic(module.Slug, dir); ok {
+		for _, n := range static.Networks {
+			netsSet[n] = true
+		}
+		networks := make([]string, 0, len(netsSet))
+		for n := range netsSet {
+			networks = append(networks, n)
+		}
+		sort.Strings(networks)
+
+		for _, svc := range static.Services {
+			expectedName := fmt.Sprintf("%s-%s-1", module.Slug, svc)
+			if _, ok := results[expectedName]; ok {
+				continue
+			}
+			results[expectedName] = AllContainer{
+				Name:       expectedName,
+				Status:     ContainerUnknown,
+				Reason:     "Not created",
+				Project:    module.Slug,
+				Networks:   networks,
+				ModuleID:   module.ID,
+				ModuleName: module.Name,
+				Missing:    true,
+			}
+		}
+	}
+
+	out := make([]AllContainer, 0, len(results))
+	for _, v := range results {
+		out = append(out, v)
+	}
+	return out, nil
+}
 
 func GetContainerLogs(module Module, containerName string, since string) ([]string, error) {
 	cli, err := getDockerClient()

@@ -14,15 +14,20 @@ export const StatTile = ({ label, value, hint }) => (
   </div>
 );
 
-const formatDay = (iso) => {
+// Points are now hourly buckets (see backend GetDailyActivity), so the label
+// includes the hour. Tooltips get the full date+hour; axis ticks are thinned
+// out below since a 30/90-day range can carry 700+ hourly points.
+const formatHour = (iso, { withDate = true } = {}) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return d.toLocaleString(undefined, withDate
+    ? { month: 'short', day: 'numeric', hour: '2-digit' }
+    : { hour: '2-digit' });
 };
 
 export const DailyActivityChart = ({ data }) => {
   const points = (data || []).map(p => ({
-    day: formatDay(p.day),
+    day: formatHour(p.day),
     activities: p.activity_count,
     users: p.unique_users,
   }));
@@ -31,11 +36,16 @@ export const DailyActivityChart = ({ data }) => {
     return <div className="stats-empty">No activity recorded for this period.</div>;
   }
 
+  // Thin out x-axis labels so they stay readable regardless of how many
+  // hourly points are in range (a 90-day range can have 2000+ points).
+  const desiredTicks = 16;
+  const tickInterval = points.length > desiredTicks ? Math.ceil(points.length / desiredTicks) : 0;
+
   return (
     <ResponsiveContainer width="100%" height={280}>
       <LineChart data={points} margin={{ top: 8, right: 16, bottom: 0, left: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-        <XAxis dataKey="day" stroke="var(--text-primary)" tick={{ fontSize: 12 }} />
+        <XAxis dataKey="day" interval={tickInterval} stroke="var(--text-primary)" tick={{ fontSize: 12 }} />
         <YAxis allowDecimals={false} stroke="var(--text-primary)" tick={{ fontSize: 12 }} />
         <Tooltip
           contentStyle={{ background: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)', color: 'var(--tooltip-text)' }}

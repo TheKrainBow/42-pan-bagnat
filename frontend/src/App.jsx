@@ -33,6 +33,9 @@ import { initTheme } from 'Global/Theme/theme';
 import SSHKeys from './Pages/SSHKeys/SSHKeys';
 import Stats from './Pages/Stats/Stats';
 import ModuleStats from './Pages/Stats/ModuleStats';
+import ContainersPage from './Pages/Containers/ContainersPage';
+import DashboardEditor from './Pages/Dashboard/DashboardEditor';
+import DashboardView from './Pages/Dashboard/DashboardView';
 import TermsOfUse from './Pages/Legal/TermsOfUse';
 import PrivacyPolicy from './Pages/Legal/PrivacyPolicy';
 
@@ -125,6 +128,7 @@ function Main() {
         <Routes>
           <Route path="/modules" element={<ModulePage pages={pages} user={user} />} />
           <Route path="/modules/:slug" element={<ModulePage pages={pages} user={user} />} />
+          <Route path="/dashboard" element={<DashboardView />} />
           <Route path="/settings" element={<UserSettingsPage pages={pages} user={user} />} />
           <Route path="/legal/terms" element={<TermsOfUse />} />
           <Route path="/legal/privacy" element={<PrivacyPolicy />} />
@@ -139,6 +143,8 @@ function Main() {
           <Route path="/admin/ssh-keys" element={<SSHKeys />} />
           <Route path="/admin/stats" element={<Stats />} />
           <Route path="/admin/stats/:moduleId" element={<ModuleStats />} />
+          <Route path="/admin/containers" element={<ContainersPage />} />
+          <Route path="/admin/dashboard" element={<DashboardEditor />} />
           <Route path="/login" element={<LoginPage />} />
           <Route
             path="*"
