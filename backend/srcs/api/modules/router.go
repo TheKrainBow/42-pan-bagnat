@@ -52,6 +52,7 @@ func RegisterRoutes(r chi.Router) {
 	r.Post("/{moduleID}/docker/deploy", DeployConfig)
 
 	r.Get("/{moduleID}/docker/ls", GetModuleContainers)
+	r.Get("/{moduleID}/docker/graph", GetModuleContainerGraph)
 	r.Post("/{moduleID}/docker/compose/deploy", ComposeDeploy)
 	r.Post("/{moduleID}/docker/compose/rebuild", ComposeRebuild)
 	r.Post("/{moduleID}/docker/compose/down", ComposeDown)

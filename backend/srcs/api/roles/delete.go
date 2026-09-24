@@ -1,6 +1,7 @@
 package roles
 
 import (
+	"backend/api/auth"
 	"backend/core"
 	"errors"
 	"log"
@@ -37,6 +38,39 @@ func DeleteRole(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Role not found", http.StatusNotFound)
 		} else {
 			log.Printf("error deleting role %s: %v\n", roleID, err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+// DeleteRoleUsers removes every user currently holding the given role.
+// @Summary      Remove all users from role
+// @Description  Unlinks every user currently holding this role. Refuses if the role is the admin role and it still has active holders, to avoid locking everyone out.
+// @Tags         Roles
+// @Produce      json
+// @Param        roleID  path      string  true  "Role ID"
+// @Success      204      "No Content"
+// @Failure      400      {string}  string  "Invalid role ID"
+// @Failure      409      {string}  string  "Would remove the last admin"
+// @Failure      500      {string}  string  "Internal server error"
+// @Router       /admin/roles/{roleID}/users [delete]
+func DeleteRoleUsers(w http.ResponseWriter, r *http.Request) {
+	roleID := chi.URLParam(r, "roleID")
+	if strings.TrimSpace(roleID) == "" {
+		http.Error(w, "Invalid role ID", http.StatusBadRequest)
+		return
+	}
+
+	err := core.RemoveAllUsersFromRole(roleID)
+	if err != nil {
+		switch {
+		case errors.Is(err, core.ErrWouldRemoveLastAdmin):
+			auth.WriteJSONError(w, http.StatusConflict, "Conflict", "Cannot remove the admin role from every user")
+		default:
+			log.Printf("error removing all users from role %s: %v\n", roleID, err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)
 		}
 		return

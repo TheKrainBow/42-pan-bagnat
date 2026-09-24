@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"backend/api/auth"
+	"backend/api/dashboard"
 	"backend/api/integrations"
 	"backend/api/modules"
 	"backend/api/oidc"
@@ -225,6 +226,7 @@ func main() {
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Delete("/api/v1/users/me/sessions/{sessionID}", users.DeleteUserSession)
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/ping", ping.Ping)
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Post("/api/v1/modules/pages/{slug}/session", modules.IssueModulePageSession)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/dashboard", dashboard.GetDashboard)
 
 	r.Route("/api/v1/admin", func(r chi.Router) {
 		r.Group(func(r chi.Router) {
@@ -236,6 +238,7 @@ func main() {
 				oidc.RegisterAdminRoutes(r)
 			})
 			r.Route("/redirections", redirections.RegisterRoutes)
+			r.Put("/dashboard", dashboard.PutDashboard)
 			r.Route("/ssh-keys", sshkeys.RegisterRoutes)
 			r.Route("/stats", stats.RegisterRoutes)
 			r.Get("/docker/ls", modules.GetAllContainers)

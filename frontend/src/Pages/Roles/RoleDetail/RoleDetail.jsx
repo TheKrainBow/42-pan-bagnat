@@ -31,6 +31,8 @@ export default function RoleDetail() {
 
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showRemoveAllConfirm, setShowRemoveAllConfirm] = useState(false);
+  const [removingAll, setRemovingAll] = useState(false);
 
   const navigate = useNavigate();
 
@@ -110,6 +112,22 @@ export default function RoleDetail() {
       if (!res.ok) throw new Error();
       setUsers(prev => prev.filter(x => x.id !== u.id));
     } catch (err) { console.error(err); }
+  };
+
+  const handleRemoveAllUsers = async () => {
+    setRemovingAll(true);
+    try {
+      const res = await fetchWithAuth(`/api/v1/admin/roles/${roleId}/users`, { method: 'DELETE' });
+      if (!res.ok) throw new Error(await res.text());
+      const removedCount = users.length;
+      setUsers([]);
+      setShowRemoveAllConfirm(false);
+      toast.success(`Removed ${removedCount} user${removedCount === 1 ? '' : 's'} from ${name}`);
+    } catch (err) {
+      toast.error(err.message || 'Failed to remove users from role');
+    } finally {
+      setRemovingAll(false);
+    }
   };
 
   // save updates
@@ -277,12 +295,20 @@ export default function RoleDetail() {
       <section className="assign-section">
         <div className="section-header">
           <label>Users</label>
-          <Button
-            label={"+ Add User"}
-            color="blue"
-            disabled={loading}
-            onClick={() => setShowUserSearch(true)}
-          />
+          <div className="button-wrapper">
+            <Button
+              label={"+ Add User"}
+              color="blue"
+              disabled={loading}
+              onClick={() => setShowUserSearch(true)}
+            />
+            <Button
+              label={"Remove All Users"}
+              color="red"
+              disabled={loading || users.length === 0}
+              onClick={() => setShowRemoveAllConfirm(true)}
+            />
+          </div>
         </div>
 
         <div className="assigned-list users-list">
@@ -324,6 +350,28 @@ export default function RoleDetail() {
           </div>
         )}
       </section>
+
+      {showRemoveAllConfirm && (
+        <div
+          className="modal-backdrop"
+          onClick={e => e.target === e.currentTarget && !removingAll && setShowRemoveAllConfirm(false)}
+        >
+          <div className="modal">
+            <h3 className="modal-title">Remove all users from {name}?</h3>
+            <p>
+              {users.length} user{users.length === 1 ? '' : 's'} will lose the <RoleBadge role={{ id: role.id, color }}>{name}</RoleBadge> role. This cannot be undone.
+            </p>
+            <div className="modal-actions">
+              <button className="btn" onClick={() => setShowRemoveAllConfirm(false)} disabled={removingAll}>
+                Cancel
+              </button>
+              <button className="btn btn-danger" onClick={handleRemoveAllUsers} disabled={removingAll}>
+                {removingAll ? 'Removing…' : 'Remove All Users'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

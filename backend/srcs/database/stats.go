@@ -118,7 +118,10 @@ func GetModuleStatsSummaries(from, to time.Time) ([]ModuleStatsSummary, error) {
 	return out, rows.Err()
 }
 
-// GetDailyActivity returns one point per calendar day in the range, optionally filtered to a single module.
+// GetDailyActivity returns one point per hour in the range, optionally filtered to a single module.
+// The "day" field name/JSON key is kept as-is (it's actually an hourly bucket
+// start now) so the frontend's existing formatting code only needs to render
+// the timestamp with more precision, not change its shape.
 func GetDailyActivity(from, to time.Time, moduleID string) ([]DailyActivityPoint, error) {
 	moduleFilter := ""
 	args := []any{from, to}
@@ -128,7 +131,7 @@ func GetDailyActivity(from, to time.Time, moduleID string) ([]DailyActivityPoint
 	}
 	rows, err := mainDB.Queryx(`
 		`+activitySessionsCTE+`
-		SELECT date_trunc('day', started_at) AS day,
+		SELECT date_trunc('hour', started_at) AS day,
 		       COUNT(*) AS activity_count,
 		       COUNT(DISTINCT user_id) AS unique_users
 		  FROM sessions_cte
