@@ -2,6 +2,7 @@ package websocket
 
 import (
 	"backend/database"
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -10,6 +11,10 @@ import (
 
 	"github.com/gorilla/websocket"
 )
+
+// roleIDAdmin mirrors core.RoleIDAdmin; duplicated here to avoid an import cycle
+// (core imports this package to stream container logs).
+const roleIDAdmin = "roles_admin"
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true },
@@ -49,6 +54,13 @@ func Handler() http.HandlerFunc {
 				fmt.Printf("Received message: %s | %s\n", ctl.ModuleID, ctl.Action)
 				switch ctl.Action {
 				case ActionSubscribe:
+					// All current topics ("module:", "container:", "containers:") carry
+					// module-management data that is admin-only over the REST API
+					// (see /api/v1/admin/modules/...), so gate every subscribe the same way.
+					if isAdminOnlyTopic(ctl.ModuleID) && !isAdminSession(sess) {
+						fmt.Printf("WS subscribe denied (not admin): %s\n", ctl.ModuleID)
+						continue
+					}
 					Subscribe(conn, ctl.ModuleID)
 				case ActionUnsubscribe:
 					Unsubscribe(conn, ctl.ModuleID)
@@ -58,6 +70,27 @@ func Handler() http.HandlerFunc {
 			}
 		}
 	}
+}
+
+// isAdminOnlyTopic reports whether a topic exposes module-management data that
+// is admin-only over the REST API (module status/logs, container status/logs).
+func isAdminOnlyTopic(topic string) bool {
+	return strings.HasPrefix(topic, "module:") ||
+		strings.HasPrefix(topic, "container:") ||
+		strings.HasPrefix(topic, "containers:")
+}
+
+// isAdminSession reports whether the session's user currently holds the admin role.
+func isAdminSession(sess *database.Session) bool {
+	user, err := database.GetUserByLogin(sess.Login)
+	if err != nil || user == nil {
+		return false
+	}
+	isAdmin, err := database.UserHasRoleByID(context.Background(), user.ID, roleIDAdmin)
+	if err != nil {
+		return false
+	}
+	return isAdmin
 }
 
 // readSessionID replicates core.ReadSessionIDFromCookie without importing core to avoid cycles.
