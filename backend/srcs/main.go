@@ -227,6 +227,7 @@ func main() {
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/ping", ping.Ping)
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Post("/api/v1/modules/pages/{slug}/session", modules.IssueModulePageSession)
 	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/dashboard", dashboard.GetDashboard)
+	r.With(InjectUserInMiddleware, auth.AuthMiddleware, auth.BlackListMiddleware).Get("/api/v1/users/{identifier}/avatar", users.GetUserAvatar)
 
 	r.Route("/api/v1/admin", func(r chi.Router) {
 		r.Group(func(r chi.Router) {

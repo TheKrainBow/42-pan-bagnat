@@ -1,12 +1,15 @@
 package core
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
+	"sync"
 	"time"
 
 	apiManager "github.com/TheKrainBow/go-api"
@@ -249,6 +252,86 @@ type CampusUser42 struct {
 	IsPrimary bool       `json:"is_primary"`
 	CreatedAt *time.Time `json:"created_at"`
 	UpdatedAt *time.Time `json:"updated_at"`
+}
+
+var (
+	ftImageTokenMu     sync.Mutex
+	ftImageToken       string
+	ftImageTokenExpiry time.Time
+)
+
+// getFtAppToken returns a cached 42 app-level (client_credentials) bearer
+// token, refreshing it shortly before it expires. 42 now requires this
+// bearer to fetch a user's avatar image, not just their /v2 API data.
+func getFtAppToken() (string, error) {
+	ftImageTokenMu.Lock()
+	defer ftImageTokenMu.Unlock()
+
+	if ftImageToken != "" && time.Now().Before(ftImageTokenExpiry) {
+		return ftImageToken, nil
+	}
+
+	data := url.Values{}
+	data.Set("grant_type", "client_credentials")
+	data.Set("scope", "public")
+
+	req, err := http.NewRequest(http.MethodPost, "https://api.intra.42.fr/oauth/token", strings.NewReader(data.Encode()))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.SetBasicAuth(os.Getenv("FT_CLIENT_ID"), os.Getenv("FT_CLIENT_SECRET"))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
+		return "", fmt.Errorf("42 token request failed: status %d: %s", resp.StatusCode, strings.TrimSpace(string(body)))
+	}
+
+	var tok struct {
+		AccessToken string `json:"access_token"`
+		ExpiresIn   int    `json:"expires_in"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&tok); err != nil {
+		return "", err
+	}
+	if tok.AccessToken == "" {
+		return "", fmt.Errorf("42 token request: empty access token")
+	}
+
+	ftImageToken = tok.AccessToken
+	ftImageTokenExpiry = time.Now().Add(time.Duration(tok.ExpiresIn-30) * time.Second)
+	return ftImageToken, nil
+}
+
+// FetchUserPhoto fetches the raw avatar bytes from 42, authenticating with
+// the app's bearer token. Callers must close the returned response body.
+func FetchUserPhoto(ctx context.Context, photoURL string) (*http.Response, error) {
+	token, err := getFtAppToken()
+	if err != nil {
+		return nil, fmt.Errorf("get 42 app token: %w", err)
+	}
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, photoURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		resp.Body.Close()
+		return nil, fmt.Errorf("fetch photo %s: status %d", photoURL, resp.StatusCode)
+	}
+	return resp, nil
 }
 
 func GetUser42(login string) (User42, error) {

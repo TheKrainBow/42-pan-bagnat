@@ -98,7 +98,7 @@ const Users = () => {
         disableSort: true,
         cell: info => (
           <img
-            src={info.row.original.ft_photo}
+            src={`/api/v1/users/${info.row.original.id}/avatar`}
             alt={info.row.original.ft_login}
             className="user-picture"
           />

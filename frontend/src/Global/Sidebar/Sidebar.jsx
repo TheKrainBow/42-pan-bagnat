@@ -232,7 +232,7 @@ export default function Sidebar({ currentPage, user, pages }) {
             {user && (
               <div className="sidebar-userfooter" onClick={() => navigate('/settings')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/settings')} title={collapsed ? user.ft_login : undefined}>
                 <div className="avatar-wrap">
-                  <img src={user.ft_photo} alt={user.ft_login} className="sidebar-avatar" />
+                  <img src={`/api/v1/users/${user.id}/avatar`} alt={user.ft_login} className="sidebar-avatar" />
                   <span className="sidebar-status online" />
                 </div>
                 <span className="sidebar-userlogin">{user.ft_login}</span>
@@ -273,7 +273,7 @@ export default function Sidebar({ currentPage, user, pages }) {
             {user && (
               <div className="sidebar-userfooter" onClick={() => navigate('/settings')} onAuxClick={(e) => isMiddleClick(e) && openInNewTab('/settings')} title={collapsed ? user.ft_login : undefined}>
                 <div className="avatar-wrap">
-                  <img src={user.ft_photo} alt={user.ft_login} className="sidebar-avatar" />
+                  <img src={`/api/v1/users/${user.id}/avatar`} alt={user.ft_login} className="sidebar-avatar" />
                   <span className="sidebar-status online" />
                 </div>
                 <span className="sidebar-userlogin">{user.ft_login}</span>

@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -116,6 +117,56 @@ func GetUser(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(apiUser); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
+}
+
+// GetUserAvatar proxies a user's 42 avatar image. 42 now requires a bearer
+// token to fetch the image bytes, so the browser can no longer hotlink the
+// stored photo_url directly — PB fetches it server-side and streams it back.
+// @Summary      Get User Avatar
+// @Description  Streams a user's avatar image, refreshing the cached URL from 42 first if stale.
+// @Tags         Users
+// @Produce      image/jpeg
+// @Param        identifier  path  string  true  "User identifier (ID or login)"
+// @Success      200  {file}    file    "The avatar image"
+// @Failure      400  {string}  string  "Identifier is required"
+// @Failure      404  {string}  string  "User or avatar not found"
+// @Failure      502  {string}  string  "Failed to fetch avatar from 42"
+// @Router       /users/{identifier}/avatar [get]
+func GetUserAvatar(w http.ResponseWriter, r *http.Request) {
+	identifier := chi.URLParam(r, "identifier")
+	if strings.TrimSpace(identifier) == "" {
+		http.Error(w, "Identifier is required", http.StatusBadRequest)
+		return
+	}
+
+	photoURL, err := core.GetUserPhotoURL(identifier)
+	if err != nil {
+		if errors.Is(err, core.ErrNotFound) {
+			http.Error(w, "User not found", http.StatusNotFound)
+		} else {
+			log.Printf("error resolving avatar for %s: %v\n", identifier, err)
+			http.Error(w, "Internal server error", http.StatusInternalServerError)
+		}
+		return
+	}
+	if photoURL == "" {
+		http.Error(w, "Avatar not found", http.StatusNotFound)
+		return
+	}
+
+	resp, err := core.FetchUserPhoto(r.Context(), photoURL)
+	if err != nil {
+		log.Printf("error fetching avatar for %s: %v\n", identifier, err)
+		http.Error(w, "Failed to fetch avatar", http.StatusBadGateway)
+		return
+	}
+	defer resp.Body.Close()
+
+	if ct := resp.Header.Get("Content-Type"); ct != "" {
+		w.Header().Set("Content-Type", ct)
+	}
+	w.Header().Set("Cache-Control", "private, max-age=3600")
+	io.Copy(w, resp.Body)
 }
 
 // GetUserMe returns the details of the currently authenticated user.
