@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -105,30 +106,39 @@ func DecodeUserPaginationToken(encoded string) (UserPagination, error) {
 // we re-ask 42 for a fresh one.
 const avatarRefreshTTL = 24 * time.Hour
 
-// RefreshUserPhotoIfStale re-fetches a user's avatar URL from 42 when the
-// cached value is older than avatarRefreshTTL, and persists it. On failure
-// (e.g. 42 API down) photo_updated_at is left untouched, so the very next
-// fetch for this user will simply try again.
+// photoRefreshInFlight de-dupes concurrent background refreshes for the same
+// user (e.g. a user list rendering many stale avatars at once).
+var photoRefreshInFlight sync.Map // userID -> struct{}
+
+// RefreshUserPhotoIfStale kicks off a background re-fetch of a user's avatar
+// URL from 42 when the cached value is older than avatarRefreshTTL. It never
+// blocks the caller: the stale URL already on `user` stays in effect for the
+// current response, and the DB is updated for next time. On failure (e.g. 42
+// API down) photo_updated_at is left untouched, so a later call will retry.
 func RefreshUserPhotoIfStale(user *User, photoUpdatedAt time.Time) {
 	if time.Since(photoUpdatedAt) < avatarRefreshTTL {
 		return
 	}
-
-	intra, err := GetUser42(user.FtLogin)
-	if err != nil {
-		fmt.Printf("couldn't refresh avatar for %s: %s\n", user.FtLogin, err.Error())
-		return
-	}
-	if intra.Image.Link == "" {
+	if _, inFlight := photoRefreshInFlight.LoadOrStore(user.ID, struct{}{}); inFlight {
 		return
 	}
 
-	now := time.Now()
-	if err := database.UpdateUserPhoto(user.ID, intra.Image.Link, now); err != nil {
-		fmt.Printf("couldn't persist refreshed avatar for %s: %s\n", user.FtLogin, err.Error())
-		return
-	}
-	user.PhotoURL = intra.Image.Link
+	userID, login := user.ID, user.FtLogin
+	go func() {
+		defer photoRefreshInFlight.Delete(userID)
+
+		intra, err := GetUser42(login)
+		if err != nil {
+			fmt.Printf("couldn't refresh avatar for %s: %s\n", login, err.Error())
+			return
+		}
+		if intra.Image.Link == "" {
+			return
+		}
+		if err := database.UpdateUserPhoto(userID, intra.Image.Link, time.Now()); err != nil {
+			fmt.Printf("couldn't persist refreshed avatar for %s: %s\n", login, err.Error())
+		}
+	}()
 }
 
 func GetUser(identifier string) (User, error) {
