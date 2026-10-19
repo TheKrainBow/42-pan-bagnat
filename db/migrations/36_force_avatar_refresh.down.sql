@@ -1,0 +1,1 @@
+-- Irreversible: the previous photo_updated_at values aren't worth restoring.
