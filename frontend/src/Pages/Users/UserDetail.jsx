@@ -162,7 +162,7 @@ export default function UserDetail() {
     <div className="user-detail-wrapper">
       {/* Header / Banner */}
       <div className="user-profile-header">
-        <img className="avatar" src={user.ft_photo} alt="avatar" />
+        <img className="avatar" src={`/api/v1/users/${user.id}/avatar`} alt="avatar" />
 
         <div className="user-profile-header-info">
           <h1>{user.ft_login}</h1>

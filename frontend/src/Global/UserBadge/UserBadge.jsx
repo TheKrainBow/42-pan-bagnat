@@ -14,7 +14,7 @@ export default function UserBadge({ user, onClick, onDelete, href }) {
       tabIndex={0}
     >
       <img
-        src={user.ft_photo}
+        src={`/api/v1/users/${user.id}/avatar`}
         alt={user.ft_login}
         className="user-badge-avatar"
       />

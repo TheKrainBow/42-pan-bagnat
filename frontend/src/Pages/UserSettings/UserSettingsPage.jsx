@@ -187,7 +187,7 @@ export default function UserSettingsPage({ pages: initialPages, user: initialUse
         {user && (
           <>
             <div className="usp-header-left">
-              <img className="usp-avatar" src={user.ft_photo} alt={user.ft_login} />
+              <img className="usp-avatar" src={`/api/v1/users/${user.id}/avatar`} alt={user.ft_login} />
               <div className="usp-identity">
                 <div className="usp-login">{user.ft_login}</div>
                 <div className="usp-roles-chips">

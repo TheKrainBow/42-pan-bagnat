@@ -101,6 +101,36 @@ func DecodeUserPaginationToken(encoded string) (UserPagination, error) {
 	return token, err
 }
 
+// avatarRefreshTTL controls how long a cached avatar URL is trusted before
+// we re-ask 42 for a fresh one.
+const avatarRefreshTTL = 24 * time.Hour
+
+// RefreshUserPhotoIfStale re-fetches a user's avatar URL from 42 when the
+// cached value is older than avatarRefreshTTL, and persists it. On failure
+// (e.g. 42 API down) photo_updated_at is left untouched, so the very next
+// fetch for this user will simply try again.
+func RefreshUserPhotoIfStale(user *User, photoUpdatedAt time.Time) {
+	if time.Since(photoUpdatedAt) < avatarRefreshTTL {
+		return
+	}
+
+	intra, err := GetUser42(user.FtLogin)
+	if err != nil {
+		fmt.Printf("couldn't refresh avatar for %s: %s\n", user.FtLogin, err.Error())
+		return
+	}
+	if intra.Image.Link == "" {
+		return
+	}
+
+	now := time.Now()
+	if err := database.UpdateUserPhoto(user.ID, intra.Image.Link, now); err != nil {
+		fmt.Printf("couldn't persist refreshed avatar for %s: %s\n", user.FtLogin, err.Error())
+		return
+	}
+	user.PhotoURL = intra.Image.Link
+}
+
 func GetUser(identifier string) (User, error) {
 	dbUser, err := database.GetUser(identifier)
 	if err != nil {
@@ -108,6 +138,7 @@ func GetUser(identifier string) (User, error) {
 	}
 
 	apiUser := DatabaseUserToUser(*dbUser)
+	RefreshUserPhotoIfStale(&apiUser, dbUser.PhotoUpdatedAt)
 
 	roles, err := database.GetUserRoles(apiUser.ID)
 	if err == nil {
@@ -139,6 +170,7 @@ func GetUsers(pagination UserPagination) ([]User, string, error) {
 
 	for _, user := range users {
 		apiUser := DatabaseUserToUser(user)
+		RefreshUserPhotoIfStale(&apiUser, user.PhotoUpdatedAt)
 		roles, err := database.GetUserRoles(apiUser.ID)
 		if err != nil {
 			fmt.Printf("couldn't get roles for user %s: %s\n", apiUser.ID, err.Error())
@@ -265,6 +297,14 @@ func HandleUser42Connection(ctx context.Context, token *oauth2.Token, meta Devic
 		user.Email = email
 	}
 
+	if photo := intra.Image.Link; photo != "" && photo != user.PhotoURL {
+		now := time.Now()
+		if err := database.UpdateUserPhoto(user.ID, photo, now); err == nil {
+			user.PhotoURL = photo
+			user.PhotoUpdatedAt = now
+		}
+	}
+
 	user.LastSeen = time.Now()
 	_ = database.UpdateUserLastSeen(user.FtLogin, user.LastSeen)
 
@@ -274,6 +314,19 @@ func HandleUser42Connection(ctx context.Context, token *oauth2.Token, meta Devic
 	}
 
 	return sessionID, nil
+}
+
+// GetUserPhotoURL resolves a user's current avatar URL, refreshing it from
+// 42 first if the cached value is stale.
+func GetUserPhotoURL(identifier string) (string, error) {
+	dbUser, err := database.GetUser(identifier)
+	if err != nil {
+		return "", ErrNotFound
+	}
+
+	user := DatabaseUserToUser(*dbUser)
+	RefreshUserPhotoIfStale(&user, dbUser.PhotoUpdatedAt)
+	return user.PhotoURL, nil
 }
 
 func ResolveUserIdentifier(identifier string) (string, error) {
