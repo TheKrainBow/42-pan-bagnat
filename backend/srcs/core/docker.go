@@ -92,6 +92,7 @@ func DeployModule(module Module) error {
 	// Step 1: docker compose build
 	cmdBuild := exec.Command("docker", "compose", "-f", file, "build")
 	cmdBuild.Dir = dir
+	cmdBuild.Env = moduleComposeEnv()
 	err = runAndLog(module.ID, cmdBuild)
 	if err != nil {
 		_, _ = database.PatchModule(database.ModulePatch{ID: module.ID, IsDeploying: ptrBool(false), LastDeployStatus: strPtr("failed")})
@@ -102,6 +103,7 @@ func DeployModule(module Module) error {
 	// Step 2: docker compose up -d
 	cmdUp := exec.Command("docker", "compose", "-f", file, "up", "-d")
 	cmdUp.Dir = dir
+	cmdUp.Env = moduleComposeEnv()
 	err = runAndLog(module.ID, cmdUp)
 	if err != nil {
 		_, _ = database.PatchModule(database.ModulePatch{ID: module.ID, IsDeploying: ptrBool(false), LastDeployStatus: strPtr("failed")})
@@ -129,12 +131,14 @@ func ComposeRebuild(module Module) error {
 	LogModule(module.ID, "INFO", "docker compose build --no-cache", nil, nil)
 	cmdBuild := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "build", "--no-cache")
 	cmdBuild.Dir = dir
+	cmdBuild.Env = moduleComposeEnv()
 	if err := runAndLog(module.ID, cmdBuild); err != nil {
 		return err
 	}
 	LogModule(module.ID, "INFO", "docker compose up -d", nil, nil)
 	cmdUp := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "up", "-d")
 	cmdUp.Dir = dir
+	cmdUp.Env = moduleComposeEnv()
 	if err := runAndLog(module.ID, cmdUp); err != nil {
 		return err
 	}
@@ -152,6 +156,7 @@ func ComposeDown(module Module) error {
 	LogModule(module.ID, "INFO", "docker compose down --remove-orphans", nil, nil)
 	cmd := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "down", "--remove-orphans")
 	cmd.Dir = dir
+	cmd.Env = moduleComposeEnv()
 	if err := runAndLog(module.ID, cmd); err != nil {
 		return err
 	}
@@ -176,6 +181,7 @@ func EnableModule(module Module) error {
 	LogModule(module.ID, "INFO", "docker compose up -d", nil, nil)
 	cmd := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "up", "-d")
 	cmd.Dir = dir
+	cmd.Env = moduleComposeEnv()
 	if err := runAndLog(module.ID, cmd); err != nil {
 		SetModuleStatus(module.ID, Disabled, true)
 		return LogModule(module.ID, "ERROR", "Failed to enable module (docker compose up)", nil, err)
@@ -204,6 +210,7 @@ func DisableModule(module Module) error {
 	LogModule(module.ID, "INFO", "docker compose stop", nil, nil)
 	cmd := exec.Command("docker", "compose", "-f", file, "--project-name", module.Slug, "stop")
 	cmd.Dir = dir
+	cmd.Env = moduleComposeEnv()
 	if err := runAndLog(module.ID, cmd); err != nil {
 		SetModuleStatus(module.ID, Enabled, true)
 		return LogModule(module.ID, "ERROR", "Failed to disable module (docker compose stop)", nil, err)
@@ -562,6 +569,7 @@ func loadComposeStatic(slug, dir string) (composeStaticInfo, bool) {
 
 	cfgCmd := exec.Command("docker", "compose", "-f", "docker-compose.yml", "--project-name", slug, "config", "--format", "json")
 	cfgCmd.Dir = dir
+	cfgCmd.Env = moduleComposeEnv()
 	var out bytes.Buffer
 	cfgCmd.Stdout = &out
 	if err := cfgCmd.Run(); err != nil {
@@ -959,6 +967,7 @@ func CleanupModuleDockerResources(module Module) error {
 
 	cmdDown := exec.Command("docker", "compose", "-f", file, "down", "--volumes", "--remove-orphans", "--rmi", "all")
 	cmdDown.Dir = dir
+	cmdDown.Env = moduleComposeEnv()
 	if err := runAndLog(module.ID, cmdDown); err != nil {
 		return LogModule(module.ID, "ERROR", "Failed to docker compose down", nil, err)
 	}
@@ -1056,4 +1065,23 @@ func notifyContainersChanged(module Module) {
 		})
 	}
 	websocket.SendContainersUpdatedEvent(module.ID, payload)
+}
+
+// composeEnvAllowlist lists the only variables from Pan Bagnat's own environment
+// that module compose commands may inherit. Everything else (POSTGRES_*, secrets...)
+// is withheld, since compose gives process env priority over a module's .env file.
+var composeEnvAllowlist = []string{
+	"PATH", "HOME", "USER", "LANG", "TMPDIR", "SSH_AUTH_SOCK",
+	"DOCKER_HOST", "DOCKER_CONFIG", "DOCKER_CONTEXT", "DOCKER_CERT_PATH", "DOCKER_TLS_VERIFY",
+}
+
+// moduleComposeEnv returns a minimal environment for running `docker compose` on a module.
+func moduleComposeEnv() []string {
+	env := make([]string, 0, len(composeEnvAllowlist))
+	for _, k := range composeEnvAllowlist {
+		if v, ok := os.LookupEnv(k); ok {
+			env = append(env, k+"="+v)
+		}
+	}
+	return env
 }
