@@ -240,6 +240,7 @@ func main() {
 			})
 			r.Route("/redirections", redirections.RegisterRoutes)
 			r.Put("/dashboard", dashboard.PutDashboard)
+			r.Post("/dashboard/image/upload", dashboard.UploadDashboardImage)
 			r.Route("/ssh-keys", sshkeys.RegisterRoutes)
 			r.Route("/stats", stats.RegisterRoutes)
 			r.Get("/docker/ls", modules.GetAllContainers)
