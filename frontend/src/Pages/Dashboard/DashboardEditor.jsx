@@ -95,6 +95,8 @@ export default function DashboardEditor() {
   const [loading, setLoading] = useState(true);
   const [gifURL, setGifURL] = useState('');
   const [showGifInput, setShowGifInput] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const imageFileInputRef = useRef(null);
   // Fabric mutates the active Textbox's selectionStart/selectionEnd in place
   // while the user highlights text — that doesn't fire any canvas-level
   // 'selection:*' event, so React never learns about it on its own. Bumping
@@ -318,24 +320,49 @@ export default function DashboardEditor() {
     canvas.requestRenderAll();
   };
 
+  const addImageToCanvas = async (url) => {
+    const canvas = fabricRef.current;
+    if (!canvas) return;
+    const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
+    if (img.width > 480) img.scaleToWidth(480);
+    img.set({ left: DASHBOARD_WIDTH / 2 - (img.getScaledWidth() / 2), top: DASHBOARD_HEIGHT / 2 - (img.getScaledHeight() / 2) });
+    canvas.add(img);
+    canvas.setActiveObject(img);
+    canvas.requestRenderAll();
+  };
+
   const addGif = async () => {
     const trimmed = gifURL.trim();
     if (!trimmed) return;
     const url = resolveGiphyPageUrl(trimmed);
-    const canvas = fabricRef.current;
-    if (!canvas) return;
     try {
-      const img = await FabricImage.fromURL(url, { crossOrigin: 'anonymous' });
-      if (img.width > 480) img.scaleToWidth(480);
-      img.set({ left: DASHBOARD_WIDTH / 2 - (img.getScaledWidth() / 2), top: DASHBOARD_HEIGHT / 2 - (img.getScaledHeight() / 2) });
-      canvas.add(img);
-      canvas.setActiveObject(img);
-      canvas.requestRenderAll();
+      await addImageToCanvas(url);
       setGifURL('');
       setShowGifInput(false);
     } catch (err) {
       toast.error('Failed to load image from that URL');
       console.error(err);
+    }
+  };
+
+  const handleImageFileSelected = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // allow re-selecting the same file again later
+    if (!file) return;
+    setUploadingImage(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetchWithAuth('/api/v1/admin/dashboard/image/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('upload failed');
+      const data = await res.json();
+      await addImageToCanvas(data.url);
+      setShowGifInput(false);
+    } catch (err) {
+      toast.error('Failed to upload image');
+      console.error(err);
+    } finally {
+      setUploadingImage(false);
     }
   };
 
@@ -619,6 +646,16 @@ export default function DashboardEditor() {
                 autoFocus
               />
               <button type="button" className="dashboard-tool-btn" onClick={addGif}>Add</button>
+              <button type="button" className="dashboard-tool-btn" onClick={() => imageFileInputRef.current?.click()} disabled={uploadingImage}>
+                {uploadingImage ? 'Uploading…' : 'Upload file'}
+              </button>
+              <input
+                type="file"
+                accept="image/*"
+                ref={imageFileInputRef}
+                onChange={handleImageFileSelected}
+                style={{ display: 'none' }}
+              />
               <button type="button" className="dashboard-tool-btn" onClick={() => { setShowGifInput(false); setGifURL(''); }}>Cancel</button>
             </>
           )}
