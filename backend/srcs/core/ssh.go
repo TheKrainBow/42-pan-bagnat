@@ -16,7 +16,7 @@ import (
 var ErrInvalidSSHKey = errors.New("invalid ssh private key")
 
 func GenerateSSHKeys() (PublicKey string, PrivateKey string, err error) {
-	priv, err := rsa.GenerateKey(rand.Reader, 2048)
+	priv, err := rsa.GenerateKey(rand.Reader, 4096)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to generate ssh key: %w", err)
 	}
