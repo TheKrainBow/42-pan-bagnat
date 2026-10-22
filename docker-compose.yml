@@ -107,6 +107,16 @@ services:
       retries: 5
       start_period: 5s
 
+  # Builds the toolbox image used by the module Shell tab, then exits.
+  module-shell-image:
+    image: pan-bagnat-module-shell:latest
+    build:
+      context: ./module-shell
+    command: ["true"]
+    restart: "no"
+    networks:
+      - pan-bagnat-core
+
   backend:
     container_name: pan-bagnat-backend
     user: "root:root"
@@ -142,10 +152,13 @@ services:
       SSH_KNOWN_HOSTS_LIST: ${SSH_KNOWN_HOSTS_LIST}
       MODULES_SESSION_SECRET: ${MODULES_SESSION_SECRET}
       MODULES_SESSION_TOKEN_TTL: ${MODULES_SESSION_TOKEN_TTL:-1m}
+      MODULE_SHELL_IMAGE: ${MODULE_SHELL_IMAGE:-pan-bagnat-module-shell:latest}
     depends_on:
       db:
         condition: service_healthy
       migrator:
+        condition: service_completed_successfully
+      module-shell-image:
         condition: service_completed_successfully
     volumes:
       - ./repos:/data/repos

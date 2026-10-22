@@ -5,6 +5,7 @@ import './ModuleDetails.css';
 import AppIcon from 'Global/AppIcon/AppIcon';
 import ModuleIconModal from 'Pages/Modules/Components/ModuleIconModal/ModuleIconModal';
 import Button from 'Global/Button/Button';
+import ModuleShellPanel from 'Pages/Modules/Components/ModuleShellPanel/ModuleShellPanel';
 import ModuleLogsPanel from 'Pages/Modules/Components/ModuleLogsPanel/ModuleLogsPanel';
 import ModuleSettings from 'Pages/Modules/Components/ModuleSettings/ModuleSettings';
 import ModuleWarningSection from 'Pages/Modules/Components/ModuleWarningSection/ModuleWarningSection';
@@ -245,6 +246,15 @@ const ModuleDetails = () => {
               onClickDisabled={() => { retryButtonRef.current?.callToAction(); }}
             />
             <Button
+              label="Shell"
+              color={`${activeTab === 'shell' ? 'blue' : 'gray'}`}
+              href={`/admin/modules/${module.id}?tab=shell`}
+              onClick={() => {
+                setActiveTab('shell');
+                setSearchParams({ tab: 'shell' });
+              }}
+            />
+            <Button
               label="Containers"
               color={`${activeTab === 'containers' ? 'blue' : 'gray'}`}
               href={`/admin/modules/${module.id}?tab=containers`}
@@ -300,6 +310,7 @@ const ModuleDetails = () => {
                 setDockerTab={() => {}}
               />
             )}
+            {activeTab === 'shell' && <ModuleShellPanel moduleId={module.id} />}
             {activeTab === 'settings' && (
               <ModuleSettings
                 module={module}
