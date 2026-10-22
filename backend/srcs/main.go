@@ -255,6 +255,8 @@ func main() {
 	}
 
 	core.StartDockerEventWatcher()
+	go core.CleanupStaleModuleShells()
+	core.StartModuleShellReaper()
 	go websocket.Dispatch()
 
 	// Wire WS subscribe/unsubscribe hooks for container log streaming

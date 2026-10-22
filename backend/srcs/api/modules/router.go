@@ -71,6 +71,9 @@ func RegisterRoutes(r chi.Router) {
 	r.Post("/{moduleID}/fs/delete", DeleteFsPath)
 	r.Post("/{moduleID}/fs/mkdir", MkdirFsPath)
 
+	// Root shell sandboxed on the module repo (WebSocket, admin only)
+	r.Get("/{moduleID}/shell", ModuleShell)
+
 	// Icon management
 	r.Post("/{moduleID}/icon/upload", SetModuleIconUpload)
 	r.Post("/{moduleID}/icon/url", SetModuleIconFromURL)
