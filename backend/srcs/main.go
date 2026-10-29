@@ -243,6 +243,7 @@ func main() {
 			r.Post("/dashboard/image/upload", dashboard.UploadDashboardImage)
 			r.Route("/ssh-keys", sshkeys.RegisterRoutes)
 			r.Route("/stats", stats.RegisterRoutes)
+			r.Get("/claude/active", modules.GetClaudeActive)
 			r.Get("/docker/ls", modules.GetAllContainers)
 			r.Delete("/docker/{containerName}/delete", modules.DeleteContainerGlobal)
 			r.Route("/users", users.RegisterRoutes)
@@ -257,6 +258,7 @@ func main() {
 	core.StartDockerEventWatcher()
 	go core.CleanupStaleModuleShells()
 	core.StartModuleShellReaper()
+	core.StartClaudeManager()
 	go websocket.Dispatch()
 
 	// Wire WS subscribe/unsubscribe hooks for container log streaming

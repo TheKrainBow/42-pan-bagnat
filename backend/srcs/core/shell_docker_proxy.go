@@ -39,8 +39,18 @@ var dockerAPIVersionRe = regexp.MustCompile(`^/v[0-9]+\.[0-9]+`)
 type scopedDockerProxy struct {
 	project string
 	dir     string
+	opts    dockerProxyOptions
 	srv     *http.Server
 	rp      *httputil.ReverseProxy
+}
+
+// dockerProxyOptions adapts a scoped proxy to the Claude tab container.
+type dockerProxyOptions struct {
+	// keepDir keeps the socket directory on Close: it is bind-mounted in a
+	// container that outlives the proxy (backend restart).
+	keepDir bool
+	// socketUID/GID own the socket when the client does not run as root.
+	socketUID, socketGID int
 }
 
 func upstreamDockerSocket() string {
@@ -52,6 +62,10 @@ func upstreamDockerSocket() string {
 
 // startScopedDockerProxy listens on <dir>/docker.sock and filters requests to project.
 func startScopedDockerProxy(project, dir string) (*scopedDockerProxy, error) {
+	return startScopedDockerProxyWith(project, dir, dockerProxyOptions{})
+}
+
+func startScopedDockerProxyWith(project, dir string, opts dockerProxyOptions) (*scopedDockerProxy, error) {
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, err
 	}
@@ -59,10 +73,15 @@ func startScopedDockerProxy(project, dir string) (*scopedDockerProxy, error) {
 	_ = os.Remove(sock)
 	ln, err := net.Listen("unix", sock)
 	if err != nil {
-		os.RemoveAll(dir)
+		if !opts.keepDir {
+			os.RemoveAll(dir)
+		}
 		return nil, err
 	}
 	_ = os.Chmod(sock, 0o600)
+	if opts.socketUID != 0 || opts.socketGID != 0 {
+		_ = os.Chown(sock, opts.socketUID, opts.socketGID)
+	}
 
 	upstream := upstreamDockerSocket()
 	transport := &http.Transport{
@@ -70,7 +89,7 @@ func startScopedDockerProxy(project, dir string) (*scopedDockerProxy, error) {
 			return (&net.Dialer{}).DialContext(ctx, "unix", upstream)
 		},
 	}
-	p := &scopedDockerProxy{project: project, dir: dir}
+	p := &scopedDockerProxy{project: project, dir: dir, opts: opts}
 	p.rp = &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
 			req.URL.Scheme = "http"
@@ -87,6 +106,10 @@ func startScopedDockerProxy(project, dir string) (*scopedDockerProxy, error) {
 
 func (p *scopedDockerProxy) Close() {
 	_ = p.srv.Close()
+	if p.opts.keepDir {
+		_ = os.Remove(filepath.Join(p.dir, shellProxySockName))
+		return
+	}
 	_ = os.RemoveAll(p.dir)
 }
 
@@ -199,6 +222,7 @@ var containerReadActions = map[string]bool{"json": true, "logs": true, "top": tr
 var containerWriteActions = map[string]bool{
 	"start": true, "stop": true, "restart": true, "kill": true, "pause": true,
 	"unpause": true, "wait": true, "resize": true, "attach": true, "exec": true,
+	"rename": true,
 }
 
 // injectFilter forces the compose project label into the request's "filters"

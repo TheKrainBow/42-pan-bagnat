@@ -1,0 +1,39 @@
+
+.module-claude {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 2px 0;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+.module-claude-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--gray);
+}
+
+.module-claude-idle .module-claude-dot { background: var(--green); }
+.module-claude-starting .module-claude-dot { background: var(--blue); }
+.module-claude-waiting_input .module-claude-dot { background: var(--yellow-strong); }
+
+.module-claude-working .module-claude-dot {
+  background: var(--purple);
+  animation: module-claude-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes module-claude-pulse {
+  50% { opacity: 0.3; }
+}
+
+.module-card {
+  position: relative;
+}
+
+.module-card-claude-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+}

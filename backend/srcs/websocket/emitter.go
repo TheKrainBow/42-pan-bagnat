@@ -192,3 +192,18 @@ func SendGenericModuleEvent(moduleID string, eventType string, payload map[strin
 	}
 	Events <- evt
 }
+
+// SendTopicEvent sends an event with a payload map on an arbitrary topic.
+func SendTopicEvent(topic, moduleID, eventType string, payload map[string]any) {
+	b, err := json.Marshal(payload)
+	if err != nil {
+		return
+	}
+	Events <- Event{
+		EventType: eventType,
+		ModuleID:  moduleID,
+		Topic:     topic,
+		Timestamp: time.Now().Format(time.RFC3339),
+		Payload:   json.RawMessage(b),
+	}
+}

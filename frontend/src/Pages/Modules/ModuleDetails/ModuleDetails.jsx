@@ -6,6 +6,10 @@ import AppIcon from 'Global/AppIcon/AppIcon';
 import ModuleIconModal from 'Pages/Modules/Components/ModuleIconModal/ModuleIconModal';
 import Button from 'Global/Button/Button';
 import ModuleShellPanel from 'Pages/Modules/Components/ModuleShellPanel/ModuleShellPanel';
+import ModuleClaudePanel from 'Pages/Modules/Components/ModuleClaudePanel/ModuleClaudePanel';
+import ClaudeAttentionDot from 'Pages/Modules/Components/ModuleClaudePanel/ClaudeAttention';
+import ClaudeRepoNotice from 'Pages/Modules/Components/ModuleClaudePanel/ClaudeRepoNotice';
+import { claudeNeedsAttention } from 'Pages/Modules/Components/ModuleClaudePanel/claudeAttentionStatus';
 import ModuleLogsPanel from 'Pages/Modules/Components/ModuleLogsPanel/ModuleLogsPanel';
 import ModuleSettings from 'Pages/Modules/Components/ModuleSettings/ModuleSettings';
 import ModuleWarningSection from 'Pages/Modules/Components/ModuleWarningSection/ModuleWarningSection';
@@ -35,6 +39,11 @@ const ModuleDetails = () => {
   const [activeTab, setActiveTab] = useState(tab);
   const fetchedRef = useRef(false);
   const [hasConflicts, setHasConflicts] = useState(false)
+  // Caller's Claude session on this module that needs them (pastille on the tab).
+  const [claudeAttention, setClaudeAttention] = useState(null)
+  // Whoever holds the module's Claude session, warned about in the IDE and Shell tabs.
+  const [claudeOccupant, setClaudeOccupant] = useState(null)
+  const [claudeMe, setClaudeMe] = useState('')
 
   const retryButtonRef = useRef();
 
@@ -92,6 +101,27 @@ const ModuleDetails = () => {
       }
     })
     return () => { socketService.unsubscribeTopic(`module:${moduleId}`); unsub() }
+  }, [moduleId])
+
+  useEffect(() => {
+    if (!moduleId) return
+    const load = () => {
+      fetchWithAuth(`/api/v1/admin/modules/${moduleId}/claude/sessions`)
+        .then((res) => (res?.ok ? res.json() : null))
+        .then((data) => {
+          setClaudeOccupant(data?.occupant || null)
+          setClaudeMe(data?.me || '')
+          const occupantId = data?.occupant?.session_id
+          const list = (data?.sessions || []).map((s) => ({ ...s, active: s.id === occupantId }))
+          setClaudeAttention(list.find(claudeNeedsAttention) || null)
+        })
+        .catch(() => {})
+    }
+    load()
+    const unsub = socketService.subscribe((evt) => {
+      if (evt?.eventType === 'claude_status' && evt?.module_id === moduleId) load()
+    })
+    return () => unsub()
   }, [moduleId])
 
   const toggleModuleStatus = async () => {
@@ -255,6 +285,20 @@ const ModuleDetails = () => {
               }}
             />
             <Button
+              label={claudeAttention && activeTab !== 'claude'
+                ? <span className="tab-label-with-dot">Claude <ClaudeAttentionDot session={claudeAttention} /></span>
+                : 'Claude'}
+              color={`${activeTab === 'claude' ? 'blue' : 'gray'}`}
+              href={`/admin/modules/${module.id}?tab=claude`}
+              onClick={() => {
+                setActiveTab('claude');
+                setSearchParams({ tab: 'claude' });
+              }}
+              disabled={showWarning}
+              disabledMessage={"You must resolve git issues first"}
+              onClickDisabled={() => { retryButtonRef.current?.callToAction(); }}
+            />
+            <Button
               label="Containers"
               color={`${activeTab === 'containers' ? 'blue' : 'gray'}`}
               href={`/admin/modules/${module.id}?tab=containers`}
@@ -303,6 +347,13 @@ const ModuleDetails = () => {
             {activeTab === 'git' && (
               <ModuleGitSection moduleId={module.id} />
             )}
+            {(activeTab === 'ide' || activeTab === 'shell') && claudeOccupant && (
+              <ClaudeRepoNotice
+                occupant={claudeOccupant}
+                isMine={claudeOccupant.user_id === claudeMe}
+                onOpen={() => { setActiveTab('claude'); setSearchParams({ tab: 'claude' }) }}
+              />
+            )}
             {activeTab === 'ide' && (
               <ModuleDockerSection
                 moduleId={module.id}
@@ -311,6 +362,7 @@ const ModuleDetails = () => {
               />
             )}
             {activeTab === 'shell' && <ModuleShellPanel moduleId={module.id} />}
+            {activeTab === 'claude' && <ModuleClaudePanel module={module} />}
             {activeTab === 'settings' && (
               <ModuleSettings
                 module={module}

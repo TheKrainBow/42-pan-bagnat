@@ -19,6 +19,8 @@ class SocketService {
   constructor() {
     this.listeners = new Set();
     this.sendQueue = [];
+    // topic -> number of components subscribed; replayed after a reconnection.
+    this.topics = new Map();
 
     this._connect();
   }
@@ -32,10 +34,14 @@ class SocketService {
     this.socket.addEventListener('open', () => {
       console.log('⚡ WebSocket connected to', endpoint);
       // flush any queued messages
+      this.sendQueue = this.sendQueue.filter(msg => msg.action !== 'subscribe' && msg.action !== 'unsubscribe');
       this.sendQueue.forEach(msg => {
         this.socket.send(JSON.stringify(msg));
       });
       this.sendQueue = [];
+      this.topics.forEach((_, topic) => {
+        this.socket.send(JSON.stringify({ action: 'subscribe', module_id: topic }));
+      });
     });
 
     this.socket.addEventListener('message', ev => {
@@ -146,11 +152,24 @@ class SocketService {
   //  - module:<moduleId>
   //  - container:<moduleId>:<containerName>
   subscribeTopic(topic) {
-    this.send({ action: 'subscribe', module_id: topic });
+    this.topics.set(topic, (this.topics.get(topic) || 0) + 1);
+    if (this.socket.readyState === WebSocket.OPEN) {
+      this.send({ action: 'subscribe', module_id: topic });
+    }
   }
 
+  // The server keeps one subscription per topic: only drop it when the last
+  // component using it unsubscribes.
   unsubscribeTopic(topic) {
-    this.send({ action: 'unsubscribe', module_id: topic });
+    const count = (this.topics.get(topic) || 0) - 1;
+    if (count > 0) {
+      this.topics.set(topic, count);
+      return;
+    }
+    this.topics.delete(topic);
+    if (this.socket.readyState === WebSocket.OPEN) {
+      this.send({ action: 'unsubscribe', module_id: topic });
+    }
   }
 
   subscribeModule(moduleId) {

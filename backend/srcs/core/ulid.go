@@ -12,17 +12,18 @@ import (
 type EntityKind string
 
 const (
-	UserKind        EntityKind = "user"
-	RoleKind        EntityKind = "role"
-	ModuleKind      EntityKind = "module"
-	PageKind        EntityKind = "page"
-	SSHKeyKind      EntityKind = "ssh-key"
-	RedirectionKind EntityKind = "redirection"
+	UserKind          EntityKind = "user"
+	RoleKind          EntityKind = "role"
+	ModuleKind        EntityKind = "module"
+	PageKind          EntityKind = "page"
+	SSHKeyKind        EntityKind = "ssh-key"
+	RedirectionKind   EntityKind = "redirection"
+	ClaudeSessionKind EntityKind = "claude-session"
 )
 
 func GenerateULID(kind EntityKind) (string, error) {
 	switch kind {
-	case UserKind, RoleKind, ModuleKind, PageKind, SSHKeyKind, RedirectionKind:
+	case UserKind, RoleKind, ModuleKind, PageKind, SSHKeyKind, RedirectionKind, ClaudeSessionKind:
 		// valid
 	default:
 		return "", fmt.Errorf("invalid entity kind: %s", kind)

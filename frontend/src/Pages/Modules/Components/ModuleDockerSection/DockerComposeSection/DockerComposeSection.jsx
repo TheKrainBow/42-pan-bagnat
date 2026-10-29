@@ -302,6 +302,38 @@ export default function DockerComposeSection({ moduleId }) {
     setDirty(false)
   }
 
+  // Claude edits the repo from its own container: when it finishes a task, reload
+  // what is shown so that a save "on focus change" never writes a stale buffer
+  // over its changes. Unsaved local edits are kept, with a warning.
+  useEffect(() => {
+    if (!moduleId) return
+    let last = null
+    const unsub = socketService.subscribe(msg => {
+      if (msg?.eventType !== 'claude_status' || msg?.module_id !== moduleId) return
+      const st = msg.payload?.status
+      const wasWorking = last === 'working' || last === 'waiting_input'
+      last = st
+      if (wasWorking && st !== 'working' && st !== 'waiting_input') {
+        window.dispatchEvent(new CustomEvent('ide:refresh'))
+      }
+    })
+    return () => unsub()
+  }, [moduleId])
+
+  useEffect(() => {
+    const onRefresh = async () => {
+      const pending = Object.keys(unsaved)
+      if (pending.length > 0 || dirty) {
+        toast.warning(`Claude changed the repository while you have unsaved edits (${pending.length || 1} file(s)). Saving them may overwrite Claude's work.`, { autoClose: false })
+      } else {
+        await reloadCurrentFile()
+      }
+      await refreshGitStatus()
+    }
+    window.addEventListener('ide:refresh', onRefresh)
+    return () => window.removeEventListener('ide:refresh', onRefresh)
+  }, [unsaved, dirty, currentPath, moduleId])
+
   const quickResolveBoth = () => {
     const resolved = resolveConflictMarkers(content, 'both')
     setContent(resolved)
@@ -453,6 +485,13 @@ function TreeView({ moduleId, selectedPath, title }) {
   const [modifiedSet, setModifiedSet] = useState(new Set())
 
   useEffect(() => { load('.') }, [])
+
+  // Reload every folder already listed (Claude may have added or removed files).
+  useEffect(() => {
+    const onRefresh = () => { Object.keys(children).forEach((p) => load(p)) }
+    window.addEventListener('ide:refresh', onRefresh)
+    return () => window.removeEventListener('ide:refresh', onRefresh)
+  }, [children])
 
   // Listen to unsaved map updates from parent to render dots
   useEffect(() => {
