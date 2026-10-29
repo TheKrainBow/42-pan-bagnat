@@ -117,6 +117,16 @@ services:
     networks:
       - pan-bagnat-core
 
+  # Builds the image used by the module Claude tab, then exits.
+  module-claude-image:
+    image: pan-bagnat-module-claude:latest
+    build:
+      context: ./module-claude
+    entrypoint: ["true"]
+    restart: "no"
+    networks:
+      - pan-bagnat-core
+
   backend:
     container_name: pan-bagnat-backend
     user: "root:root"
@@ -153,12 +163,22 @@ services:
       MODULES_SESSION_SECRET: ${MODULES_SESSION_SECRET}
       MODULES_SESSION_TOKEN_TTL: ${MODULES_SESSION_TOKEN_TTL:-1m}
       MODULE_SHELL_IMAGE: ${MODULE_SHELL_IMAGE:-pan-bagnat-module-shell:latest}
+      MODULE_CLAUDE_IMAGE: ${MODULE_CLAUDE_IMAGE:-pan-bagnat-module-claude:latest}
+      CLAUDE_IDLE_TTL: ${CLAUDE_IDLE_TTL:-30m}
+      CLAUDE_MAX_WORK_SECONDS: ${CLAUDE_MAX_WORK_SECONDS:-43200}
+      CLAUDE_SESSION_RETENTION_DAYS: ${CLAUDE_SESSION_RETENTION_DAYS:-30}
+      CLAUDE_MEMORY_MB: ${CLAUDE_MEMORY_MB:-2048}
+      CLAUDE_CPUS: ${CLAUDE_CPUS:-2}
+      CLAUDE_PIDS_LIMIT: ${CLAUDE_PIDS_LIMIT:-512}
+      CLAUDE_MAX_CONTAINERS: ${CLAUDE_MAX_CONTAINERS:-5}
     depends_on:
       db:
         condition: service_healthy
       migrator:
         condition: service_completed_successfully
       module-shell-image:
+        condition: service_completed_successfully
+      module-claude-image:
         condition: service_completed_successfully
     volumes:
       - ./repos:/data/repos

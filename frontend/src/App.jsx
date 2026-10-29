@@ -41,6 +41,7 @@ import PrivacyPolicy from './Pages/Legal/PrivacyPolicy';
 
 function Main() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { slug } = useParams();
   const path = location.pathname;
   const mode = path.startsWith('/admin/') ? 'admin' : 'user';
@@ -84,6 +85,37 @@ function Main() {
 
     return () => { cancelled = true; };
   }, [showSidebar]);
+
+  // Claude tab notifications: the owner of a session is told, wherever they are
+  // in PB, when Claude waits for them or has finished its task.
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    const topic = `claude-user:${user.id}`;
+    socketService.subscribeTopic(topic);
+    const unsub = socketService.subscribe((evt) => {
+      if (evt?.eventType !== 'claude_notify' || !evt.payload) return;
+      const { kind, module_id, module_name, title, message } = evt.payload;
+      const url = `/admin/modules/${module_id}?tab=claude`;
+      const heading = {
+        waiting: `Claude is waiting for you on ${module_name}`,
+        error: `Claude stopped on ${module_name}`,
+      }[kind] || `Claude finished on ${module_name}`;
+      const body = [title, message].filter(Boolean).join(' — ');
+      toast(`${heading}${body ? `: ${body}` : ''}`, {
+        type: { waiting: 'warning', error: 'error' }[kind] || 'success',
+        autoClose: kind === 'waiting' ? false : 8000,
+        onClick: () => navigate(url),
+        className: 'toast-simple',
+      });
+      if (document.hidden && 'Notification' in window && Notification.permission === 'granted') {
+        try {
+          const n = new Notification(heading, { body, tag: `claude-${module_id}` });
+          n.onclick = () => { window.focus(); navigate(url); n.close(); };
+        } catch { /* notifications unavailable */ }
+      }
+    });
+    return () => { socketService.unsubscribeTopic(topic); unsub(); };
+  }, [user?.id, navigate]);
 
   // Load user pages
   useEffect(() => {

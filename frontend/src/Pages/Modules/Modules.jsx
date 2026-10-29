@@ -7,8 +7,9 @@ import ModuleImport from 'Pages/Modules/Components/ModuleImport/ModuleImport';
 import ModuleStatusBadge from 'Pages/Modules/Components/ModuleStatusBadge/ModuleStatusBadge';
 import ModuleBadge from 'Global/ModuleBadge/ModuleBadge';
 import { Link } from 'react-router-dom';
-import { setModuleStatusUpdater } from 'Global/SocketService/SocketService';
+import { setModuleStatusUpdater, socketService } from 'Global/SocketService/SocketService';
 import { fetchWithAuth } from 'Global/utils/Auth';
+import { claudeNeedsAttention } from 'Pages/Modules/Components/ModuleClaudePanel/claudeAttentionStatus';
 
 const Modules = () => {
   const [modules, setModules] = useState([]);
@@ -20,6 +21,43 @@ const Modules = () => {
   const scrollContainerRef = useRef(null);
   const isFirst = useRef(true);
   const [showModal, setShowModal] = useState(false);
+  // Claude sessions shown on the cards: running ones (anyone's) and the
+  // caller's ended ones with an unseen result. session id -> session.
+  const [claudeSessions, setClaudeSessions] = useState({});
+  const [me, setMe] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    fetchWithAuth('/api/v1/admin/claude/active')
+      .then((res) => (res?.ok ? res.json() : {}))
+      .then((data) => {
+        if (cancelled || !Array.isArray(data?.sessions)) return;
+        setMe(data.me || '');
+        setClaudeSessions(Object.fromEntries(data.sessions.map((s) => [s.id, s])));
+      })
+      .catch(() => {});
+    socketService.subscribeTopic('claude:status');
+    const unsub = socketService.subscribe((evt) => {
+      if (evt?.eventType !== 'claude_status' || !evt.payload) return;
+      const s = evt.payload;
+      setClaudeSessions((prev) => {
+        const next = { ...prev };
+        if (s.active || s.unseen_result) next[s.id] = s;
+        else delete next[s.id];
+        return next;
+      });
+    });
+    return () => { cancelled = true; socketService.unsubscribeTopic('claude:status'); unsub(); };
+  }, []);
+
+  const claudeFor = (moduleId) => {
+    const list = Object.values(claudeSessions).filter((s) => s.module_id === moduleId);
+    return {
+      active: list.find((s) => s.active) || null,
+      // Only the owner is asked to come back: others just see the status line.
+      attention: list.find((s) => s.user_id === me && claudeNeedsAttention(s)) || null,
+    };
+  };
 
   useEffect(() => {
     // Register live update handler
@@ -122,9 +160,10 @@ const Modules = () => {
       />
       <div className="modules-container" ref={scrollContainerRef}>
         <div className="modules-grid">
-          {modules.map((mod) => (
-            <ModuleBadge key={mod.id} mod={mod} />
-          ))}
+          {modules.map((mod) => {
+            const claude = claudeFor(mod.id);
+            return <ModuleBadge key={mod.id} mod={mod} claude={claude.active} claudeAttention={claude.attention} />;
+          })}
         </div>
         {nextPage && (
           <div className="load-more-wrapper">

@@ -74,6 +74,14 @@ func RegisterRoutes(r chi.Router) {
 	// Root shell sandboxed on the module repo (WebSocket, admin only)
 	r.Get("/{moduleID}/shell", ModuleShell)
 
+	// Claude Code sessions on the module repo (each admin logs in with their own account)
+	r.Get("/{moduleID}/claude/sessions", GetClaudeSessions)
+	r.Post("/{moduleID}/claude/sessions", PostClaudeSession)
+	r.Get("/{moduleID}/claude/sessions/{sessionID}/terminal", ClaudeTerminal)
+	r.Post("/{moduleID}/claude/sessions/{sessionID}/stop", StopClaudeSession)
+	r.Delete("/{moduleID}/claude/sessions/{sessionID}", DeleteClaudeSession)
+	r.Post("/{moduleID}/claude/seen", PostClaudeSeen)
+
 	// Icon management
 	r.Post("/{moduleID}/icon/upload", SetModuleIconUpload)
 	r.Post("/{moduleID}/icon/url", SetModuleIconFromURL)

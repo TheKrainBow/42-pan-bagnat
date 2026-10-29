@@ -61,6 +61,10 @@ func Handler() http.HandlerFunc {
 						fmt.Printf("WS subscribe denied (not admin): %s\n", ctl.ModuleID)
 						continue
 					}
+					if !userTopicAllowed(ctl.ModuleID, sess) {
+						fmt.Printf("WS subscribe denied (not owner): %s\n", ctl.ModuleID)
+						continue
+					}
 					Subscribe(conn, ctl.ModuleID)
 				case ActionUnsubscribe:
 					Unsubscribe(conn, ctl.ModuleID)
@@ -77,7 +81,19 @@ func Handler() http.HandlerFunc {
 func isAdminOnlyTopic(topic string) bool {
 	return strings.HasPrefix(topic, "module:") ||
 		strings.HasPrefix(topic, "container:") ||
-		strings.HasPrefix(topic, "containers:")
+		strings.HasPrefix(topic, "containers:") ||
+		strings.HasPrefix(topic, "claude:") ||
+		strings.HasPrefix(topic, "claude-user:")
+}
+
+// userTopicAllowed restricts per-user topics ("claude-user:<user_id>") to their owner.
+func userTopicAllowed(topic string, sess *database.Session) bool {
+	userID, ok := strings.CutPrefix(topic, "claude-user:")
+	if !ok {
+		return true
+	}
+	user, err := database.GetUserByLogin(sess.Login)
+	return err == nil && user != nil && user.ID == userID
 }
 
 // isAdminSession reports whether the session's user currently holds the admin role.

@@ -155,3 +155,9 @@
     display: none;
   }
 }
+
+.tab-label-with-dot {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
