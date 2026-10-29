@@ -28,10 +28,12 @@ RUN curl -fsSL "https://go.dev/dl/go${GO_VERSION}.linux-$(dpkg --print-architect
 ENV PATH="/usr/local/go/bin:/root/go/bin:${PATH}"
 
 # Node.js, npm, pnpm, vite
+# Versions pinned (pnpm/vite as in frontend/package.json): an unpinned install
+# breaks the build whenever a freshly published release is not served yet.
 RUN curl -fsSL "https://deb.nodesource.com/setup_${NODE_MAJOR}.x" | bash - \
   && apt-get install -y --no-install-recommends nodejs \
   && rm -rf /var/lib/apt/lists/* \
-  && npm install -g pnpm yarn vite
+  && npm install -g pnpm@10.12.1 yarn@1 vite@7
 
 # zsh + oh-my-zsh (default robbyrussell theme)
 RUN sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)" "" --unattended \
