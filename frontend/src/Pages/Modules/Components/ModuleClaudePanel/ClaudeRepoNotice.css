@@ -1,0 +1,28 @@
+.claude-repo-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 8px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--yellow-dark);
+  background: rgba(234, 179, 8, 0.12);
+  font-size: 0.9rem;
+}
+
+.claude-repo-notice.working {
+  border-color: var(--yellow-strong);
+  background: rgba(217, 119, 6, 0.18);
+}
+
+.claude-repo-notice-link {
+  flex: 0 0 auto;
+  border: none;
+  background: none;
+  color: var(--blue-link);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+  text-decoration: underline;
+}

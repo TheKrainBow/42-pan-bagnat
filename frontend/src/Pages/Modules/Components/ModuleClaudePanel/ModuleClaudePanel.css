@@ -1,0 +1,168 @@
+.claude-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 420px;
+}
+
+.claude-prod-banner {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: var(--red-dark);
+  color: var(--white);
+  font-size: 0.9rem;
+}
+
+.claude-prod-banner code,
+.claude-help code {
+  font-family: monospace;
+  padding: 0 4px;
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.25);
+}
+
+.claude-occupied {
+  padding: 8px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--yellow-dark);
+  background: rgba(234, 179, 8, 0.12);
+}
+
+.claude-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.claude-help {
+  font-size: 0.85rem;
+  opacity: 0.75;
+}
+
+.claude-current {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.claude-current-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.claude-current-title {
+  font-weight: 600;
+}
+
+.claude-current-hint {
+  margin-left: auto;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.claude-terminal-wrapper {
+  position: relative;
+}
+
+.claude-terminal {
+  height: 60vh;
+  min-height: 360px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #000;
+  overflow: hidden;
+}
+
+.claude-terminal-overlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: var(--white);
+}
+
+.claude-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: claude-spin 0.8s linear infinite;
+}
+
+@keyframes claude-spin {
+  to { transform: rotate(360deg); }
+}
+
+.claude-sessions h4 {
+  margin: 8px 0;
+}
+
+.claude-session-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  border-radius: 6px;
+}
+
+.claude-session-row.open {
+  background: rgba(59, 130, 246, 0.12);
+}
+
+.claude-session-title {
+  flex: 1 1 auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.claude-session-date {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  white-space: nowrap;
+}
+
+.claude-session-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.claude-empty {
+  opacity: 0.7;
+  font-size: 0.9rem;
+}
+
+.claude-status {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: bold;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--white);
+  background: var(--gray);
+}
+
+.claude-status-starting { background: var(--blue); }
+.claude-status-idle { background: var(--green-dark); }
+.claude-status-working { background: var(--purple); }
+.claude-status-waiting_input { background: var(--yellow-strong); }
+.claude-status-aborted { background: var(--red); }
+
+.claude-attention-placeholder {
+  display: inline-block;
+  width: 10px;
+}
