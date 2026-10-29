@@ -1,0 +1,18 @@
+.claude-attention-dot {
+  display: inline-block;
+  flex: 0 0 auto;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 0 2px var(--bg, #1e1e1e);
+}
+
+.claude-attention-dot.waiting {
+  background: var(--yellow-strong);
+  animation: claude-attention-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes claude-attention-pulse {
+  50% { transform: scale(1.35); }
+}

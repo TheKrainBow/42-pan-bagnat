@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# `pb`: asks Pan Bagnat to run a deployment action on this module. PB runs the
+# same code as the Deploy / Rebuild / Down buttons, so the output lands in the
+# module logs; it is also streamed here.
+usage() {
+  cat >&2 <<'EOF'
+Usage: pb <action>
+  deploy    docker compose build + up -d (le bouton Deploy de PB)
+  rebuild   build --no-cache + up -d
+  down      docker compose down --remove-orphans (sans supprimer les volumes)
+EOF
+}
+
+case "${1:-}" in
+  deploy|rebuild|down) ;;
+  -h|--help|help) usage; exit 0 ;;
+  *) usage; exit 1 ;;
+esac
+
+ok="$(mktemp)"
+trap 'rm -f "$ok"' EXIT
+curl -sS -N --unix-socket /run/pb/pb.sock \
+  -H "Authorization: Bearer ${PB_HOOK_TOKEN:-}" \
+  -X POST "http://pb/action/$1" | while IFS= read -r line; do
+    printf '%s\n' "$line"
+    [ "$line" = "PB_RESULT ok" ] && echo 1 > "$ok"
+  done
+[ -s "$ok" ]
