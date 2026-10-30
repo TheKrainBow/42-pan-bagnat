@@ -183,7 +183,7 @@ const SSHKeys = () => {
                     <span>Created by</span>
                     {key.created_by?.type === 'user' && key.created_by?.user ? (
                       <div className="ssh-creator" title={key.created_by.user.login}>
-                        <img src={key.created_by.user.photo_url || '/icons/users.png'} alt="" />
+                        <img src={`/api/v1/users/${key.created_by.user.id}/avatar`} alt="" />
                         <span>{key.created_by.user.login}</span>
                       </div>
                     ) : key.created_by?.type === 'module' && key.created_by?.module ? (

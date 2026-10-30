@@ -98,7 +98,7 @@ const ModuleStats = () => {
                     <tr key={u.user_id}>
                       <td>
                         <div className="stats-user-cell">
-                          <img src={u.photo_url || '/icons/users.png'} alt="" />
+                          <img src={`/api/v1/users/${u.user_id}/avatar`} alt="" />
                           <span>{u.ft_login}</span>
                         </div>
                       </td>
