@@ -236,6 +236,26 @@ func GetClaudeActive(w http.ResponseWriter, r *http.Request) {
 	writeClaudeJSON(w, http.StatusOK, map[string]any{"me": user.ID, "sessions": list})
 }
 
+// GetClaudeUserSessions lists the caller's Claude sessions on every module
+// (running first, then the most recent), for the Claude page.
+// @Security     AdminAuth
+// @Summary      My Claude sessions
+// @Tags         Modules
+// @Success      200        {object}  object "{me, sessions}"
+// @Router       /admin/claude/sessions [get]
+func GetClaudeUserSessions(w http.ResponseWriter, r *http.Request) {
+	user, ok := claudeUser(w, r)
+	if !ok {
+		return
+	}
+	list, err := core.ListUserClaudeSessions(user.ID)
+	if err != nil {
+		http.Error(w, "failed to list sessions", http.StatusInternalServerError)
+		return
+	}
+	writeClaudeJSON(w, http.StatusOK, map[string]any{"me": user.ID, "sessions": list})
+}
+
 // PostClaudeSeen marks the caller's Claude results on a module as seen (Claude tab displayed).
 // @Security     AdminAuth
 // @Summary      Mark Claude results as seen

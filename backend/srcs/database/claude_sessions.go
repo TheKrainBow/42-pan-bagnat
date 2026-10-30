@@ -138,6 +138,13 @@ func ListClaudeSessions(moduleID, userID string) ([]ClaudeSession, error) {
 		ORDER BY cs.last_activity_at DESC`, moduleID, userID)
 }
 
+// ListUserClaudeSessions returns a user's sessions on every module: the ones
+// holding a container first, then the most recently active, up to limit.
+func ListUserClaudeSessions(userID string, limit int) ([]ClaudeSession, error) {
+	return queryClaudeSessions(`WHERE cs.user_id = $1
+		ORDER BY (cs.container_id IS NOT NULL) DESC, cs.last_activity_at DESC LIMIT $2`, userID, limit)
+}
+
 // ListActiveClaudeSessions returns every session that holds a container.
 func ListActiveClaudeSessions() ([]ClaudeSession, error) {
 	return queryClaudeSessions(`WHERE cs.container_id IS NOT NULL ORDER BY cs.created_at`)

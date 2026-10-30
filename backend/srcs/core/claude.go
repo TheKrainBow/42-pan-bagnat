@@ -322,6 +322,42 @@ func ListClaudeSessions(moduleID, userID string) ([]database.ClaudeSession, erro
 	return database.ListClaudeSessions(moduleID, userID)
 }
 
+// ClaudeUserSession is a session of the caller, with its module, for the Claude page.
+type ClaudeUserSession struct {
+	database.ClaudeSession
+	Active        bool   `json:"active"`
+	ModuleName    string `json:"module_name"`
+	ModuleSlug    string `json:"module_slug"`
+	ModuleIconURL string `json:"module_icon_url"`
+}
+
+const claudeUserSessionsLimit = 50
+
+// ListUserClaudeSessions returns the user's sessions on every module (running first).
+func ListUserClaudeSessions(userID string) ([]ClaudeUserSession, error) {
+	list, err := database.ListUserClaudeSessions(userID, claudeUserSessionsLimit)
+	if err != nil {
+		return nil, err
+	}
+	modules := map[string]Module{}
+	out := make([]ClaudeUserSession, 0, len(list))
+	for _, s := range list {
+		module, ok := modules[s.ModuleID]
+		if !ok {
+			module, _ = GetModule(s.ModuleID)
+			modules[s.ModuleID] = module
+		}
+		out = append(out, ClaudeUserSession{
+			ClaudeSession: s,
+			Active:        s.Active(),
+			ModuleName:    module.Name,
+			ModuleSlug:    module.Slug,
+			ModuleIconURL: module.IconURL,
+		})
+	}
+	return out, nil
+}
+
 func GetClaudeSession(id string) (*database.ClaudeSession, error) {
 	return database.GetClaudeSession(id)
 }
