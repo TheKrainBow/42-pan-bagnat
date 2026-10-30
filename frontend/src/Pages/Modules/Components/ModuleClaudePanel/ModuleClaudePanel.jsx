@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
+import { ClipboardAddon } from '@xterm/addon-clipboard';
+import { WebLinksAddon } from '@xterm/addon-web-links';
 import '@xterm/xterm/css/xterm.css';
 import { toast } from 'react-toastify';
 import Button from 'Global/Button/Button';
@@ -11,6 +13,8 @@ import { claudeNeedsAttention } from './claudeAttentionStatus';
 import './ModuleClaudePanel.css';
 
 const ACTIVE = ['starting', 'idle', 'working', 'waiting_input'];
+
+const PROD_BANNER_KEY = 'pb-claude-prod-banner-hidden';
 
 const STATUS_LABELS = {
   starting: 'Starting',
@@ -61,8 +65,15 @@ const ClaudeTerminal = ({ moduleId, sessionId, onClosed }) => {
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
+    // OSC 52 from tmux/claude (mouse selection, "c to copy") reaches the browser clipboard.
+    term.loadAddon(new ClipboardAddon());
+    term.loadAddon(new WebLinksAddon());
     term.open(containerRef.current);
     fit.fit();
+    // Right click belongs to tmux: no browser context menu on top of it.
+    const container = containerRef.current;
+    const blockContextMenu = (ev) => ev.preventDefault();
+    container.addEventListener('contextmenu', blockContextMenu);
 
     const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const url = `${protocol}://${window.location.host}/api/v1/admin/modules/${encodeURIComponent(moduleId)}/claude/sessions/${encodeURIComponent(sessionId)}/terminal`;
@@ -109,6 +120,7 @@ const ClaudeTerminal = ({ moduleId, sessionId, onClosed }) => {
       closedByUs = true;
       clearTimeout(retryTimer);
       observer.disconnect();
+      container.removeEventListener('contextmenu', blockContextMenu);
       dataSub.dispose();
       resizeSub.dispose();
       ws.close();
@@ -139,6 +151,12 @@ const ModuleClaudePanel = ({ module }) => {
   // Session whose terminal is shown; defaults to the caller's running session.
   const [openSessionId, setOpenSessionId] = useState(null);
   const [terminalKey, setTerminalKey] = useState(0);
+  // Hidden once and for all in this browser.
+  const [prodBannerHidden, setProdBannerHidden] = useState(() => localStorage.getItem(PROD_BANNER_KEY) === '1');
+  const hideProdBanner = () => {
+    localStorage.setItem(PROD_BANNER_KEY, '1');
+    setProdBannerHidden(true);
+  };
 
   const load = useCallback(async () => {
     try {
@@ -267,10 +285,15 @@ const ModuleClaudePanel = ({ module }) => {
 
   return (
     <div className="claude-panel">
-      <div className="claude-prod-banner">
-        <strong>PRODUCTION</strong> — Claude works directly on the live <code>{module.slug}</code> module
-        (repository and containers). There is no staging.
-      </div>
+      {!prodBannerHidden && (
+        <div className="claude-prod-banner">
+          <span>
+            <strong>PRODUCTION</strong> — Claude works directly on the live <code>{module.slug}</code> module
+            (repository and containers). There is no staging.
+          </span>
+          <button type="button" className="claude-prod-banner-close" aria-label="Hide" onClick={hideProdBanner}>×</button>
+        </div>
+      )}
 
       {takenByOther && (
         <div className="claude-occupied">

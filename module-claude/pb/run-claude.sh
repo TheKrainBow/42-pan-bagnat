@@ -2,7 +2,16 @@
 # Runs inside the tmux session. PB_RESUME_ID resumes a previous conversation.
 notice="$(sed "s/<slug>/${PB_MODULE}/g" /etc/pb/prod-notice.md)"
 args=()
-[ -n "${PB_RESUME_ID:-}" ] && args+=(--resume "$PB_RESUME_ID")
+# claude only writes the transcript on the first message: a session stopped
+# before that (e.g. right after /login) has nothing to resume, so start a fresh
+# conversation under the same id (PB keeps it bound to the same session).
+if [ -n "${PB_RESUME_ID:-}" ]; then
+  if find "$HOME/.claude/projects" -name "${PB_RESUME_ID}.jsonl" -print -quit 2>/dev/null | grep -q .; then
+    args+=(--resume "$PB_RESUME_ID")
+  else
+    args+=(--session-id "$PB_RESUME_ID")
+  fi
+fi
 
 claude "${args[@]}" --append-system-prompt "$notice"
 code=$?

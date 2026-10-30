@@ -94,6 +94,8 @@ function Main() {
     socketService.subscribeTopic(topic);
     const unsub = socketService.subscribe((evt) => {
       if (evt?.eventType !== 'claude_notify' || !evt.payload) return;
+      // The topic is already owner-only (backend); never toast someone else's session.
+      if (evt.payload.user_id !== user.id) return;
       const { kind, module_id, module_name, title, message } = evt.payload;
       const url = `/admin/modules/${module_id}?tab=claude`;
       const heading = {

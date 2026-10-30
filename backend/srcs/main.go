@@ -244,6 +244,7 @@ func main() {
 			r.Route("/ssh-keys", sshkeys.RegisterRoutes)
 			r.Route("/stats", stats.RegisterRoutes)
 			r.Get("/claude/active", modules.GetClaudeActive)
+			r.Get("/claude/sessions", modules.GetClaudeUserSessions)
 			r.Get("/docker/ls", modules.GetAllContainers)
 			r.Delete("/docker/{containerName}/delete", modules.DeleteContainerGlobal)
 			r.Route("/users", users.RegisterRoutes)
