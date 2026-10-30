@@ -341,7 +341,7 @@ func BuildOIDCUserClaims(user User, module Module, _ database.OIDCClient, scopes
 	if includeProfile {
 		claims.Name = user.FtLogin
 		claims.PreferredUsername = user.FtLogin
-		claims.Picture = user.PhotoURL
+		claims.Picture = oidcAvatarURL(user)
 	}
 	if includeEmail {
 		claims.Email = buildOIDCEmail(user)
@@ -518,4 +518,14 @@ func SetOIDCClientSecret(clientID string) (string, error) {
 		return "", err
 	}
 	return secret, nil
+}
+
+// oidcAvatarURL points modules at PB's avatar proxy: 42's CDN now requires a
+// bearer token, so the stored photo_url can't be loaded by a browser directly.
+func oidcAvatarURL(user User) string {
+	host := strings.TrimSpace(os.Getenv("HOST_NAME"))
+	if host == "" || user.PhotoURL == "" {
+		return user.PhotoURL
+	}
+	return "https://" + host + "/api/v1/users/" + user.ID + "/avatar"
 }
