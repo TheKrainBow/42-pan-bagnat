@@ -31,7 +31,10 @@ RUN npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}" && npm cac
 # The container runs as the owner of the module repo, whose UID is only known at
 # runtime: the entrypoint registers it in /etc/passwd (ssh needs an entry), and
 # the home (a per-user volume) is world-writable with the sticky bit.
+# The repo is mounted at its host path, which may live under /root (0700 in the
+# base image): let the repo owner traverse it, without listing it.
 RUN chmod 0666 /etc/passwd /etc/group \
+  && chmod 0711 /root \
   && mkdir -p /home/claude && chmod 1777 /home/claude
 
 COPY pb/ /opt/pb/
