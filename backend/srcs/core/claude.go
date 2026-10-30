@@ -775,6 +775,7 @@ func notifyClaudeUser(s database.ClaudeSession, kind, message string) {
 	websocket.SendTopicEvent("claude-user:"+s.UserID, s.ModuleID, "claude_notify", map[string]any{
 		"kind":        kind,
 		"session_id":  s.ID,
+		"user_id":     s.UserID,
 		"module_id":   s.ModuleID,
 		"module_name": module.Name,
 		"title":       s.Title,
